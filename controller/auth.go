@@ -16,7 +16,7 @@ func Login(c *gin.Context) {
 		"userName": "Justin",
 		"exp":      time.Now().Add(time.Second * 20).Unix(),
 	})
-	tokenString, err := jwtToken.SignedString([]byte(os.Getenv("jwtSecret")))
+	tokenString, err := jwtToken.SignedString([]byte(os.Getenv("accessToken")))
 
 	fmt.Print(err)
 

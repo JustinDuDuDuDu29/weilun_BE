@@ -20,13 +20,10 @@ CREATE TABLE UserT(
     -- 0~100:super admin
     -- 101~200:company
     -- 300+:driver
-    loginTimes integer NOT NULL DEFAULT 0,
     initPwdChanged Boolean NOT NULL DEFAULT false,
     create_date Timestamp NOT NULL DEFAULT NOW(),
     deleted_date Timestamp,
-    last_modified_date Timestamp NOT NULL DEFAULT NOW(),
-
-    CHECK (loginTimes>=0)
+    last_modified_date Timestamp NOT NULL DEFAULT NOW()
   );
 -- +goose StatementEnd
 
