@@ -1,17 +1,22 @@
 package router
 
 import (
+	// "main/middleware"
 	"main/controller"
-	"main/middleware"
 
 	"github.com/gin-gonic/gin"
 )
 
-func InitRouter() *gin.Engine {
-	app := gin.Default()
-	app.GET("/login", controller.Login)
-	app.POST("/", middleware.IsLoggedIn, controller.Login)
-	app.POST("/register", controller.RegisterNewUser)
-	app.Run()
-	return app
+func RouterInit(c *controller.AppControllerImpl) {
+
+	router := gin.New()
+	router.Use(gin.Logger())
+	router.Use(gin.Recovery())
+
+	api := router.Group("/api")
+	{
+		user := api.Group("/user")
+		user.GET("", c.UserCtrl.RegisterNewUser)
+	}
+	router.Run(":8080")
 }

@@ -2,26 +2,41 @@ package controller
 
 import (
 	"fmt"
+	"main/service"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-type reqBodyT struct {
+type UserCtrl interface {
+	RegisterNewUser(c *gin.Context)
+}
+
+type UserCtrlImpl struct {
+	svc *service.AppService
+}
+
+type registerNewUserBodyT struct {
 	Name       string `json:"name" binding:"required"`
 	Role       string `json:"role" binding:"required"`
 	PhoneNum   string `json:"phoneNum" binding:"required"`
 	DriverInfo string `json:"driverInfo"`
 }
 
-func RegisterNewUser(c *gin.Context) {
-	var reqBody reqBodyT
-	err := c.BindJSON(&reqBody)
+func (u *UserCtrlImpl) RegisterNewUser(c *gin.Context) {
+	// var reqBody registerNewUserBodyT
+	// err := c.BindJSON(&reqBody)
 
-	if err != nil {
-		return
-	}
+	fmt.Println("Hello!")
+	// if err != nil {
+	// 	return
+	// }
 
-	fmt.Print(reqBody.Name)
 	c.Status(http.StatusOK)
+}
+
+func UserCtrlInit(svc *service.AppService) *UserCtrlImpl {
+	return &UserCtrlImpl{
+		svc: svc,
+	}
 }
