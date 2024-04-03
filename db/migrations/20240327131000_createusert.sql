@@ -30,4 +30,5 @@ CREATE TABLE UserT(
 -- +goose Down
 -- +goose StatementBegin
 Drop TABLE If Exists UserT;
+Drop DOMAIN If Exists phoneType;
 -- +goose StatementEnd

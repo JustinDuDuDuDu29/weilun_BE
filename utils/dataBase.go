@@ -19,7 +19,7 @@ func InitDatabase() (*db.Queries, *pgx.Conn) {
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v\n", err)
 	}
-	defer conn.Close(context.Background())
+	// defer conn.Close(context.Background())
 
 	queries := db.New(conn)
 

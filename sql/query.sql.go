@@ -11,26 +11,115 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createUser = `-- name: CreateUser :one
+const createAdmin = `-- name: CreateAdmin :one
 INSERT INTO UserT(
-    userName, pwd, role
+    userName, pwd, name, role, belongcmp, phoneNum
 ) VALUES (
-  $1, $2, $3
+  $1, $2, $3, $4, $5, $6
 )
 RETURNING id
 `
 
-type CreateUserParams struct {
-	Username string
-	Pwd      string
-	Role     int16
+type CreateAdminParams struct {
+	Username  string
+	Pwd       string
+	Name      string
+	Role      int16
+	Belongcmp pgtype.Int8
+	Phonenum  interface{}
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, error) {
-	row := q.db.QueryRow(ctx, createUser, arg.Username, arg.Pwd, arg.Role)
+func (q *Queries) CreateAdmin(ctx context.Context, arg CreateAdminParams) (int64, error) {
+	row := q.db.QueryRow(ctx, createAdmin,
+		arg.Username,
+		arg.Pwd,
+		arg.Name,
+		arg.Role,
+		arg.Belongcmp,
+		arg.Phonenum,
+	)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
+}
+
+const createCmpAdmin = `-- name: CreateCmpAdmin :one
+INSERT INTO UserT(
+    userName, pwd, name, role, belongcmp, phoneNum
+) VALUES (
+  $1, $2, $3, $4, $5, $6
+)
+RETURNING id
+`
+
+type CreateCmpAdminParams struct {
+	Username  string
+	Pwd       string
+	Name      string
+	Role      int16
+	Belongcmp pgtype.Int8
+	Phonenum  interface{}
+}
+
+func (q *Queries) CreateCmpAdmin(ctx context.Context, arg CreateCmpAdminParams) (int64, error) {
+	row := q.db.QueryRow(ctx, createCmpAdmin,
+		arg.Username,
+		arg.Pwd,
+		arg.Name,
+		arg.Role,
+		arg.Belongcmp,
+		arg.Phonenum,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createDriver = `-- name: CreateDriver :one
+with createUser as (
+    INSERT INTO UserT(
+        userName, pwd, name, role, belongcmp, phoneNum
+        ) VALUES (
+        $1, $2, $3, $4, $5, $6
+    )
+    RETURNING id
+)
+
+insert into driverT (userid, percentage, nationalidnumber) 
+	(select o.id, v.percentage, v.nationalidnumber
+	from createUser o
+	cross join(
+		values 
+		($7, $8)
+	) as v (percentage, nationalidnumber))
+RETURNING userid
+`
+
+type CreateDriverParams struct {
+	Username  string
+	Pwd       string
+	Name      string
+	Role      int16
+	Belongcmp pgtype.Int8
+	Phonenum  interface{}
+	Column7   interface{}
+	Column8   interface{}
+}
+
+func (q *Queries) CreateDriver(ctx context.Context, arg CreateDriverParams) (pgtype.Int8, error) {
+	row := q.db.QueryRow(ctx, createDriver,
+		arg.Username,
+		arg.Pwd,
+		arg.Name,
+		arg.Role,
+		arg.Belongcmp,
+		arg.Phonenum,
+		arg.Column7,
+		arg.Column8,
+	)
+	var userid pgtype.Int8
+	err := row.Scan(&userid)
+	return userid, err
 }
 
 const deleteUser = `-- name: DeleteUser :exec
