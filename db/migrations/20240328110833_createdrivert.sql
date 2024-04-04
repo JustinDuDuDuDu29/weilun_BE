@@ -7,14 +7,10 @@ CHECK (
 
 CREATE TABLE DriverT(
     id BIGSERIAL PRIMARY KEY,
-    userId bigint references UserT(id) ,
+    userId bigint references UserT(id),
     -- BLABLABLA
     percentage smallint NOT NULL DEFAULT 20, 
-    nationalIDNumber nationalIDNumberType NOT NULL,
-    -- BLABLABLA
-    create_date Timestamp NOT NULL DEFAULT NOW(),
-    deleted_date Timestamp,
-    last_modified_date Timestamp NOT NULL DEFAULT NOW() 
+    nationalIDNumber nationalIDNumberType NOT NULL
   );
 -- +goose StatementEnd
 

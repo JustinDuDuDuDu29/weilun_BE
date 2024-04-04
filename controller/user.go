@@ -12,6 +12,7 @@ import (
 
 type UserCtrl interface {
 	RegisterNewUser(c *gin.Context)
+	DeleteUser(c *gin.Context)
 }
 
 type UserCtrlImpl struct {
@@ -41,7 +42,6 @@ func (u *UserCtrlImpl) RegisterNewUser(c *gin.Context) {
 	case "cmpAdmin":
 		fmt.Print("11")
 		param := db.CreateCmpAdminParams{
-			Username:  reqBody.Name,
 			Pwd:       reqBody.PhoneNum,
 			Name:      reqBody.Name,
 			Belongcmp: pgtype.Int8{Int64: int64(reqBody.BelongCmp), Valid: true},
@@ -59,17 +59,18 @@ func (u *UserCtrlImpl) RegisterNewUser(c *gin.Context) {
 }
 
 type deleteUserBodyT struct {
-	ToDeleteUserId string `json:"id" binding:"required"`
+	ToDeleteUserId int `json:"id" binding:"required"`
 }
 
 func (u *UserCtrlImpl) DeleteUser(c *gin.Context) {
 	var reqBody deleteUserBodyT
 	err := c.BindJSON(&reqBody)
 
-	fmt.Println("Hello!")
 	if err != nil {
 		return
 	}
+
+	u.svc.UserServ.DeleteUser(int64(reqBody.ToDeleteUserId))
 
 	c.Status(http.StatusOK)
 }

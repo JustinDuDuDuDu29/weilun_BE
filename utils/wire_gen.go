@@ -19,7 +19,8 @@ func Init(q *db.Queries) *controller.AppControllerImpl {
 	userServImpl := service.UserServInit(q)
 	appService := service.AppServiceInit(userServImpl)
 	userCtrlImpl := controller.UserCtrlInit(appService)
-	appControllerImpl := controller.AppControllerInit(userCtrlImpl)
+	authCtrlImpl := controller.AuthCtrlInit(appService)
+	appControllerImpl := controller.AppControllerInit(userCtrlImpl, authCtrlImpl)
 	return appControllerImpl
 }
 
@@ -28,3 +29,5 @@ func Init(q *db.Queries) *controller.AppControllerImpl {
 var userServSet = wire.NewSet(service.UserServInit, wire.Bind(new(service.UserServ), new(*service.UserServImpl)))
 
 var userCtrlSet = wire.NewSet(controller.UserCtrlInit, wire.Bind(new(controller.UserCtrl), new(*controller.UserCtrlImpl)))
+
+var authCtrlSet = wire.NewSet(controller.AuthCtrlInit, wire.Bind(new(controller.AuthCtrl), new(*controller.AuthCtrlImpl)))

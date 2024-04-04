@@ -17,7 +17,7 @@ func RouterInit(c *controller.AppControllerImpl) {
 	{
 		auth := api.Group("/auth")
 		auth.GET("")
-		auth.POST("")
+		auth.POST("", c.AuthCtrl.Login)
 		auth.DELETE("")
 
 		user := api.Group("/user")

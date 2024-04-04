@@ -11,11 +11,10 @@ OR VALUE ~ '^09\d{2}(\d{6}|-\d{3}-\d{3})$'
 
 CREATE TABLE UserT(
     id BIGSERIAL PRIMARY KEY,
-    userName varchar(20)  NOT NULL Unique,
+    phoneNum phoneType NOT NULL Unique,
     pwd  varchar(76) NOT NULL,
     name varchar(25) NOT NULL,
     belongCMP bigint references CMPT(id),
-    phoneNum phoneType NOT NULL Unique,
     role smallint NOT NULL,
     -- 0~100:super admin
     -- 101~200:company

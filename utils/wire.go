@@ -12,9 +12,6 @@ import (
 	"github.com/google/wire"
 )
 
-// InitializeEvent creates an Event. It will error if the Event is staffed with
-// a grumpy greeter.
-
 var userServSet = wire.NewSet(
 	service.UserServInit,
 	wire.Bind(new(service.UserServ), new(*service.UserServImpl)),
@@ -25,11 +22,17 @@ var userCtrlSet = wire.NewSet(
 	wire.Bind(new(controller.UserCtrl), new(*controller.UserCtrlImpl)),
 )
 
+var authCtrlSet = wire.NewSet(
+	controller.AuthCtrlInit,
+	wire.Bind(new(controller.AuthCtrl), new(*controller.AuthCtrlImpl)),
+)
+
 func Init(q *db.Queries) *controller.AppControllerImpl {
 	wire.Build(
 		controller.AppControllerInit,
 		userCtrlSet,
 		userServSet,
+		authCtrlSet,
 		service.AppServiceInit,
 	)
 
