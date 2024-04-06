@@ -10,6 +10,7 @@ import (
 	db "main/sql"
 
 	"github.com/google/wire"
+	"github.com/jackc/pgx/v5"
 )
 
 var userServSet = wire.NewSet(
@@ -27,7 +28,7 @@ var authCtrlSet = wire.NewSet(
 	wire.Bind(new(controller.AuthCtrl), new(*controller.AuthCtrlImpl)),
 )
 
-func Init(q *db.Queries) *controller.AppControllerImpl {
+func Init(q *db.Queries, conn *pgx.Conn) *controller.AppControllerImpl {
 	wire.Build(
 		controller.AppControllerInit,
 		userCtrlSet,

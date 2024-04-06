@@ -16,14 +16,25 @@ func RouterInit(c *controller.AppControllerImpl) {
 	api := router.Group("/api")
 	{
 		auth := api.Group("/auth")
-		auth.GET("")
 		auth.POST("", c.AuthCtrl.Login)
-		auth.DELETE("")
 
 		user := api.Group("/user")
-		user.POST("", c.UserCtrl.RegisterNewUser)
-		user.PUT("", c.UserCtrl.RegisterNewUser)
-		user.DELETE("", c.UserCtrl.RegisterNewUser)
+		user.GET("", c.UserCtrl.RegisterUser)
+		user.POST("", c.UserCtrl.RegisterUser)
+		user.PUT("", c.UserCtrl.RegisterUser)
+		user.DELETE("", c.UserCtrl.DeleteUser)
+
+		cmp := api.Group("/cmp")
+		cmp.GET("", c.UserCtrl.RegisterUser)
+		cmp.POST("", c.UserCtrl.RegisterUser)
+		cmp.PUT("")
+		cmp.DELETE("", c.UserCtrl.DeleteUser)
+
+		jobs := api.Group("/jobs")
+		jobs.GET("", c.UserCtrl.RegisterUser)
+		jobs.POST("", c.UserCtrl.RegisterUser)
+		jobs.PUT("")
+		jobs.DELETE("", c.UserCtrl.DeleteUser)
 	}
 	router.Run(":8080")
 }

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"main/apptypes"
 	"main/service"
 	db "main/sql"
 	"net/http"
@@ -11,7 +12,7 @@ import (
 )
 
 type UserCtrl interface {
-	RegisterNewUser(c *gin.Context)
+	RegisterUser(c *gin.Context)
 	DeleteUser(c *gin.Context)
 }
 
@@ -19,58 +20,66 @@ type UserCtrlImpl struct {
 	svc *service.AppService
 }
 
-type registerNewUserBodyT struct {
-	Name       string `json:"name" binding:"required"`
-	Role       string `json:"role" binding:"required"`
-	PhoneNum   string `json:"phoneNum" binding:"required"`
-	BelongCmp  int    `json:"belongCmp" binding:"required"`
-	DriverInfo string `json:"driverInfo"`
-}
+func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
+	var reqBody apptypes.RegisterUserBodyT
 
-func (u *UserCtrlImpl) RegisterNewUser(c *gin.Context) {
-	var reqBody registerNewUserBodyT
-	err := c.BindJSON(&reqBody)
-
-	if err != nil {
+	if err := c.BindJSON(&reqBody); err != nil {
 		return
 	}
 
+	var newid int64
+	var err error
+
 	switch reqBody.Role {
-	case "admin":
-		// return dont 87
-		return
 	case "cmpAdmin":
-		fmt.Print("11")
-		param := db.CreateCmpAdminParams{
+		param := db.CreateUserParams{
 			Pwd:       reqBody.PhoneNum,
 			Name:      reqBody.Name,
 			Belongcmp: pgtype.Int8{Int64: int64(reqBody.BelongCmp), Valid: true},
 			Phonenum:  reqBody.PhoneNum,
 			Role:      200,
 		}
-		u.svc.UserServ.RegisterCmpAdmin(param)
+		newid, err = u.svc.UserServ.RegisterCmpAdmin(param)
+
 	case "driver":
+		param := db.CreateUserParams{
+			Pwd:       reqBody.PhoneNum,
+			Name:      reqBody.Name,
+			Belongcmp: pgtype.Int8{Int64: int64(reqBody.BelongCmp), Valid: true},
+			Phonenum:  reqBody.PhoneNum,
+			Role:      300,
+		}
+
+		newid, err = u.svc.UserServ.RegisterDriver(param, reqBody.DriverInfo.Percentage, reqBody.DriverInfo.NationalIdNumber)
 
 	default:
-
+		fmt.Print("out")
 	}
 
-	c.Status(http.StatusOK)
-}
+	if err != nil {
+		fmt.Print("HERE")
+		fmt.Printf("\n%s", err)
 
-type deleteUserBodyT struct {
-	ToDeleteUserId int `json:"id" binding:"required"`
+		c.Status(http.StatusConflict)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"id": newid})
 }
 
 func (u *UserCtrlImpl) DeleteUser(c *gin.Context) {
-	var reqBody deleteUserBodyT
+	var reqBody apptypes.DeleteUserBodyT
 	err := c.BindJSON(&reqBody)
 
 	if err != nil {
 		return
 	}
 
-	u.svc.UserServ.DeleteUser(int64(reqBody.ToDeleteUserId))
+	err = u.svc.UserServ.DeleteUser(int64(reqBody.ToDeleteUserId))
+
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+	}
 
 	c.Status(http.StatusOK)
 }
