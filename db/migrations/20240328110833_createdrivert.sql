@@ -6,8 +6,7 @@ CHECK (
 );
 
 CREATE TABLE DriverT(
-    id BIGSERIAL PRIMARY KEY,
-    userId bigint references UserT(id),
+    id bigint PRIMARY KEY references UserT(id),
     -- BLABLABLA
     percentage smallint NOT NULL DEFAULT 20, 
     nationalIDNumber nationalIDNumberType NOT NULL

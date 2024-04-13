@@ -13,6 +13,11 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+var cmpServSet = wire.NewSet(
+	service.CmpServInit,
+	wire.Bind(new(service.CmpServ), new(*service.CmpServImpl)),
+)
+
 var userServSet = wire.NewSet(
 	service.UserServInit,
 	wire.Bind(new(service.UserServ), new(*service.UserServImpl)),
@@ -34,6 +39,7 @@ func Init(q *db.Queries, conn *pgx.Conn) *controller.AppControllerImpl {
 		userCtrlSet,
 		userServSet,
 		authCtrlSet,
+		cmpServSet,
 		service.AppServiceInit,
 	)
 

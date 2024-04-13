@@ -43,6 +43,8 @@ func (a *AuthCtrlImpl) Login(c *gin.Context) {
 
 	if err != nil {
 		c.Status(http.StatusNotFound)
+		c.Abort()
+		return
 	}
 
 	fmt.Printf("%+v", res)

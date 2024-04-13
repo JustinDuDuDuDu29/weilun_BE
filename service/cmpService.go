@@ -2,17 +2,16 @@ package service
 
 import (
 	"context"
-	"fmt"
 	db "main/sql"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type CmpServ interface {
-	GetCmp(queryParam db.GetUserParams) (db.GetUserRow, error)
-	NewCmp(queryParam db.CreateUserParams) (int64, error)
-	UpdateCmp(queryParam int64) error
+	GetCmp(cmpId int64) (db.GetCmpRow, error)
+	NewCmp(name string) (int64, error)
+	GetAllCmp() ([]db.Cmpt, error)
+	UpdateCmp(queryParam db.UpdateCmpParams) error
 	DeleteCmp(queryParam int64) error
 }
 
@@ -26,19 +25,23 @@ func (u *CmpServImpl) GetCmp(cmpId int64) (db.GetCmpRow, error) {
 	return res, err
 }
 
-func (u *CmpServImpl) NewCmp(name string) (int64, error) {
-	id, err := u.q.NewCmp(context.Background(), name)
-
-	return id, err
-}
-
-func (u *CmpServImpl) HaveUser(queryParam db.GetUserParams) (db.GetUserRow, error) {
-	res, err := u.q.GetUser(context.Background(), queryParam)
+func (u *CmpServImpl) GetAllCmp() ([]db.Cmpt, error) {
+	res, err := u.q.GetAllCmp(context.Background())
 	return res, err
 }
 
-func (u *CmpServImpl) DeleteUser(queryParam int64) error {
-	err := u.q.DeleteUser(context.Background(), queryParam)
+func (u *CmpServImpl) NewCmp(name string) (int64, error) {
+	id, err := u.q.NewCmp(context.Background(), name)
+	return id, err
+}
+
+func (u *CmpServImpl) UpdateCmp(queryParam db.UpdateCmpParams) error {
+	err := u.q.UpdateCmp(context.Background(), queryParam)
+	return err
+}
+
+func (u *CmpServImpl) DeleteCmp(queryParam int64) error {
+	err := u.q.DeleteCmp(context.Background(), queryParam)
 	return err
 }
 

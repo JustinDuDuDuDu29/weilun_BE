@@ -61,6 +61,7 @@ func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
 		fmt.Printf("\n%s", err)
 
 		c.Status(http.StatusConflict)
+		c.Abort()
 		return
 	}
 
@@ -79,9 +80,13 @@ func (u *UserCtrlImpl) DeleteUser(c *gin.Context) {
 
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
+		c.Abort()
+		return
 	}
 
 	c.Status(http.StatusOK)
+	c.Abort()
+	return
 }
 
 func UserCtrlInit(svc *service.AppService) *UserCtrlImpl {

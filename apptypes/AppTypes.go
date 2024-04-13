@@ -16,3 +16,11 @@ type RegisterUserBodyT struct {
 type DeleteUserBodyT struct {
 	ToDeleteUserId int `json:"id" binding:"required"`
 }
+
+type RegisterCmpT struct {
+	CmpName int `json:"cmpName" binding:"required"`
+}
+
+type DeleteCmpBodyT struct {
+	ToDeleteCmpId int `json:"id" binding:"required"`
+}

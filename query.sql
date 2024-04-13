@@ -22,9 +22,9 @@ INSERT INTO UserT(
 RETURNING id;
 
 -- name: CreateDriverInfo :one
-insert into driverT (userid, percentage, nationalidnumber) 
+insert into driverT (id, percentage, nationalidnumber) 
     values ($1, $2, $3)
-RETURNING userid;
+RETURNING id;
 
 -- name: UpdateUser :exec
 UPDATE UserT
@@ -55,8 +55,9 @@ INSERT INTO cmpt (name) values ($1) RETURNING id;
 
 -- name: UpdateCmp :exec
 UPDATE cmpt
-  set deleted_date= NOW(),
-  last_modified_date = NOW()
+    set
+    name = $2,
+    last_modified_date = NOW()
 WHERE id = $1;
 
 -- name: DeleteCmp :exec
@@ -64,3 +65,113 @@ UPDATE cmpt
   set deleted_date= NOW(),
   last_modified_date = NOW()
 WHERE id = $1;
+
+
+-- name: GetAllJobs :many
+SELECT * from JobsT;
+
+
+-- name: GetAllJobsByCmp :many
+SELECT * from JobsT where belongcmp = $1;
+
+-- name: SetJobNoMore :exec
+UPDATE JobsT 
+  set finished_date = NOW(),
+  last_modified_date = NOW()
+WHERE id = $1;
+ 
+-- name: DeleteJob :exec
+UPDATE JobsT 
+  set deleted_date = NOW(),
+  last_modified_date = NOW()
+WHERE id = $1;
+
+
+-- name: UpdateJob :one
+UPDATE JobsT set 
+    from_loc = $1,
+    mid = $2,
+    to_loc = $3,
+    price = $4,
+    remaining = $5,
+    belongCMP = $6,
+    source = $7,
+    jobDate = $8,
+    memo = $9,
+    end_date = $10,
+    last_modified_date = NOW()
+where id = $11
+ RETURNING id;
+
+
+-- name: CreateJob :one
+INSERT INTO JobsT (
+    from_loc,
+    mid,
+    to_loc,
+    price,
+    estimated,
+    remaining,
+    belongCMP,
+    source,
+    jobDate,
+    memo,
+    end_date
+) values (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $5,
+    $6,
+    $7,
+    $8,
+    $9,
+    $10
+) RETURNING id;
+
+-- name: ClaimJob :one 
+INSERT into ClaimJobT (
+    jobID,
+    driverID
+) values (
+    $1,
+    $2
+) RETURNING id;
+
+-- name: DecreaseRemaining :exec
+Update JobsT set remaining = remaining - 1, last_modified_date = NOW() where id = $1;
+
+-- name: DeleteClaimedJob :exec 
+Update ClaimJobT Set
+    deleted_by = $2,
+    deleted_date = NOW(),
+    last_modified_date = NOW()
+    where id = $1;
+
+-- name: IncreaseRemaining :exec
+Update JobsT set remaining = remaining + 1, last_modified_date = NOW() where id = $1;
+
+-- name: FinishClamedJob :exec
+Update ClaimJobT Set
+    finished_date = NOW(),
+    percentage = (SELECT percentage from driverT where usert.id = (SELECT driverID from ClaimJobT where ClaimJobT.id = $1)),
+    last_modified_date = NOW()
+WHERE id = $1;
+
+-- name: ApproveFinishedJob :exec
+Update ClaimJobT set Approved_By = $2, approved_date = NOW(), last_modified_date = NOW() where id = $1;
+
+-- name: GetClaimedJob :one
+SELECT t2.id, t1.*  FROM ClaimJobT t2 inner join JobsT t1 on t1.id = t2.jobID where t2.driverID = $1 and (t2.deleted_date IS NULL and t2.finished_date IS NULL) order by t2.create_date LIMIT 1;
+
+-- name: GetDriverRevenue :many
+SELECT t1.percentage*t2.price as earn from ClaimJobT t1 inner join JobsT t2 on t1.jobID = t2.id where t1.driverID = $1 and (t1.finished_date IS NOT NULL 
+    and approved_date IS NOT NULL and deleted_date IS NOT NULL) and t1.finished_date 
+    between $2 and $3;
+
+
+
+
+

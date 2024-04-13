@@ -18,7 +18,8 @@ import (
 
 func Init(q *db.Queries, conn *pgx.Conn) *controller.AppControllerImpl {
 	userServImpl := service.UserServInit(q, conn)
-	appService := service.AppServiceInit(userServImpl)
+	cmpServImpl := service.CmpServInit(q, conn)
+	appService := service.AppServiceInit(userServImpl, cmpServImpl)
 	userCtrlImpl := controller.UserCtrlInit(appService)
 	authCtrlImpl := controller.AuthCtrlInit(appService)
 	appControllerImpl := controller.AppControllerInit(userCtrlImpl, authCtrlImpl)
@@ -26,6 +27,8 @@ func Init(q *db.Queries, conn *pgx.Conn) *controller.AppControllerImpl {
 }
 
 // wire.go:
+
+var cmpServSet = wire.NewSet(service.CmpServInit, wire.Bind(new(service.CmpServ), new(*service.CmpServImpl)))
 
 var userServSet = wire.NewSet(service.UserServInit, wire.Bind(new(service.UserServ), new(*service.UserServImpl)))
 
