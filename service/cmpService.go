@@ -36,6 +36,7 @@ func (u *CmpServImpl) NewCmp(name string) (int64, error) {
 }
 
 func (u *CmpServImpl) UpdateCmp(queryParam db.UpdateCmpParams) error {
+
 	err := u.q.UpdateCmp(context.Background(), queryParam)
 	return err
 }

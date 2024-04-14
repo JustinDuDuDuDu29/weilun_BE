@@ -1,11 +1,11 @@
 package controller
 
 import (
-	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -21,17 +21,19 @@ type UserCtrlImpl struct {
 }
 
 func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
-	var reqBody apptypes.RegisterUserBodyT
-
-	if err := c.BindJSON(&reqBody); err != nil {
-		return
-	}
+	userType := c.Query("userType")
 
 	var newid int64
 	var err error
 
-	switch reqBody.Role {
+	switch userType {
 	case "cmpAdmin":
+		var reqBody apptypes.RegisterCmpAdminBodyT
+
+		if err := c.BindJSON(&reqBody); err != nil {
+			return
+		}
+
 		param := db.CreateUserParams{
 			Pwd:       reqBody.PhoneNum,
 			Name:      reqBody.Name,
@@ -42,6 +44,11 @@ func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
 		newid, err = u.svc.UserServ.RegisterCmpAdmin(param)
 
 	case "driver":
+		var reqBody apptypes.RegisterDriverBodyT
+
+		if err := c.BindJSON(&reqBody); err != nil {
+			return
+		}
 		param := db.CreateUserParams{
 			Pwd:       reqBody.PhoneNum,
 			Name:      reqBody.Name,
@@ -53,13 +60,11 @@ func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
 		newid, err = u.svc.UserServ.RegisterDriver(param, reqBody.DriverInfo.Percentage, reqBody.DriverInfo.NationalIdNumber)
 
 	default:
-		fmt.Print("out")
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
 	}
 
 	if err != nil {
-		fmt.Print("HERE")
-		fmt.Printf("\n%s", err)
-
 		c.Status(http.StatusConflict)
 		c.Abort()
 		return
@@ -87,6 +92,32 @@ func (u *UserCtrlImpl) DeleteUser(c *gin.Context) {
 	c.Status(http.StatusOK)
 	c.Abort()
 	return
+}
+
+func (u *UserCtrlImpl) GetUserById(c *gin.Context) {
+
+	id := c.Query("id")
+
+	if id != "" {
+
+		id, err := strconv.Atoi(id)
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+			c.Abort()
+			return
+		}
+		res, err := u.svc.UserServ.GetUserById(int64(id))
+
+		c.JSON(http.StatusOK, gin.H{"res": res})
+		return
+	}
+
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		c.Abort()
+		return
+	}
+
 }
 
 func UserCtrlInit(svc *service.AppService) *UserCtrlImpl {

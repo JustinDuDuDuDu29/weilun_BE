@@ -33,8 +33,14 @@ var authCtrlSet = wire.NewSet(
 	wire.Bind(new(controller.AuthCtrl), new(*controller.AuthCtrlImpl)),
 )
 
+var cmpCtrlSet = wire.NewSet(
+	controller.CmpCtrlInit,
+	wire.Bind(new(controller.CmpCtrl), new(*controller.CmpCtrlImpl)),
+)
+
 func Init(q *db.Queries, conn *pgx.Conn) *controller.AppControllerImpl {
 	wire.Build(
+		cmpCtrlSet,
 		controller.AppControllerInit,
 		userCtrlSet,
 		userServSet,

@@ -2,10 +2,10 @@ package controller
 
 import (
 	"fmt"
+	"main/apptypes"
 	"main/service"
 	db "main/sql"
 
-	// db "main/sql"
 	"net/http"
 	"os"
 	"time"
@@ -22,14 +22,10 @@ type AuthCtrlImpl struct {
 	svc *service.AppService
 }
 
-type loginBodyT struct {
-	Phonenum string `json:"phoneNum" binding:"required"`
-	Pwd      string `json:"pwd" binding:"required"`
-}
-
 func (a *AuthCtrlImpl) Login(c *gin.Context) {
 
-	var reqBody loginBodyT
+	var reqBody apptypes.LoginBodyT
+
 	err := c.BindJSON(&reqBody)
 
 	if err != nil {
@@ -61,9 +57,7 @@ func (a *AuthCtrlImpl) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"jwt": tokenString})
-
-	// return
+	c.JSON(http.StatusOK, gin.H{"Token": tokenString})
 }
 
 func AuthCtrlInit(svc *service.AppService) *AuthCtrlImpl {

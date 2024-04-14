@@ -526,7 +526,7 @@ func (q *Queries) GetUser(ctx context.Context, arg GetUserParams) (GetUserRow, e
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, phonenum, pwd, name, belongcmp, role, initpwdchanged, create_date, deleted_date, last_modified_date from UserT where id=$1
+SELECT id, phonenum, pwd, name, belongcmp, role, initpwdchanged, create_date, deleted_date, last_modified_date from UserT where id=$1 LIMIT 1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id int64) (Usert, error) {

@@ -1,23 +1,75 @@
 package controller
 
 import (
-	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type CmpCtrl interface {
 	RegisterCmp(c *gin.Context)
 	DeleteCmp(c *gin.Context)
+	UpdateCmp(c *gin.Context)
+	GetCmp(c *gin.Context)
+	GetAllCmp(c *gin.Context)
 }
 
 type CmpCtrlImpl struct {
 	svc *service.AppService
+}
+
+func (u *CmpCtrlImpl) GetCmp(c *gin.Context) {
+
+	var reqBody apptypes.GetCmpT
+
+	data, err := u.svc.CmpServ.GetCmp(int64(reqBody.Id))
+
+	if err != nil {
+		c.Status(http.StatusConflict)
+		c.Abort()
+		return
+	}
+
+	c.JSON(http.StatusOK, data)
+}
+
+func (u *CmpCtrlImpl) GetAllCmp(c *gin.Context) {
+
+	cmpList, err := u.svc.CmpServ.GetAllCmp()
+
+	if err != nil {
+		c.Status(http.StatusConflict)
+		c.Abort()
+		return
+	}
+
+	c.JSON(http.StatusOK, cmpList)
+}
+
+func (u *CmpCtrlImpl) UpdateCmp(c *gin.Context) {
+	var reqBody apptypes.UpdateCmpT
+
+	if err := c.BindJSON(&reqBody); err != nil {
+		return
+	}
+
+	param := db.UpdateCmpParams{
+		ID:   int64(reqBody.Id),
+		Name: reqBody.CmpName,
+	}
+
+	err := u.svc.CmpServ.UpdateCmp(param)
+
+	if err != nil {
+		c.Status(http.StatusConflict)
+		c.Abort()
+		return
+	}
+
+	c.JSON(http.StatusOK, nil)
 }
 
 func (u *CmpCtrlImpl) RegisterCmp(c *gin.Context) {
@@ -27,11 +79,9 @@ func (u *CmpCtrlImpl) RegisterCmp(c *gin.Context) {
 		return
 	}
 
-	newid, err = u.svc.CmpServ.RegisterCmp(param)
+	newid, err := u.svc.CmpServ.NewCmp(reqBody.CmpName)
 
 	if err != nil {
-		fmt.Printf("\n%s", err)
-
 		c.Status(http.StatusConflict)
 		c.Abort()
 		return
@@ -48,7 +98,7 @@ func (u *CmpCtrlImpl) DeleteCmp(c *gin.Context) {
 		return
 	}
 
-	err = u.svc.CmpServ.DeleteCmp(int64(reqBody.ToDeleteUserId))
+	err = u.svc.CmpServ.DeleteCmp(int64(reqBody.ToDeleteCmpId))
 
 	if err != nil {
 		c.Status(http.StatusInternalServerError)

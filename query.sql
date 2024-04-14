@@ -3,7 +3,7 @@ SELECT id, role, deleted_date FROM  UserT
 WHERE phoneNum=$1 AND pwd=$2 LIMIT 1;
 
 -- name: GetUserByID :one
-SELECT * from UserT where id=$1;
+SELECT * from UserT where id=$1 LIMIT 1;
 
 -- name: CreateAdmin :one
 INSERT INTO UserT(

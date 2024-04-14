@@ -3,6 +3,7 @@ package router
 import (
 	// "main/middleware"
 	"main/controller"
+	"main/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,16 +20,17 @@ func RouterInit(c *controller.AppControllerImpl) {
 		auth.POST("", c.AuthCtrl.Login)
 
 		user := api.Group("/user")
-		user.GET("", c.UserCtrl.RegisterUser)
+		user.GET("", middleware.IsLoggedIn, c.UserCtrl)
 		user.POST("", c.UserCtrl.RegisterUser)
 		user.PUT("", c.UserCtrl.RegisterUser)
 		user.DELETE("", c.UserCtrl.DeleteUser)
 
 		cmp := api.Group("/cmp")
-		cmp.GET("", c.UserCtrl.RegisterUser)
-		cmp.POST("", c.UserCtrl.RegisterUser)
-		cmp.PUT("")
-		cmp.DELETE("", c.UserCtrl.DeleteUser)
+		cmp.GET("", c.CmpCtrl.GetCmp)
+		cmp.GET("/all", c.CmpCtrl.GetAllCmp)
+		cmp.POST("", c.CmpCtrl.RegisterCmp)
+		cmp.PUT("", c.CmpCtrl.UpdateCmp)
+		cmp.DELETE("", c.CmpCtrl.DeleteCmp)
 
 		jobs := api.Group("/jobs")
 		jobs.GET("", c.UserCtrl.RegisterUser)
