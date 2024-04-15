@@ -10,10 +10,11 @@ import (
 
 type UserServ interface {
 	HaveUser(queryParam db.GetUserParams) (db.GetUserRow, error)
-	GetUserById(id int64) (db.Usert, error)
+	GetUserById(id int64) (db.GetUserByIDRow, error)
 	RegisterCmpAdmin(queryParam db.CreateUserParams) (int64, error)
 	RegisterDriver(queryParam db.CreateUserParams, percentage int, nationalIdNumber string) (int64, error)
 	DeleteUser(queryParam int64) error
+	GetUserList(queryParam db.GetUserListParams) ([]db.GetUserListRow, error)
 }
 
 type UserServImpl struct {
@@ -21,8 +22,8 @@ type UserServImpl struct {
 	conn *pgx.Conn
 }
 
-func (u *UserServImpl) GetAllUser(queryParam db.CreateUserParams) (int64, error) {
-	res, err := u.q.GetAllUser(context.Background(), queryParam)
+func (u *UserServImpl) GetUserList(queryParam db.GetUserListParams) ([]db.GetUserListRow, error) {
+	res, err := u.q.GetUserList(context.Background(), queryParam)
 	return res, err
 }
 
@@ -70,7 +71,7 @@ func (u *UserServImpl) RegisterDriver(queryParam db.CreateUserParams, percentage
 	return int64(userid), err
 }
 
-func (u *UserServImpl) GetUserById(id int64) (db.Usert, error) {
+func (u *UserServImpl) GetUserById(id int64) (db.GetUserByIDRow, error) {
 	res, err := u.q.GetUserByID(context.Background(), id)
 	return res, err
 }

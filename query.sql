@@ -3,7 +3,17 @@ SELECT id, role, deleted_date FROM  UserT
 WHERE phoneNum=$1 AND pwd=$2 LIMIT 1;
 
 -- name: GetUserByID :one
-SELECT * from UserT where id=$1 LIMIT 1;
+SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date from UserT  inner join cmpt on UserT.belongcmp = cmpt.id where UserT.id=$1 LIMIT 1;
+
+-- name: GetUserList :many
+SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date from UserT  inner join cmpt on UserT.belongcmp = cmpt.id where 
+(UserT.id = $1 OR UserT.id IS NULL)AND
+(phoneNum = $2 OR phoneNum IS NULL)AND
+(UserT.name = $3 OR UserT.name IS NULL)AND
+(belongcmp = $4 OR belongcmp IS NULL)AND
+(UserT.create_date between $5 and $6 OR UserT.create_date IS NULL)AND
+(UserT.deleted_date between $7 and $8 OR UserT.deleted_date IS NULL)AND
+(UserT.last_modified_date between $9 and $10 OR UserT.last_modified_date IS NULL);
 
 -- name: CreateAdmin :one
 INSERT INTO UserT(

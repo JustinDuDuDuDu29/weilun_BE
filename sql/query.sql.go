@@ -526,25 +526,109 @@ func (q *Queries) GetUser(ctx context.Context, arg GetUserParams) (GetUserRow, e
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, phonenum, pwd, name, belongcmp, role, initpwdchanged, create_date, deleted_date, last_modified_date from UserT where id=$1 LIMIT 1
+SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date from UserT  inner join cmpt on UserT.belongcmp = cmpt.id where UserT.id=$1 LIMIT 1
 `
 
-func (q *Queries) GetUserByID(ctx context.Context, id int64) (Usert, error) {
+type GetUserByIDRow struct {
+	ID               int64
+	Phonenum         interface{}
+	Name             string
+	Name_2           string
+	Role             int16
+	CreateDate       pgtype.Timestamp
+	DeletedDate      pgtype.Timestamp
+	LastModifiedDate pgtype.Timestamp
+}
+
+func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, error) {
 	row := q.db.QueryRow(ctx, getUserByID, id)
-	var i Usert
+	var i GetUserByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.Phonenum,
-		&i.Pwd,
 		&i.Name,
-		&i.Belongcmp,
+		&i.Name_2,
 		&i.Role,
-		&i.Initpwdchanged,
 		&i.CreateDate,
 		&i.DeletedDate,
 		&i.LastModifiedDate,
 	)
 	return i, err
+}
+
+const getUserList = `-- name: GetUserList :many
+SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date from UserT  inner join cmpt on UserT.belongcmp = cmpt.id where 
+(UserT.id = $1 OR UserT.id IS NULL)AND
+(phoneNum = $2 OR phoneNum IS NULL)AND
+(UserT.name = $3 OR UserT.name IS NULL)AND
+(belongcmp = $4 OR belongcmp IS NULL)AND
+(UserT.create_date between $5 and $6 OR UserT.create_date IS NULL)AND
+(UserT.deleted_date between $7 and $8 OR UserT.deleted_date IS NULL)AND
+(UserT.last_modified_date between $9 and $10 OR UserT.last_modified_date IS NULL)
+`
+
+type GetUserListParams struct {
+	ID                 int64
+	Phonenum           interface{}
+	Name               string
+	Belongcmp          pgtype.Int8
+	CreateDate         pgtype.Timestamp
+	CreateDate_2       pgtype.Timestamp
+	DeletedDate        pgtype.Timestamp
+	DeletedDate_2      pgtype.Timestamp
+	LastModifiedDate   pgtype.Timestamp
+	LastModifiedDate_2 pgtype.Timestamp
+}
+
+type GetUserListRow struct {
+	ID               int64
+	Phonenum         interface{}
+	Name             string
+	Name_2           string
+	Role             int16
+	CreateDate       pgtype.Timestamp
+	DeletedDate      pgtype.Timestamp
+	LastModifiedDate pgtype.Timestamp
+}
+
+func (q *Queries) GetUserList(ctx context.Context, arg GetUserListParams) ([]GetUserListRow, error) {
+	rows, err := q.db.Query(ctx, getUserList,
+		arg.ID,
+		arg.Phonenum,
+		arg.Name,
+		arg.Belongcmp,
+		arg.CreateDate,
+		arg.CreateDate_2,
+		arg.DeletedDate,
+		arg.DeletedDate_2,
+		arg.LastModifiedDate,
+		arg.LastModifiedDate_2,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUserListRow
+	for rows.Next() {
+		var i GetUserListRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Phonenum,
+			&i.Name,
+			&i.Name_2,
+			&i.Role,
+			&i.CreateDate,
+			&i.DeletedDate,
+			&i.LastModifiedDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const increaseRemaining = `-- name: IncreaseRemaining :exec

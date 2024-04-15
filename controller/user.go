@@ -8,12 +8,15 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/locales/id"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type UserCtrl interface {
 	RegisterUser(c *gin.Context)
 	DeleteUser(c *gin.Context)
+	GetUserById(c *gin.Context)
+	GetUserList(c *gin.Context)
 }
 
 type UserCtrlImpl struct {
@@ -94,9 +97,35 @@ func (u *UserCtrlImpl) DeleteUser(c *gin.Context) {
 	return
 }
 
+func (u *UserCtrlImpl) GetUserList(c *gin.Context) {
+	id := c.Query("id")
+	phoneNum := c.Query("phoneNum")
+	name := c.Query("name")
+	belongCmp := c.Query("belongCmp")
+	create_date_Start := c.Query("create_date_Start")
+	create_date_End := c.Query("create_date_end")
+	deleted_date_Start := c.Query("deleted_date_Start")
+	deleted_date_End := c.Query("deleted_date_End")
+	last_date_Start := c.Query("last_date_Start")
+	last_date_End := c.Query("last_date_End")
+
+	param := db.GetUserListParams{
+		ID:                 id,
+		Phonenum:           phoneNum,
+		Name:               name,
+		Belongcmp:          belongCmp,
+		CreateDate:         create_date_Start,
+		CreateDate_2:       create_date_End,
+		DeletedDate:        deleted_date_Start,
+		DeletedDate_2:      deleted_date_End,
+		LastModifiedDate:   last_date_Start,
+		LastModifiedDate_2: last_date_End,
+	}
+}
+
 func (u *UserCtrlImpl) GetUserById(c *gin.Context) {
 
-	id := c.Query("id")
+	id := c.Param("id")
 
 	if id != "" {
 
@@ -112,12 +141,9 @@ func (u *UserCtrlImpl) GetUserById(c *gin.Context) {
 		return
 	}
 
-	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		c.Abort()
-		return
-	}
-
+	c.Status(http.StatusInternalServerError)
+	c.Abort()
+	return
 }
 
 func UserCtrlInit(svc *service.AppService) *UserCtrlImpl {
