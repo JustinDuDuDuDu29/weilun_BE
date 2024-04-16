@@ -19,7 +19,7 @@ type reqBodyT struct {
 func IsLoggedIn(c *gin.Context) {
 
 	var reqBody reqBodyT
-	err := c.ShouldBindJSON(&reqBody)
+	err := c.BindJSON(&reqBody)
 
 	if err != nil {
 		c.Abort()
@@ -27,11 +27,11 @@ func IsLoggedIn(c *gin.Context) {
 	}
 
 	token, err := jwt.Parse(reqBody.Token, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			c.Abort()
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(os.Getenv("jwtSecret")), nil
+		// if _, ok := token.Method .(*jwt.SigningMethodHMAC); !ok {
+		// 	c.Abort()
+		// 	return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		// }
+		return []byte(os.Getenv("accessToken")), nil
 	})
 
 	if err != nil {
@@ -42,6 +42,7 @@ func IsLoggedIn(c *gin.Context) {
 			return
 
 		default:
+			fmt.Printf("%s", err)
 			c.JSON(http.StatusBadRequest, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return

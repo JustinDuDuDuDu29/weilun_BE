@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -8,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/locales/id"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -98,29 +98,81 @@ func (u *UserCtrlImpl) DeleteUser(c *gin.Context) {
 }
 
 func (u *UserCtrlImpl) GetUserList(c *gin.Context) {
-	id := c.Query("id")
+	userId := c.Query("id")
+	id := &pgtype.Numeric{}
+	err := id.Scan(userId)
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+	}
 	phoneNum := c.Query("phoneNum")
 	name := c.Query("name")
-	belongCmp := c.Query("belongCmp")
-	create_date_Start := c.Query("create_date_Start")
-	create_date_End := c.Query("create_date_end")
-	deleted_date_Start := c.Query("deleted_date_Start")
-	deleted_date_End := c.Query("deleted_date_End")
-	last_date_Start := c.Query("last_date_Start")
-	last_date_End := c.Query("last_date_End")
+
+	cmp := c.Query("belongCmp")
+	belongCmpInt64 := &pgtype.Numeric{}
+	err = belongCmpInt64.Scan(cmp)
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+	}
+	belongCmp, err := belongCmpInt64.Int64Value()
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+	}
+
+	create_date_StartStr := c.Query("create_date_Start")
+	create_date_Start := &pgtype.Timestamp{}
+	err = create_date_Start.Scan(create_date_StartStr)
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+	}
+
+	create_date_EndStr := c.Query("create_date_end")
+	create_date_End := &pgtype.Timestamp{}
+	err = create_date_End.Scan(create_date_EndStr)
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+	}
+
+	deleted_date_StartStr := c.Query("deleted_date_Start")
+	deleted_date_Start := &pgtype.Timestamp{}
+	err = create_date_End.Scan(deleted_date_StartStr)
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+	}
+
+	deleted_date_EndStr := c.Query("deleted_date_End")
+	deleted_date_End := &pgtype.Timestamp{}
+	err = create_date_End.Scan(deleted_date_EndStr)
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+	}
+
+	last_date_StartStr := c.Query("last_date_Start")
+	last_date_Start := &pgtype.Timestamp{}
+	err = create_date_End.Scan(last_date_StartStr)
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+	}
+
+	last_date_EndStr := c.Query("last_date_End")
+	last_date_End := &pgtype.Timestamp{}
+	err = create_date_End.Scan(last_date_EndStr)
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+	}
 
 	param := db.GetUserListParams{
-		ID:                 id,
+		ID:                 id.Int.Int64(),
 		Phonenum:           phoneNum,
 		Name:               name,
 		Belongcmp:          belongCmp,
-		CreateDate:         create_date_Start,
-		CreateDate_2:       create_date_End,
-		DeletedDate:        deleted_date_Start,
-		DeletedDate_2:      deleted_date_End,
-		LastModifiedDate:   last_date_Start,
-		LastModifiedDate_2: last_date_End,
+		CreateDate:         *create_date_Start,
+		CreateDate_2:       *create_date_End,
+		DeletedDate:        *deleted_date_Start,
+		DeletedDate_2:      *deleted_date_End,
+		LastModifiedDate:   *last_date_Start,
+		LastModifiedDate_2: *last_date_End,
 	}
+	fmt.Printf("%+v", param)
 }
 
 func (u *UserCtrlImpl) GetUserById(c *gin.Context) {

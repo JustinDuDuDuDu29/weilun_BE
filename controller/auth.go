@@ -47,7 +47,7 @@ func (a *AuthCtrlImpl) Login(c *gin.Context) {
 
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"ID":  res.ID,
-		"exp": time.Now().Add(time.Second * 20).Unix(),
+		"exp": time.Now().Add(time.Second * 2000).Unix(),
 	})
 
 	tokenString, err := jwtToken.SignedString([]byte(os.Getenv("accessToken")))
