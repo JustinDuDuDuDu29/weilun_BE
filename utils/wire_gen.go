@@ -19,11 +19,13 @@ import (
 func Init(q *sql.Queries, conn *sql2.DB) *controller.AppControllerImpl {
 	userServImpl := service.UserServInit(q, conn)
 	cmpServImpl := service.CmpServInit(q, conn)
-	appService := service.AppServiceInit(userServImpl, cmpServImpl)
+	jobsServImpl := service.JobsServInit(q, conn)
+	appService := service.AppServiceInit(userServImpl, cmpServImpl, jobsServImpl)
 	userCtrlImpl := controller.UserCtrlInit(appService)
 	authCtrlImpl := controller.AuthCtrlInit(appService)
 	cmpCtrlImpl := controller.CmpCtrlInit(appService)
-	appControllerImpl := controller.AppControllerInit(userCtrlImpl, authCtrlImpl, cmpCtrlImpl)
+	jobsCtrlImpl := controller.JobsCtrlInit(appService)
+	appControllerImpl := controller.AppControllerInit(userCtrlImpl, authCtrlImpl, cmpCtrlImpl, jobsCtrlImpl)
 	return appControllerImpl
 }
 
@@ -31,9 +33,13 @@ func Init(q *sql.Queries, conn *sql2.DB) *controller.AppControllerImpl {
 
 var cmpServSet = wire.NewSet(service.CmpServInit, wire.Bind(new(service.CmpServ), new(*service.CmpServImpl)))
 
+var jobsServSet = wire.NewSet(service.JobsServInit, wire.Bind(new(service.JobsServ), new(*service.JobsServImpl)))
+
 var userServSet = wire.NewSet(service.UserServInit, wire.Bind(new(service.UserServ), new(*service.UserServImpl)))
 
 var userCtrlSet = wire.NewSet(controller.UserCtrlInit, wire.Bind(new(controller.UserCtrl), new(*controller.UserCtrlImpl)))
+
+var jobsCtrlSet = wire.NewSet(controller.JobsCtrlInit, wire.Bind(new(controller.JobsCtrl), new(*controller.JobsCtrlImpl)))
 
 var authCtrlSet = wire.NewSet(controller.AuthCtrlInit, wire.Bind(new(controller.AuthCtrl), new(*controller.AuthCtrlImpl)))
 

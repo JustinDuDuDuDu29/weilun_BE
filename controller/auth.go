@@ -1,17 +1,17 @@
 package controller
 
 import (
-	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
+	"time"
 
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/thanhpk/randstr"
 )
 
 type AuthCtrl interface {
@@ -42,13 +42,20 @@ func (a *AuthCtrlImpl) Login(c *gin.Context) {
 		c.Abort()
 		return
 	}
+	if res.DeletedDate.Valid {
+		c.JSON(http.StatusOK, gin.H{"err": "Account is deleted"})
+		return
+	}
 
-	fmt.Printf("%+v", res)
+	var newClaim apptypes.CustomClaims
+	newClaim.Audience = []string{"audience-example"}
+	newClaim.IssuedAt = jwt.NewNumericDate(time.Now())
+	newClaim.NotBefore = jwt.NewNumericDate(time.Now())
+	newClaim.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Second * 2000))
+	newClaim.ID = randstr.Hex(16)
+	newClaim.Issuer = "Weilun"
 
-	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"ID":  res.ID,
-		"exp": time.Now().Add(time.Second * 2000).Unix(),
-	})
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, newClaim)
 
 	tokenString, err := jwtToken.SignedString([]byte(os.Getenv("accessToken")))
 

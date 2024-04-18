@@ -1,5 +1,12 @@
 package apptypes
 
+import (
+	"github.com/golang-jwt/jwt/v5"
+)
+
+type CustomClaims struct {
+	jwt.RegisteredClaims
+}
 type DriverInfo struct {
 	Percentage       int    `json:"percentage" binding:"required"`
 	NationalIdNumber string `json:"nationalIdNumber" binding:"required"`

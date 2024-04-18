@@ -17,6 +17,10 @@ var cmpServSet = wire.NewSet(
 	service.CmpServInit,
 	wire.Bind(new(service.CmpServ), new(*service.CmpServImpl)),
 )
+var jobsServSet = wire.NewSet(
+	service.JobsServInit,
+	wire.Bind(new(service.JobsServ), new(*service.JobsServImpl)),
+)
 
 var userServSet = wire.NewSet(
 	service.UserServInit,
@@ -26,6 +30,11 @@ var userServSet = wire.NewSet(
 var userCtrlSet = wire.NewSet(
 	controller.UserCtrlInit,
 	wire.Bind(new(controller.UserCtrl), new(*controller.UserCtrlImpl)),
+)
+
+var jobsCtrlSet = wire.NewSet(
+	controller.JobsCtrlInit,
+	wire.Bind(new(controller.JobsCtrl), new(*controller.JobsCtrlImpl)),
 )
 
 var authCtrlSet = wire.NewSet(
@@ -47,6 +56,8 @@ func Init(q *db.Queries, conn *sql.DB) *controller.AppControllerImpl {
 		authCtrlSet,
 		cmpServSet,
 		service.AppServiceInit,
+		jobsCtrlSet,
+		jobsServSet,
 	)
 
 	return nil

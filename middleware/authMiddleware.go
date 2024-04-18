@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"os"
 
@@ -42,7 +41,6 @@ func IsLoggedIn(c *gin.Context) {
 			return
 
 		default:
-			fmt.Printf("%s", err)
 			c.JSON(http.StatusBadRequest, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
@@ -51,9 +49,19 @@ func IsLoggedIn(c *gin.Context) {
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok {
-		fmt.Println("claims:", claims)
+		res, err := claims.GetAudience()
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"err": "grow up, K? get a real job or something..."})
+			c.Abort()
+			return
+		}
+		c.Set("UserID", res)
+		c.Next()
+		return
 	} else {
-		fmt.Println("err:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"err": "grow up, K? get a real job or something..."})
+		c.Abort()
+		return
 	}
-	c.Next()
+
 }
