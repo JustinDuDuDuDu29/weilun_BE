@@ -4,8 +4,8 @@ CREATE TABLE CMPInChargeT(
 
     id BIGSERIAL PRIMARY KEY,
     
-    userID BIGINT references UserT(id),
-    cmpID BIGINT references CMPT(id),
+    userID BIGINT NOT NULL references UserT(id),
+    cmpID BIGINT NOT NULL references CMPT(id),
 
     create_date Timestamp NOT NULL DEFAULT NOW(),
     deleted_date Timestamp,
