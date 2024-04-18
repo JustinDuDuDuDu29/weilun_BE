@@ -2,41 +2,42 @@
 // versions:
 //   sqlc v1.26.0
 
-package db
+package sql
 
 import (
-	"github.com/jackc/pgx/v5/pgtype"
+	"database/sql"
+	"time"
 )
 
 type Claimjobt struct {
 	ID               int64
 	Jobid            int64
 	Driverid         int64
-	Percentage       pgtype.Int2
-	FinishedDate     pgtype.Timestamp
-	CreateDate       pgtype.Timestamp
-	DeletedDate      pgtype.Timestamp
-	DeletedBy        pgtype.Int8
-	LastModifiedDate pgtype.Timestamp
-	ApprovedBy       pgtype.Int8
-	ApprovedDate     pgtype.Timestamp
+	Percentage       sql.NullInt16
+	FinishedDate     sql.NullTime
+	CreateDate       time.Time
+	DeletedDate      sql.NullTime
+	DeletedBy        sql.NullInt64
+	LastModifiedDate time.Time
+	ApprovedBy       sql.NullInt64
+	ApprovedDate     sql.NullTime
 }
 
 type Cmpincharget struct {
 	ID               int64
-	Userid           pgtype.Int8
-	Cmpid            pgtype.Int8
-	CreateDate       pgtype.Timestamp
-	DeletedDate      pgtype.Timestamp
-	LastModifiedDate pgtype.Timestamp
+	Userid           int64
+	Cmpid            int64
+	CreateDate       time.Time
+	DeletedDate      sql.NullTime
+	LastModifiedDate time.Time
 }
 
 type Cmpt struct {
 	ID               int64
 	Name             string
-	CreateDate       pgtype.Timestamp
-	DeletedDate      pgtype.Timestamp
-	LastModifiedDate pgtype.Timestamp
+	CreateDate       time.Time
+	DeletedDate      sql.NullTime
+	LastModifiedDate time.Time
 }
 
 type Drivert struct {
@@ -48,26 +49,26 @@ type Drivert struct {
 type Jobst struct {
 	ID               int64
 	FromLoc          string
-	Mid              pgtype.Text
+	Mid              sql.NullString
 	ToLoc            string
 	Price            int16
 	Estimated        int16
 	Remaining        int16
 	Belongcmp        int64
 	Source           string
-	Jobdate          pgtype.Timestamp
-	Memo             pgtype.Text
-	CreateDate       pgtype.Timestamp
-	EndDate          pgtype.Timestamp
-	DeletedDate      pgtype.Timestamp
-	FinishedDate     pgtype.Timestamp
-	LastModifiedDate pgtype.Timestamp
+	Jobdate          time.Time
+	Memo             sql.NullString
+	CreateDate       time.Time
+	EndDate          sql.NullTime
+	DeletedDate      sql.NullTime
+	FinishedDate     sql.NullTime
+	LastModifiedDate time.Time
 }
 
 type Logint struct {
 	ID         int64
-	Userid     pgtype.Int8
-	CreateDate pgtype.Timestamp
+	Userid     int64
+	CreateDate time.Time
 }
 
 type Usert struct {
@@ -75,10 +76,10 @@ type Usert struct {
 	Phonenum         interface{}
 	Pwd              string
 	Name             string
-	Belongcmp        pgtype.Int8
+	Belongcmp        int64
 	Role             int16
 	Initpwdchanged   bool
-	CreateDate       pgtype.Timestamp
-	DeletedDate      pgtype.Timestamp
-	LastModifiedDate pgtype.Timestamp
+	CreateDate       time.Time
+	DeletedDate      sql.NullTime
+	LastModifiedDate time.Time
 }

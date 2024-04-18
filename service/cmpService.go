@@ -2,9 +2,8 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	db "main/sql"
-
-	"github.com/jackc/pgx/v5"
 )
 
 type CmpServ interface {
@@ -17,7 +16,7 @@ type CmpServ interface {
 
 type CmpServImpl struct {
 	q    *db.Queries
-	conn *pgx.Conn
+	conn *sql.DB
 }
 
 func (u *CmpServImpl) GetCmp(cmpId int64) (db.GetCmpRow, error) {
@@ -46,7 +45,7 @@ func (u *CmpServImpl) DeleteCmp(queryParam int64) error {
 	return err
 }
 
-func CmpServInit(q *db.Queries, conn *pgx.Conn) *CmpServImpl {
+func CmpServInit(q *db.Queries, conn *sql.DB) *CmpServImpl {
 	return &CmpServImpl{
 		q:    q,
 		conn: conn,

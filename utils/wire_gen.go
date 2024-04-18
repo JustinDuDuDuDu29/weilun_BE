@@ -7,8 +7,8 @@
 package utils
 
 import (
+	sql2 "database/sql"
 	"github.com/google/wire"
-	"github.com/jackc/pgx/v5"
 	"main/controller"
 	"main/service"
 	"main/sql"
@@ -16,7 +16,7 @@ import (
 
 // Injectors from wire.go:
 
-func Init(q *db.Queries, conn *pgx.Conn) *controller.AppControllerImpl {
+func Init(q *sql.Queries, conn *sql2.DB) *controller.AppControllerImpl {
 	userServImpl := service.UserServInit(q, conn)
 	cmpServImpl := service.CmpServInit(q, conn)
 	appService := service.AppServiceInit(userServImpl, cmpServImpl)

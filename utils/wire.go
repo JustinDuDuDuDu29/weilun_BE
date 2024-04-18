@@ -5,12 +5,12 @@
 package utils
 
 import (
+	"database/sql"
 	"main/controller"
 	"main/service"
 	db "main/sql"
 
 	"github.com/google/wire"
-	"github.com/jackc/pgx/v5"
 )
 
 var cmpServSet = wire.NewSet(
@@ -38,7 +38,7 @@ var cmpCtrlSet = wire.NewSet(
 	wire.Bind(new(controller.CmpCtrl), new(*controller.CmpCtrlImpl)),
 )
 
-func Init(q *db.Queries, conn *pgx.Conn) *controller.AppControllerImpl {
+func Init(q *db.Queries, conn *sql.DB) *controller.AppControllerImpl {
 	wire.Build(
 		cmpCtrlSet,
 		controller.AppControllerInit,

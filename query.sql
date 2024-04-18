@@ -3,17 +3,27 @@ SELECT id, role, deleted_date FROM  UserT
 WHERE phoneNum=$1 AND pwd=$2 LIMIT 1;
 
 -- name: GetUserByID :one
-SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date from UserT  inner join cmpt on UserT.belongcmp = cmpt.id where UserT.id=$1 LIMIT 1;
+SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
+from UserT 
+inner join cmpt on UserT.belongcmp = cmpt.id 
+where (UserT.id = sqlc.narg('id') OR sqlc.narg('id') IS NULL);
+-- where UserT.id=$1 LIMIT 1;
 
 -- name: GetUserList :many
-SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date from UserT  inner join cmpt on UserT.belongcmp = cmpt.id where 
-(UserT.id = $1 OR UserT.id IS NULL)AND
-(phoneNum = $2 OR phoneNum IS NULL)AND
-(UserT.name = $3 OR UserT.name IS NULL)AND
-(belongcmp = $4 OR belongcmp IS NULL)AND
-(UserT.create_date between $5 and $6 OR UserT.create_date IS NULL)AND
-(UserT.deleted_date between $7 and $8 OR UserT.deleted_date IS NULL)AND
-(UserT.last_modified_date between $9 and $10 OR UserT.last_modified_date IS NULL);
+SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
+from UserT 
+inner join cmpt on UserT.belongcmp = cmpt.id 
+where 
+(UserT.id = sqlc.narg('id') OR sqlc.narg('id') IS NULL)AND
+(phoneNum = sqlc.narg('phoneNum')::Text OR sqlc.narg('phoneNum')::Text IS NULL)AND
+(UserT.name = sqlc.narg('name') OR sqlc.narg('name') IS NULL)AND
+(belongcmp = sqlc.narg('belongcmp') OR sqlc.narg('belongcmp') IS NULL)AND
+((UserT.create_date > sqlc.narg('create_date_start') OR sqlc.narg('create_date_start') IS NULL)
+ AND (UserT.create_date < sqlc.narg('create_date_end') OR sqlc.narg('create_date_end') IS NULL)) AND
+((UserT.deleted_date > sqlc.narg('deleted_date_start') OR sqlc.narg('deleted_date_start') IS NULL)
+ AND (UserT.deleted_date < sqlc.narg('deleted_date_end') OR sqlc.narg('deleted_date_end') IS NULL)) AND
+((UserT.last_modified_date > sqlc.narg('last_modified_date_start') OR sqlc.narg('last_modified_date_start') IS NULL) 
+AND (UserT.last_modified_date < sqlc.narg('last_modified_date_end') OR sqlc.narg('last_modified_date_end') IS NULL));
 
 -- name: CreateAdmin :one
 INSERT INTO UserT(
@@ -180,8 +190,3 @@ SELECT t2.id, t1.*  FROM ClaimJobT t2 inner join JobsT t1 on t1.id = t2.jobID wh
 SELECT t1.percentage*t2.price as earn from ClaimJobT t1 inner join JobsT t2 on t1.jobID = t2.id where t1.driverID = $1 and (t1.finished_date IS NOT NULL 
     and approved_date IS NOT NULL and deleted_date IS NOT NULL) and t1.finished_date 
     between $2 and $3;
-
-
-
-
-

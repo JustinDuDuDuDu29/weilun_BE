@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"main/router"
 	"main/utils"
 
@@ -13,6 +12,6 @@ func main() {
 	q, conn := utils.InitDatabase()
 
 	ctrl := utils.Init(q, conn)
-	defer conn.Close(context.Background())
+	defer conn.Close()
 	router.RouterInit(ctrl)
 }

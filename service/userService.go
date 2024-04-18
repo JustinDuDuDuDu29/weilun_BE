@@ -2,15 +2,15 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	db "main/sql"
-
-	"github.com/jackc/pgx/v5"
+	// "github.com/jackc/pgx/v5"
 )
 
 type UserServ interface {
 	HaveUser(queryParam db.GetUserParams) (db.GetUserRow, error)
-	GetUserById(id int64) (db.GetUserByIDRow, error)
+	GetUserById(id sql.NullInt64) (db.GetUserByIDRow, error)
 	RegisterCmpAdmin(queryParam db.CreateUserParams) (int64, error)
 	RegisterDriver(queryParam db.CreateUserParams, percentage int, nationalIdNumber string) (int64, error)
 	DeleteUser(queryParam int64) error
@@ -19,7 +19,7 @@ type UserServ interface {
 
 type UserServImpl struct {
 	q    *db.Queries
-	conn *pgx.Conn
+	conn *sql.DB
 }
 
 func (u *UserServImpl) GetUserList(queryParam db.GetUserListParams) ([]db.GetUserListRow, error) {
@@ -34,7 +34,7 @@ func (u *UserServImpl) RegisterCmpAdmin(queryParam db.CreateUserParams) (int64, 
 
 func (u *UserServImpl) RegisterDriver(queryParam db.CreateUserParams, percentage int, nationalIdNumber string) (int64, error) {
 
-	tx, err := u.conn.Begin(context.Background())
+	tx, err := u.conn.BeginTx(context.Background(), nil)
 
 	if err != nil {
 		return -99, err
@@ -45,7 +45,7 @@ func (u *UserServImpl) RegisterDriver(queryParam db.CreateUserParams, percentage
 
 	if err != nil {
 		fmt.Print("HERE1")
-		tx.Rollback(context.Background())
+		tx.Rollback()
 		return -99, err
 	}
 	driverParam := db.CreateDriverInfoParams{
@@ -58,20 +58,20 @@ func (u *UserServImpl) RegisterDriver(queryParam db.CreateUserParams, percentage
 
 	if err != nil {
 		fmt.Print("HERE2")
-		tx.Rollback(context.Background())
+		tx.Rollback()
 		return -99, err
 	}
 
-	err = tx.Commit(context.Background())
+	err = tx.Commit()
 
 	if err != nil {
 		fmt.Print("HERE3")
-		tx.Rollback(context.Background())
+		tx.Rollback()
 	}
 	return int64(userid), err
 }
 
-func (u *UserServImpl) GetUserById(id int64) (db.GetUserByIDRow, error) {
+func (u *UserServImpl) GetUserById(id sql.NullInt64) (db.GetUserByIDRow, error) {
 	res, err := u.q.GetUserByID(context.Background(), id)
 	return res, err
 }
@@ -86,7 +86,7 @@ func (u *UserServImpl) DeleteUser(queryParam int64) error {
 	return err
 }
 
-func UserServInit(q *db.Queries, conn *pgx.Conn) *UserServImpl {
+func UserServInit(q *db.Queries, conn *sql.DB) *UserServImpl {
 	return &UserServImpl{
 		q:    q,
 		conn: conn,

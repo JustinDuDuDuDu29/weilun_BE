@@ -21,6 +21,7 @@ func RouterInit(c *controller.AppControllerImpl) {
 
 		user := api.Group("/user")
 		user.GET("", middleware.IsLoggedIn, c.UserCtrl.GetUserList)
+		user.GET(":id", middleware.IsLoggedIn, c.UserCtrl.GetUserById)
 		user.POST("", c.UserCtrl.RegisterUser)
 		user.PUT("", c.UserCtrl.RegisterUser)
 		user.DELETE("", c.UserCtrl.DeleteUser)

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -82,6 +83,7 @@ func (u *CmpCtrlImpl) RegisterCmp(c *gin.Context) {
 	newid, err := u.svc.CmpServ.NewCmp(reqBody.CmpName)
 
 	if err != nil {
+		fmt.Print(err)
 		c.Status(http.StatusConflict)
 		c.Abort()
 		return

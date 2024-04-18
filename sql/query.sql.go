@@ -3,12 +3,12 @@
 //   sqlc v1.26.0
 // source: query.sql
 
-package db
+package sql
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"database/sql"
+	"time"
 )
 
 const approveFinishedJob = `-- name: ApproveFinishedJob :exec
@@ -17,11 +17,11 @@ Update ClaimJobT set Approved_By = $2, approved_date = NOW(), last_modified_date
 
 type ApproveFinishedJobParams struct {
 	ID         int64
-	ApprovedBy pgtype.Int8
+	ApprovedBy sql.NullInt64
 }
 
 func (q *Queries) ApproveFinishedJob(ctx context.Context, arg ApproveFinishedJobParams) error {
-	_, err := q.db.Exec(ctx, approveFinishedJob, arg.ID, arg.ApprovedBy)
+	_, err := q.db.ExecContext(ctx, approveFinishedJob, arg.ID, arg.ApprovedBy)
 	return err
 }
 
@@ -41,7 +41,7 @@ type ClaimJobParams struct {
 }
 
 func (q *Queries) ClaimJob(ctx context.Context, arg ClaimJobParams) (int64, error) {
-	row := q.db.QueryRow(ctx, claimJob, arg.Jobid, arg.Driverid)
+	row := q.db.QueryRowContext(ctx, claimJob, arg.Jobid, arg.Driverid)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
@@ -60,12 +60,12 @@ type CreateAdminParams struct {
 	Pwd       string
 	Name      string
 	Role      int16
-	Belongcmp pgtype.Int8
+	Belongcmp int64
 	Phonenum  interface{}
 }
 
 func (q *Queries) CreateAdmin(ctx context.Context, arg CreateAdminParams) (int64, error) {
-	row := q.db.QueryRow(ctx, createAdmin,
+	row := q.db.QueryRowContext(ctx, createAdmin,
 		arg.Pwd,
 		arg.Name,
 		arg.Role,
@@ -90,7 +90,7 @@ type CreateDriverInfoParams struct {
 }
 
 func (q *Queries) CreateDriverInfo(ctx context.Context, arg CreateDriverInfoParams) (int64, error) {
-	row := q.db.QueryRow(ctx, createDriverInfo, arg.ID, arg.Percentage, arg.Nationalidnumber)
+	row := q.db.QueryRowContext(ctx, createDriverInfo, arg.ID, arg.Percentage, arg.Nationalidnumber)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
@@ -126,19 +126,19 @@ INSERT INTO JobsT (
 
 type CreateJobParams struct {
 	FromLoc   string
-	Mid       pgtype.Text
+	Mid       sql.NullString
 	ToLoc     string
 	Price     int16
 	Estimated int16
 	Belongcmp int64
 	Source    string
-	Jobdate   pgtype.Timestamp
-	Memo      pgtype.Text
-	EndDate   pgtype.Timestamp
+	Jobdate   time.Time
+	Memo      sql.NullString
+	EndDate   sql.NullTime
 }
 
 func (q *Queries) CreateJob(ctx context.Context, arg CreateJobParams) (int64, error) {
-	row := q.db.QueryRow(ctx, createJob,
+	row := q.db.QueryRowContext(ctx, createJob,
 		arg.FromLoc,
 		arg.Mid,
 		arg.ToLoc,
@@ -168,12 +168,12 @@ type CreateUserParams struct {
 	Pwd       string
 	Name      string
 	Role      int16
-	Belongcmp pgtype.Int8
+	Belongcmp int64
 	Phonenum  interface{}
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, error) {
-	row := q.db.QueryRow(ctx, createUser,
+	row := q.db.QueryRowContext(ctx, createUser,
 		arg.Pwd,
 		arg.Name,
 		arg.Role,
@@ -190,7 +190,7 @@ Update JobsT set remaining = remaining - 1, last_modified_date = NOW() where id 
 `
 
 func (q *Queries) DecreaseRemaining(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, decreaseRemaining, id)
+	_, err := q.db.ExecContext(ctx, decreaseRemaining, id)
 	return err
 }
 
@@ -204,11 +204,11 @@ Update ClaimJobT Set
 
 type DeleteClaimedJobParams struct {
 	ID        int64
-	DeletedBy pgtype.Int8
+	DeletedBy sql.NullInt64
 }
 
 func (q *Queries) DeleteClaimedJob(ctx context.Context, arg DeleteClaimedJobParams) error {
-	_, err := q.db.Exec(ctx, deleteClaimedJob, arg.ID, arg.DeletedBy)
+	_, err := q.db.ExecContext(ctx, deleteClaimedJob, arg.ID, arg.DeletedBy)
 	return err
 }
 
@@ -220,7 +220,7 @@ WHERE id = $1
 `
 
 func (q *Queries) DeleteCmp(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, deleteCmp, id)
+	_, err := q.db.ExecContext(ctx, deleteCmp, id)
 	return err
 }
 
@@ -232,7 +232,7 @@ WHERE id = $1
 `
 
 func (q *Queries) DeleteJob(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, deleteJob, id)
+	_, err := q.db.ExecContext(ctx, deleteJob, id)
 	return err
 }
 
@@ -244,7 +244,7 @@ WHERE id = $1
 `
 
 func (q *Queries) DeleteUser(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, deleteUser, id)
+	_, err := q.db.ExecContext(ctx, deleteUser, id)
 	return err
 }
 
@@ -257,7 +257,7 @@ WHERE id = $1
 `
 
 func (q *Queries) FinishClamedJob(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, finishClamedJob, id)
+	_, err := q.db.ExecContext(ctx, finishClamedJob, id)
 	return err
 }
 
@@ -266,7 +266,7 @@ SELECT id, name, create_date, deleted_date, last_modified_date from cmpt
 `
 
 func (q *Queries) GetAllCmp(ctx context.Context) ([]Cmpt, error) {
-	rows, err := q.db.Query(ctx, getAllCmp)
+	rows, err := q.db.QueryContext(ctx, getAllCmp)
 	if err != nil {
 		return nil, err
 	}
@@ -285,6 +285,9 @@ func (q *Queries) GetAllCmp(ctx context.Context) ([]Cmpt, error) {
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -296,7 +299,7 @@ SELECT id, from_loc, mid, to_loc, price, estimated, remaining, belongcmp, source
 `
 
 func (q *Queries) GetAllJobs(ctx context.Context) ([]Jobst, error) {
-	rows, err := q.db.Query(ctx, getAllJobs)
+	rows, err := q.db.QueryContext(ctx, getAllJobs)
 	if err != nil {
 		return nil, err
 	}
@@ -325,6 +328,9 @@ func (q *Queries) GetAllJobs(ctx context.Context) ([]Jobst, error) {
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -337,7 +343,7 @@ SELECT id, from_loc, mid, to_loc, price, estimated, remaining, belongcmp, source
 `
 
 func (q *Queries) GetAllJobsByCmp(ctx context.Context, belongcmp int64) ([]Jobst, error) {
-	rows, err := q.db.Query(ctx, getAllJobsByCmp, belongcmp)
+	rows, err := q.db.QueryContext(ctx, getAllJobsByCmp, belongcmp)
 	if err != nil {
 		return nil, err
 	}
@@ -366,6 +372,9 @@ func (q *Queries) GetAllJobsByCmp(ctx context.Context, belongcmp int64) ([]Jobst
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -381,24 +390,24 @@ type GetClaimedJobRow struct {
 	ID               int64
 	ID_2             int64
 	FromLoc          string
-	Mid              pgtype.Text
+	Mid              sql.NullString
 	ToLoc            string
 	Price            int16
 	Estimated        int16
 	Remaining        int16
 	Belongcmp        int64
 	Source           string
-	Jobdate          pgtype.Timestamp
-	Memo             pgtype.Text
-	CreateDate       pgtype.Timestamp
-	EndDate          pgtype.Timestamp
-	DeletedDate      pgtype.Timestamp
-	FinishedDate     pgtype.Timestamp
-	LastModifiedDate pgtype.Timestamp
+	Jobdate          time.Time
+	Memo             sql.NullString
+	CreateDate       time.Time
+	EndDate          sql.NullTime
+	DeletedDate      sql.NullTime
+	FinishedDate     sql.NullTime
+	LastModifiedDate time.Time
 }
 
 func (q *Queries) GetClaimedJob(ctx context.Context, driverid int64) (GetClaimedJobRow, error) {
-	row := q.db.QueryRow(ctx, getClaimedJob, driverid)
+	row := q.db.QueryRowContext(ctx, getClaimedJob, driverid)
 	var i GetClaimedJobRow
 	err := row.Scan(
 		&i.ID,
@@ -432,23 +441,23 @@ where cmpt.id = $1
 type GetCmpRow struct {
 	ID                 int64
 	Name               string
-	CreateDate         pgtype.Timestamp
-	DeletedDate        pgtype.Timestamp
-	LastModifiedDate   pgtype.Timestamp
+	CreateDate         time.Time
+	DeletedDate        sql.NullTime
+	LastModifiedDate   time.Time
 	ID_2               int64
 	Phonenum           interface{}
 	Pwd                string
 	Name_2             string
-	Belongcmp          pgtype.Int8
+	Belongcmp          int64
 	Role               int16
 	Initpwdchanged     bool
-	CreateDate_2       pgtype.Timestamp
-	DeletedDate_2      pgtype.Timestamp
-	LastModifiedDate_2 pgtype.Timestamp
+	CreateDate_2       time.Time
+	DeletedDate_2      sql.NullTime
+	LastModifiedDate_2 time.Time
 }
 
 func (q *Queries) GetCmp(ctx context.Context, id int64) (GetCmpRow, error) {
-	row := q.db.QueryRow(ctx, getCmp, id)
+	row := q.db.QueryRowContext(ctx, getCmp, id)
 	var i GetCmpRow
 	err := row.Scan(
 		&i.ID,
@@ -478,12 +487,12 @@ SELECT t1.percentage*t2.price as earn from ClaimJobT t1 inner join JobsT t2 on t
 
 type GetDriverRevenueParams struct {
 	Driverid       int64
-	FinishedDate   pgtype.Timestamp
-	FinishedDate_2 pgtype.Timestamp
+	FinishedDate   sql.NullTime
+	FinishedDate_2 sql.NullTime
 }
 
 func (q *Queries) GetDriverRevenue(ctx context.Context, arg GetDriverRevenueParams) ([]int32, error) {
-	rows, err := q.db.Query(ctx, getDriverRevenue, arg.Driverid, arg.FinishedDate, arg.FinishedDate_2)
+	rows, err := q.db.QueryContext(ctx, getDriverRevenue, arg.Driverid, arg.FinishedDate, arg.FinishedDate_2)
 	if err != nil {
 		return nil, err
 	}
@@ -495,6 +504,9 @@ func (q *Queries) GetDriverRevenue(ctx context.Context, arg GetDriverRevenuePara
 			return nil, err
 		}
 		items = append(items, earn)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -515,18 +527,21 @@ type GetUserParams struct {
 type GetUserRow struct {
 	ID          int64
 	Role        int16
-	DeletedDate pgtype.Timestamp
+	DeletedDate sql.NullTime
 }
 
 func (q *Queries) GetUser(ctx context.Context, arg GetUserParams) (GetUserRow, error) {
-	row := q.db.QueryRow(ctx, getUser, arg.Phonenum, arg.Pwd)
+	row := q.db.QueryRowContext(ctx, getUser, arg.Phonenum, arg.Pwd)
 	var i GetUserRow
 	err := row.Scan(&i.ID, &i.Role, &i.DeletedDate)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date from UserT  inner join cmpt on UserT.belongcmp = cmpt.id where UserT.id=$1 LIMIT 1
+SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
+from UserT 
+inner join cmpt on UserT.belongcmp = cmpt.id 
+where (UserT.id = $1 OR $1 IS NULL)
 `
 
 type GetUserByIDRow struct {
@@ -535,13 +550,13 @@ type GetUserByIDRow struct {
 	Name             string
 	Name_2           string
 	Role             int16
-	CreateDate       pgtype.Timestamp
-	DeletedDate      pgtype.Timestamp
-	LastModifiedDate pgtype.Timestamp
+	CreateDate       time.Time
+	DeletedDate      sql.NullTime
+	LastModifiedDate time.Time
 }
 
-func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, error) {
-	row := q.db.QueryRow(ctx, getUserByID, id)
+func (q *Queries) GetUserByID(ctx context.Context, id sql.NullInt64) (GetUserByIDRow, error) {
+	row := q.db.QueryRowContext(ctx, getUserByID, id)
 	var i GetUserByIDRow
 	err := row.Scan(
 		&i.ID,
@@ -557,27 +572,34 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, er
 }
 
 const getUserList = `-- name: GetUserList :many
-SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date from UserT  inner join cmpt on UserT.belongcmp = cmpt.id where 
-(UserT.id = $1 OR UserT.id IS NULL)AND
-(phoneNum = $2 OR phoneNum IS NULL)AND
-(UserT.name = $3 OR UserT.name IS NULL)AND
-(belongcmp = $4 OR belongcmp IS NULL)AND
-(UserT.create_date between $5 and $6 OR UserT.create_date IS NULL)AND
-(UserT.deleted_date between $7 and $8 OR UserT.deleted_date IS NULL)AND
-(UserT.last_modified_date between $9 and $10 OR UserT.last_modified_date IS NULL)
+
+SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
+from UserT 
+inner join cmpt on UserT.belongcmp = cmpt.id 
+where 
+(UserT.id = $1 OR $1 IS NULL)AND
+(phoneNum = $2::Text OR $2::Text IS NULL)AND
+(UserT.name = $3 OR $3 IS NULL)AND
+(belongcmp = $4 OR $4 IS NULL)AND
+((UserT.create_date > $5 OR $5 IS NULL)
+ AND (UserT.create_date < $6 OR $6 IS NULL)) AND
+((UserT.deleted_date > $7 OR $7 IS NULL)
+ AND (UserT.deleted_date < $8 OR $8 IS NULL)) AND
+((UserT.last_modified_date > $9 OR $9 IS NULL) 
+AND (UserT.last_modified_date < $10 OR $10 IS NULL))
 `
 
 type GetUserListParams struct {
-	ID                 int64
-	Phonenum           interface{}
-	Name               string
-	Belongcmp          pgtype.Int8
-	CreateDate         pgtype.Timestamp
-	CreateDate_2       pgtype.Timestamp
-	DeletedDate        pgtype.Timestamp
-	DeletedDate_2      pgtype.Timestamp
-	LastModifiedDate   pgtype.Timestamp
-	LastModifiedDate_2 pgtype.Timestamp
+	ID                    sql.NullInt64
+	PhoneNum              sql.NullString
+	Name                  sql.NullString
+	Belongcmp             sql.NullInt64
+	CreateDateStart       sql.NullTime
+	CreateDateEnd         sql.NullTime
+	DeletedDateStart      sql.NullTime
+	DeletedDateEnd        sql.NullTime
+	LastModifiedDateStart sql.NullTime
+	LastModifiedDateEnd   sql.NullTime
 }
 
 type GetUserListRow struct {
@@ -586,23 +608,24 @@ type GetUserListRow struct {
 	Name             string
 	Name_2           string
 	Role             int16
-	CreateDate       pgtype.Timestamp
-	DeletedDate      pgtype.Timestamp
-	LastModifiedDate pgtype.Timestamp
+	CreateDate       time.Time
+	DeletedDate      sql.NullTime
+	LastModifiedDate time.Time
 }
 
+// where UserT.id=$1 LIMIT 1;
 func (q *Queries) GetUserList(ctx context.Context, arg GetUserListParams) ([]GetUserListRow, error) {
-	rows, err := q.db.Query(ctx, getUserList,
+	rows, err := q.db.QueryContext(ctx, getUserList,
 		arg.ID,
-		arg.Phonenum,
+		arg.PhoneNum,
 		arg.Name,
 		arg.Belongcmp,
-		arg.CreateDate,
-		arg.CreateDate_2,
-		arg.DeletedDate,
-		arg.DeletedDate_2,
-		arg.LastModifiedDate,
-		arg.LastModifiedDate_2,
+		arg.CreateDateStart,
+		arg.CreateDateEnd,
+		arg.DeletedDateStart,
+		arg.DeletedDateEnd,
+		arg.LastModifiedDateStart,
+		arg.LastModifiedDateEnd,
 	)
 	if err != nil {
 		return nil, err
@@ -625,6 +648,9 @@ func (q *Queries) GetUserList(ctx context.Context, arg GetUserListParams) ([]Get
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -636,7 +662,7 @@ Update JobsT set remaining = remaining + 1, last_modified_date = NOW() where id 
 `
 
 func (q *Queries) IncreaseRemaining(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, increaseRemaining, id)
+	_, err := q.db.ExecContext(ctx, increaseRemaining, id)
 	return err
 }
 
@@ -645,7 +671,7 @@ INSERT INTO cmpt (name) values ($1) RETURNING id
 `
 
 func (q *Queries) NewCmp(ctx context.Context, name string) (int64, error) {
-	row := q.db.QueryRow(ctx, newCmp, name)
+	row := q.db.QueryRowContext(ctx, newCmp, name)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
@@ -659,7 +685,7 @@ WHERE id = $1
 `
 
 func (q *Queries) SetJobNoMore(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, setJobNoMore, id)
+	_, err := q.db.ExecContext(ctx, setJobNoMore, id)
 	return err
 }
 
@@ -677,7 +703,7 @@ type UpdateCmpParams struct {
 }
 
 func (q *Queries) UpdateCmp(ctx context.Context, arg UpdateCmpParams) error {
-	_, err := q.db.Exec(ctx, updateCmp, arg.ID, arg.Name)
+	_, err := q.db.ExecContext(ctx, updateCmp, arg.ID, arg.Name)
 	return err
 }
 
@@ -700,20 +726,20 @@ where id = $11
 
 type UpdateJobParams struct {
 	FromLoc   string
-	Mid       pgtype.Text
+	Mid       sql.NullString
 	ToLoc     string
 	Price     int16
 	Remaining int16
 	Belongcmp int64
 	Source    string
-	Jobdate   pgtype.Timestamp
-	Memo      pgtype.Text
-	EndDate   pgtype.Timestamp
+	Jobdate   time.Time
+	Memo      sql.NullString
+	EndDate   sql.NullTime
 	ID        int64
 }
 
 func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (int64, error) {
-	row := q.db.QueryRow(ctx, updateJob,
+	row := q.db.QueryRowContext(ctx, updateJob,
 		arg.FromLoc,
 		arg.Mid,
 		arg.ToLoc,
@@ -747,6 +773,6 @@ type UpdateUserParams struct {
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
-	_, err := q.db.Exec(ctx, updateUser, arg.ID, arg.Pwd, arg.Role)
+	_, err := q.db.ExecContext(ctx, updateUser, arg.ID, arg.Pwd, arg.Role)
 	return err
 }

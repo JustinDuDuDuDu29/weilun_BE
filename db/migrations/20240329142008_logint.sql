@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE LoginT(
     id BIGSERIAL PRIMARY KEY,
-    userID bigint references UserT(id),
+    userID bigint NOT NULL references UserT(id),
     create_date Timestamp NOT NULL DEFAULT NOW()
 );
 -- +goose StatementEnd

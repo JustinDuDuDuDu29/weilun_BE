@@ -14,7 +14,7 @@ CREATE TABLE UserT(
     phoneNum phoneType NOT NULL Unique,
     pwd  varchar(76) NOT NULL,
     name varchar(25) NOT NULL,
-    belongCMP bigint references CMPT(id),
+    belongCMP bigint NOT NULL references CMPT(id),
     role smallint NOT NULL,
     -- 0~100:super admin
     -- 101~200:company
