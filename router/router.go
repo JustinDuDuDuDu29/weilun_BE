@@ -34,10 +34,10 @@ func RouterInit(c *controller.AppControllerImpl) {
 		cmp.DELETE("", middleware.IsLoggedIn, c.CmpCtrl.DeleteCmp)
 
 		jobs := api.Group("/jobs")
-		jobs.GET("", middleware.IsLoggedIn, c.UserCtrl.RegisterUser)
+		jobs.GET("", middleware.IsLoggedIn, c.JobsCtrl.GetAllJob)
 		jobs.POST("", middleware.IsLoggedIn, c.JobsCtrl.CreateJob)
 		jobs.PUT("")
-		jobs.DELETE("", middleware.IsLoggedIn, c.UserCtrl.DeleteUser)
+		jobs.DELETE("", middleware.IsLoggedIn, c.JobsCtrl.DeleteJob)
 	}
 	router.Run(":8080")
 }

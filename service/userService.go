@@ -10,7 +10,7 @@ import (
 
 type UserServ interface {
 	HaveUser(queryParam db.GetUserParams) (db.GetUserRow, error)
-	GetUserById(id sql.NullInt64) (db.GetUserByIDRow, error)
+	GetUserById(id int64) (db.GetUserByIDRow, error)
 	RegisterCmpAdmin(queryParam db.CreateUserParams) (int64, error)
 	RegisterDriver(queryParam db.CreateUserParams, percentage int, nationalIdNumber string) (int64, error)
 	DeleteUser(queryParam int64) error
@@ -57,7 +57,6 @@ func (u *UserServImpl) RegisterDriver(queryParam db.CreateUserParams, percentage
 	userid, err := qtx.CreateDriverInfo(context.Background(), driverParam)
 
 	if err != nil {
-		fmt.Print("HERE2")
 		tx.Rollback()
 		return -99, err
 	}
@@ -65,13 +64,12 @@ func (u *UserServImpl) RegisterDriver(queryParam db.CreateUserParams, percentage
 	err = tx.Commit()
 
 	if err != nil {
-		fmt.Print("HERE3")
 		tx.Rollback()
 	}
 	return int64(userid), err
 }
 
-func (u *UserServImpl) GetUserById(id sql.NullInt64) (db.GetUserByIDRow, error) {
+func (u *UserServImpl) GetUserById(id int64) (db.GetUserByIDRow, error) {
 	res, err := u.q.GetUserByID(context.Background(), id)
 	return res, err
 }

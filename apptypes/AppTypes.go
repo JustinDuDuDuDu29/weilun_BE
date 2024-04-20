@@ -7,6 +7,29 @@ import (
 type CustomClaims struct {
 	jwt.RegisteredClaims
 }
+
+type DeleteClaimJobBodyT struct {
+	ClaimJobID int `json:"claimJobID" binding:"required"`
+}
+
+type ClaimJobBodyT struct {
+	JobID int `json:"jobID" binding:"required"`
+}
+
+type CreateJobBodyT struct {
+	FromLoc   string `json:"fromLoc" binding:"required"`
+	Mid       string `json:"mid"`
+	ToLoc     string `json:"toLoc" binding:"required"`
+	Price     int    `json:"price" binding:"required"`
+	Estimated int    `json:"estimated" binding:"required"`
+	Belongcmp int    `json:"belongCmp" binding:"required"`
+	Source    string `json:"source" binding:"required"`
+	// Jobdate   time.Time `json:"jobDate" binding:"required"`
+	Jobdate string `json:"jobDate" binding:"required"`
+	Memo    string `json:"memo"`
+	EndDate string `json:"endDate" binding:"required"`
+}
+
 type DriverInfo struct {
 	Percentage       int    `json:"percentage" binding:"required"`
 	NationalIdNumber string `json:"nationalIdNumber" binding:"required"`

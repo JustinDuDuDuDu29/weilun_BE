@@ -4,6 +4,7 @@ import (
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
+	"strconv"
 	"time"
 
 	"net/http"
@@ -48,7 +49,7 @@ func (a *AuthCtrlImpl) Login(c *gin.Context) {
 	}
 
 	var newClaim apptypes.CustomClaims
-	newClaim.Audience = []string{"audience-example"}
+	newClaim.Audience = []string{strconv.Itoa(int(res.ID))}
 	newClaim.IssuedAt = jwt.NewNumericDate(time.Now())
 	newClaim.NotBefore = jwt.NewNumericDate(time.Now())
 	newClaim.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Second * 2000))

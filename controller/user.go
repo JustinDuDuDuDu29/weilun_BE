@@ -2,7 +2,6 @@ package controller
 
 import (
 	"database/sql"
-	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -199,9 +198,8 @@ func (u *UserCtrlImpl) GetUserById(c *gin.Context) {
 		Id.Scan(c.Param("id"))
 	}
 
-	res, err := u.svc.UserServ.GetUserById(Id)
+	res, err := u.svc.UserServ.GetUserById(Id.Int64)
 	if err != nil {
-		fmt.Print(err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return

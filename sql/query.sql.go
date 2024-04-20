@@ -253,12 +253,56 @@ Update ClaimJobT Set
     finished_date = NOW(),
     percentage = (SELECT percentage from driverT where usert.id = (SELECT driverID from ClaimJobT where ClaimJobT.id = $1)),
     last_modified_date = NOW()
-WHERE id = $1
+WHERE id = $1 and ClaimJobT.Driverid = $2
 `
 
-func (q *Queries) FinishClamedJob(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, finishClamedJob, id)
+type FinishClamedJobParams struct {
+	ID       int64
+	Driverid int64
+}
+
+func (q *Queries) FinishClamedJob(ctx context.Context, arg FinishClamedJobParams) error {
+	_, err := q.db.ExecContext(ctx, finishClamedJob, arg.ID, arg.Driverid)
 	return err
+}
+
+const getAllClaimedJobs = `-- name: GetAllClaimedJobs :many
+SELECT id, jobid, driverid, percentage, finished_date, create_date, deleted_date, deleted_by, last_modified_date, approved_by, approved_date from ClaimJobT
+`
+
+func (q *Queries) GetAllClaimedJobs(ctx context.Context) ([]Claimjobt, error) {
+	rows, err := q.db.QueryContext(ctx, getAllClaimedJobs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Claimjobt
+	for rows.Next() {
+		var i Claimjobt
+		if err := rows.Scan(
+			&i.ID,
+			&i.Jobid,
+			&i.Driverid,
+			&i.Percentage,
+			&i.FinishedDate,
+			&i.CreateDate,
+			&i.DeletedDate,
+			&i.DeletedBy,
+			&i.LastModifiedDate,
+			&i.ApprovedBy,
+			&i.ApprovedDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getAllCmp = `-- name: GetAllCmp :many
@@ -431,6 +475,29 @@ func (q *Queries) GetClaimedJob(ctx context.Context, driverid int64) (GetClaimed
 	return i, err
 }
 
+const getClaimedJobByID = `-- name: GetClaimedJobByID :one
+SELECT id, jobid, driverid, percentage, finished_date, create_date, deleted_date, deleted_by, last_modified_date, approved_by, approved_date from ClaimJobT where id = $1
+`
+
+func (q *Queries) GetClaimedJobByID(ctx context.Context, id int64) (Claimjobt, error) {
+	row := q.db.QueryRowContext(ctx, getClaimedJobByID, id)
+	var i Claimjobt
+	err := row.Scan(
+		&i.ID,
+		&i.Jobid,
+		&i.Driverid,
+		&i.Percentage,
+		&i.FinishedDate,
+		&i.CreateDate,
+		&i.DeletedDate,
+		&i.DeletedBy,
+		&i.LastModifiedDate,
+		&i.ApprovedBy,
+		&i.ApprovedDate,
+	)
+	return i, err
+}
+
 const getCmp = `-- name: GetCmp :one
 SELECT cmpt.id, cmpt.name, cmpt.create_date, cmpt.deleted_date, cmpt.last_modified_date, usert.id, phonenum, pwd, usert.name, belongcmp, role, initpwdchanged, usert.create_date, usert.deleted_date, usert.last_modified_date FROM cmpt
 inner join usert
@@ -541,7 +608,7 @@ const getUserByID = `-- name: GetUserByID :one
 SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
 from UserT 
 inner join cmpt on UserT.belongcmp = cmpt.id 
-where (UserT.id = $1 OR $1 IS NULL)
+where UserT.id=$1 LIMIT 1
 `
 
 type GetUserByIDRow struct {
@@ -555,7 +622,7 @@ type GetUserByIDRow struct {
 	LastModifiedDate time.Time
 }
 
-func (q *Queries) GetUserByID(ctx context.Context, id sql.NullInt64) (GetUserByIDRow, error) {
+func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, error) {
 	row := q.db.QueryRowContext(ctx, getUserByID, id)
 	var i GetUserByIDRow
 	err := row.Scan(
@@ -572,7 +639,6 @@ func (q *Queries) GetUserByID(ctx context.Context, id sql.NullInt64) (GetUserByI
 }
 
 const getUserList = `-- name: GetUserList :many
-
 SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
 from UserT 
 inner join cmpt on UserT.belongcmp = cmpt.id 
@@ -613,7 +679,6 @@ type GetUserListRow struct {
 	LastModifiedDate time.Time
 }
 
-// where UserT.id=$1 LIMIT 1;
 func (q *Queries) GetUserList(ctx context.Context, arg GetUserListParams) ([]GetUserListRow, error) {
 	rows, err := q.db.QueryContext(ctx, getUserList,
 		arg.ID,

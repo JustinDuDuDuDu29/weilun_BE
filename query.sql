@@ -6,8 +6,7 @@ WHERE phoneNum=$1 AND pwd=$2 LIMIT 1;
 SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
 from UserT 
 inner join cmpt on UserT.belongcmp = cmpt.id 
-where (UserT.id = sqlc.narg('id') OR sqlc.narg('id') IS NULL);
--- where UserT.id=$1 LIMIT 1;
+where UserT.id=$1 LIMIT 1;
 
 -- name: GetUserList :many
 SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
@@ -151,6 +150,12 @@ INSERT INTO JobsT (
     $10
 ) RETURNING id;
 
+-- name: GetAllClaimedJobs :many
+SELECT * from ClaimJobT;
+
+-- name: GetClaimedJobByID :one
+SELECT * from ClaimJobT where id = $1;
+
 -- name: ClaimJob :one 
 INSERT into ClaimJobT (
     jobID,
@@ -178,7 +183,7 @@ Update ClaimJobT Set
     finished_date = NOW(),
     percentage = (SELECT percentage from driverT where usert.id = (SELECT driverID from ClaimJobT where ClaimJobT.id = $1)),
     last_modified_date = NOW()
-WHERE id = $1;
+WHERE id = $1 and ClaimJobT.Driverid = $2;
 
 -- name: ApproveFinishedJob :exec
 Update ClaimJobT set Approved_By = $2, approved_date = NOW(), last_modified_date = NOW() where id = $1;
