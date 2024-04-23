@@ -7,6 +7,8 @@ package utils
 import (
 	"database/sql"
 	"main/controller"
+
+	"main/middleware"
 	"main/service"
 	db "main/sql"
 
@@ -25,6 +27,11 @@ var jobsServSet = wire.NewSet(
 var userServSet = wire.NewSet(
 	service.UserServInit,
 	wire.Bind(new(service.UserServ), new(*service.UserServImpl)),
+)
+
+var repairServSet = wire.NewSet(
+	service.RepairServInit,
+	wire.Bind(new(service.RepairServ), new(*service.RepairServImpl)),
 )
 
 var userCtrlSet = wire.NewSet(
@@ -47,6 +54,16 @@ var cmpCtrlSet = wire.NewSet(
 	wire.Bind(new(controller.CmpCtrl), new(*controller.CmpCtrlImpl)),
 )
 
+var repairCtrlSet = wire.NewSet(
+	controller.RepairCtrlInit,
+	wire.Bind(new(controller.RepairCtrl), new(*controller.RepairCtrlImpl)),
+)
+
+var roleMidSet = wire.NewSet(
+	middleware.RoleMidInit,
+	wire.Bind(new(middleware.RoleMid), new(*middleware.RoleMidImpl)),
+)
+
 func Init(q *db.Queries, conn *sql.DB) *controller.AppControllerImpl {
 	wire.Build(
 		cmpCtrlSet,
@@ -58,6 +75,22 @@ func Init(q *db.Queries, conn *sql.DB) *controller.AppControllerImpl {
 		service.AppServiceInit,
 		jobsCtrlSet,
 		jobsServSet,
+		repairCtrlSet,
+		repairServSet,
+	)
+
+	return nil
+}
+
+func MInit(q *db.Queries, conn *sql.DB) *middleware.AppMiddlewareImpl {
+	wire.Build(
+		userServSet,
+		cmpServSet,
+		service.AppServiceInit,
+		jobsServSet,
+		repairServSet,
+		middleware.AppMiddlewareInit,
+		roleMidSet,
 	)
 
 	return nil

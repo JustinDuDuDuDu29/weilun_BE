@@ -12,6 +12,7 @@ func main() {
 	q, conn := utils.InitDatabase()
 
 	ctrl := utils.Init(q, conn)
+	mid := utils.MInit(q, conn)
 	defer conn.Close()
-	router.RouterInit(ctrl)
+	router.RouterInit(ctrl, mid)
 }

@@ -8,7 +8,7 @@ CREATE TABLE ClaimJobT(
     finished_date Timestamp,
     create_date Timestamp NOT NULL DEFAULT NOW(),
     deleted_date Timestamp,
-    deleted_by BigInt references DriverT(id),
+    deleted_by BigInt references UserT(id),
     last_modified_date Timestamp NOT NULL DEFAULT NOW(),
     Approved_By BigInt references UserT(id),
     approved_date Timestamp 

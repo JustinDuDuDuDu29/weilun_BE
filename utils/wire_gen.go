@@ -10,6 +10,7 @@ import (
 	sql2 "database/sql"
 	"github.com/google/wire"
 	"main/controller"
+	"main/middleware"
 	"main/service"
 	"main/sql"
 )
@@ -20,13 +21,26 @@ func Init(q *sql.Queries, conn *sql2.DB) *controller.AppControllerImpl {
 	userServImpl := service.UserServInit(q, conn)
 	cmpServImpl := service.CmpServInit(q, conn)
 	jobsServImpl := service.JobsServInit(q, conn)
-	appService := service.AppServiceInit(userServImpl, cmpServImpl, jobsServImpl)
+	repairServImpl := service.RepairServInit(q, conn)
+	appService := service.AppServiceInit(userServImpl, cmpServImpl, jobsServImpl, repairServImpl)
 	userCtrlImpl := controller.UserCtrlInit(appService)
 	authCtrlImpl := controller.AuthCtrlInit(appService)
 	cmpCtrlImpl := controller.CmpCtrlInit(appService)
 	jobsCtrlImpl := controller.JobsCtrlInit(appService)
-	appControllerImpl := controller.AppControllerInit(userCtrlImpl, authCtrlImpl, cmpCtrlImpl, jobsCtrlImpl)
+	repairCtrlImpl := controller.RepairCtrlInit(appService)
+	appControllerImpl := controller.AppControllerInit(userCtrlImpl, authCtrlImpl, cmpCtrlImpl, jobsCtrlImpl, repairCtrlImpl)
 	return appControllerImpl
+}
+
+func MInit(q *sql.Queries, conn *sql2.DB) *middleware.AppMiddlewareImpl {
+	userServImpl := service.UserServInit(q, conn)
+	cmpServImpl := service.CmpServInit(q, conn)
+	jobsServImpl := service.JobsServInit(q, conn)
+	repairServImpl := service.RepairServInit(q, conn)
+	appService := service.AppServiceInit(userServImpl, cmpServImpl, jobsServImpl, repairServImpl)
+	roleMidImpl := middleware.RoleMidInit(appService)
+	appMiddlewareImpl := middleware.AppMiddlewareInit(roleMidImpl)
+	return appMiddlewareImpl
 }
 
 // wire.go:
@@ -37,6 +51,8 @@ var jobsServSet = wire.NewSet(service.JobsServInit, wire.Bind(new(service.JobsSe
 
 var userServSet = wire.NewSet(service.UserServInit, wire.Bind(new(service.UserServ), new(*service.UserServImpl)))
 
+var repairServSet = wire.NewSet(service.RepairServInit, wire.Bind(new(service.RepairServ), new(*service.RepairServImpl)))
+
 var userCtrlSet = wire.NewSet(controller.UserCtrlInit, wire.Bind(new(controller.UserCtrl), new(*controller.UserCtrlImpl)))
 
 var jobsCtrlSet = wire.NewSet(controller.JobsCtrlInit, wire.Bind(new(controller.JobsCtrl), new(*controller.JobsCtrlImpl)))
@@ -44,3 +60,7 @@ var jobsCtrlSet = wire.NewSet(controller.JobsCtrlInit, wire.Bind(new(controller.
 var authCtrlSet = wire.NewSet(controller.AuthCtrlInit, wire.Bind(new(controller.AuthCtrl), new(*controller.AuthCtrlImpl)))
 
 var cmpCtrlSet = wire.NewSet(controller.CmpCtrlInit, wire.Bind(new(controller.CmpCtrl), new(*controller.CmpCtrlImpl)))
+
+var repairCtrlSet = wire.NewSet(controller.RepairCtrlInit, wire.Bind(new(controller.RepairCtrl), new(*controller.RepairCtrlImpl)))
+
+var roleMidSet = wire.NewSet(middleware.RoleMidInit, wire.Bind(new(middleware.RoleMid), new(*middleware.RoleMidImpl)))

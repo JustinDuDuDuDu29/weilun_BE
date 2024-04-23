@@ -9,7 +9,7 @@ CREATE TABLE DriverT(
     id bigint PRIMARY KEY references UserT(id),
     -- BLABLABLA
     percentage smallint NOT NULL DEFAULT 20, 
-    nationalIDNumber nationalIDNumberType NOT NULL
+    nationalIDNumber nationalIDNumberType NOT NULL Unique
   );
 -- +goose StatementEnd
 

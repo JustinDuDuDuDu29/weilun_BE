@@ -93,6 +93,9 @@ SELECT * from JobsT;
 -- name: GetAllJobsByCmp :many
 SELECT * from JobsT where belongcmp = $1;
 
+-- name: GetJobById :one
+SELECT * from JobsT where id = $1 LIMIT 1;
+
 -- name: SetJobNoMore :exec
 UPDATE JobsT 
   set finished_date = NOW(),
@@ -117,7 +120,7 @@ UPDATE JobsT set
     source = $7,
     jobDate = $8,
     memo = $9,
-    end_date = $10,
+    close_date = $10,
     last_modified_date = NOW()
 where id = $11
  RETURNING id;
@@ -135,7 +138,7 @@ INSERT INTO JobsT (
     source,
     jobDate,
     memo,
-    end_date
+    close_date
 ) values (
     $1,
     $2,
@@ -188,10 +191,25 @@ WHERE id = $1 and ClaimJobT.Driverid = $2;
 -- name: ApproveFinishedJob :exec
 Update ClaimJobT set Approved_By = $2, approved_date = NOW(), last_modified_date = NOW() where id = $1;
 
--- name: GetClaimedJob :one
+-- name: GetCurrentClaimedJob :one
 SELECT t2.id, t1.*  FROM ClaimJobT t2 inner join JobsT t1 on t1.id = t2.jobID where t2.driverID = $1 and (t2.deleted_date IS NULL and t2.finished_date IS NULL) order by t2.create_date LIMIT 1;
 
 -- name: GetDriverRevenue :many
 SELECT t1.percentage*t2.price as earn from ClaimJobT t1 inner join JobsT t2 on t1.jobID = t2.id where t1.driverID = $1 and (t1.finished_date IS NOT NULL 
     and approved_date IS NOT NULL and deleted_date IS NOT NULL) and t1.finished_date 
     between $2 and $3;
+
+-- name: CreateNewRepair :one
+INSERT into repairT (type, driverID, repairInfo) values ($1, $2, $3) RETURNING id;
+
+-- name: GetAllRepair :many
+SELECT * from repairT;
+
+-- name: GetRepairByID :one
+SELECT * from repairT where id = $1;
+
+-- name: GetAllRepairByDriverID :many
+SELECT * from repairT where driverID = $1;
+
+-- name: GetAllRepairByCMP :many
+SELECT * from repairT inner join UserT on repairT.Driverid = UserT.id where UserT.belongCMP= $1;

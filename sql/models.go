@@ -6,6 +6,7 @@ package sql
 
 import (
 	"database/sql"
+	"encoding/json"
 	"time"
 )
 
@@ -58,10 +59,9 @@ type Jobst struct {
 	Source           string
 	Jobdate          time.Time
 	Memo             sql.NullString
+	CloseDate        sql.NullTime
 	CreateDate       time.Time
-	EndDate          sql.NullTime
 	DeletedDate      sql.NullTime
-	FinishedDate     sql.NullTime
 	LastModifiedDate time.Time
 }
 
@@ -69,6 +69,17 @@ type Logint struct {
 	ID         int64
 	Userid     int64
 	CreateDate time.Time
+}
+
+type Repairt struct {
+	ID               int64
+	Type             string
+	Driverid         int64
+	Repairinfo       json.RawMessage
+	CreateDate       time.Time
+	ApprovedDate     sql.NullTime
+	DeletedDate      sql.NullTime
+	LastModifiedDate time.Time
 }
 
 type Usert struct {

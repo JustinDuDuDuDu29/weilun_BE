@@ -8,12 +8,19 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-type DeleteClaimJobBodyT struct {
-	ClaimJobID int `json:"claimJobID" binding:"required"`
-}
-
-type ClaimJobBodyT struct {
-	JobID int `json:"jobID" binding:"required"`
+type UpdateJobBodyT struct {
+	FromLoc   string `json:"fromLoc" binding:"required"`
+	Mid       string `json:"mid"`
+	ToLoc     string `json:"toLoc" binding:"required"`
+	Price     int    `json:"price" binding:"required"`
+	Remaining int    `json:"estimated" binding:"required"`
+	Belongcmp int    `json:"belongCmp" binding:"required"`
+	Source    string `json:"source" binding:"required"`
+	// Jobdate   time.Time `json:"jobDate" binding:"required"`
+	Jobdate   string `json:"jobDate" binding:"required"`
+	Memo      string `json:"memo"`
+	CloseDate string `json:"closeDate" binding:"required"`
+	ID        int    `json:"id" binding:"required"`
 }
 
 type CreateJobBodyT struct {
@@ -25,9 +32,9 @@ type CreateJobBodyT struct {
 	Belongcmp int    `json:"belongCmp" binding:"required"`
 	Source    string `json:"source" binding:"required"`
 	// Jobdate   time.Time `json:"jobDate" binding:"required"`
-	Jobdate string `json:"jobDate" binding:"required"`
-	Memo    string `json:"memo"`
-	EndDate string `json:"endDate" binding:"required"`
+	Jobdate   string `json:"jobDate" binding:"required"`
+	Memo      string `json:"memo"`
+	CloseDate string `json:"sloseDate" binding:"required"`
 }
 
 type DriverInfo struct {

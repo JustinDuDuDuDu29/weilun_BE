@@ -1,8 +1,11 @@
 package middleware
 
 type AppMiddlewareImpl struct {
+	RoleMid RoleMid
 }
 
-func AppMiddlewareInit() *AppMiddlewareImpl {
-	return &AppMiddlewareImpl{}
+func AppMiddlewareInit(roleMid RoleMid) *AppMiddlewareImpl {
+	return &AppMiddlewareImpl{
+		RoleMid: roleMid,
+	}
 }
