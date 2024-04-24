@@ -141,6 +141,11 @@ func (u *JobsCtrlImpl) CancelClaimJob(c *gin.Context) {
 	}
 
 	res, err := u.svc.UserServ.GetUserById(int64(UserID))
+	if err != nil {
+		fmt.Print(err)
+		c.Abort()
+		return
+	}
 	cJobRes, err := u.svc.JobsServ.GetClaimedJobByID(int64(id))
 
 	if err != nil {
