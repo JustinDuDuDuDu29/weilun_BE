@@ -117,7 +117,6 @@ func (u *CmpCtrlImpl) DeleteCmp(c *gin.Context) {
 
 	c.Status(http.StatusOK)
 	c.Abort()
-	return
 }
 
 func CmpCtrlInit(svc *service.AppService) *CmpCtrlImpl {

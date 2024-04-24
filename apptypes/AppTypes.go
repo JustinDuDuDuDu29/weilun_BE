@@ -1,6 +1,8 @@
 package apptypes
 
 import (
+	"encoding/json"
+
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -23,6 +25,10 @@ type UpdateJobBodyT struct {
 	ID        int    `json:"id" binding:"required"`
 }
 
+type NewRepairBodyT struct {
+	Repairinfo json.RawMessage `json:"Repairinfo" binding:"required"`
+}
+
 type CreateJobBodyT struct {
 	FromLoc   string `json:"fromLoc" binding:"required"`
 	Mid       string `json:"mid"`
@@ -31,7 +37,6 @@ type CreateJobBodyT struct {
 	Estimated int    `json:"estimated" binding:"required"`
 	Belongcmp int    `json:"belongCmp" binding:"required"`
 	Source    string `json:"source" binding:"required"`
-	// Jobdate   time.Time `json:"jobDate" binding:"required"`
 	Jobdate   string `json:"jobDate" binding:"required"`
 	Memo      string `json:"memo"`
 	CloseDate string `json:"sloseDate" binding:"required"`

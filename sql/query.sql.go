@@ -26,6 +26,15 @@ func (q *Queries) ApproveFinishedJob(ctx context.Context, arg ApproveFinishedJob
 	return err
 }
 
+const approveRepair = `-- name: ApproveRepair :exec
+Update repairT set approved_date = NOW(), last_modified_date = NOW() where id =$1
+`
+
+func (q *Queries) ApproveRepair(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, approveRepair, id)
+	return err
+}
+
 const claimJob = `-- name: ClaimJob :one
 INSERT into ClaimJobT (
     jobID,
@@ -254,6 +263,15 @@ func (q *Queries) DeleteJob(ctx context.Context, id int64) error {
 	return err
 }
 
+const deleteRepair = `-- name: DeleteRepair :exec
+Update repairT set deleted_date = NOW(), last_modified_date = NOW() where id =$1
+`
+
+func (q *Queries) DeleteRepair(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteRepair, id)
+	return err
+}
+
 const deleteUser = `-- name: DeleteUser :exec
 UPDATE UserT
   set deleted_date= NOW(),
@@ -426,109 +444,6 @@ func (q *Queries) GetAllJobsByCmp(ctx context.Context, belongcmp int64) ([]Jobst
 			&i.Memo,
 			&i.CloseDate,
 			&i.CreateDate,
-			&i.DeletedDate,
-			&i.LastModifiedDate,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getAllRepairByCMP = `-- name: GetAllRepairByCMP :many
-SELECT repairt.id, type, driverid, repairinfo, repairt.create_date, approved_date, repairt.deleted_date, repairt.last_modified_date, usert.id, phonenum, pwd, name, belongcmp, role, initpwdchanged, usert.create_date, usert.deleted_date, usert.last_modified_date from repairT inner join UserT on repairT.Driverid = UserT.id where UserT.belongCMP= $1
-`
-
-type GetAllRepairByCMPRow struct {
-	ID                 int64
-	Type               string
-	Driverid           int64
-	Repairinfo         json.RawMessage
-	CreateDate         time.Time
-	ApprovedDate       sql.NullTime
-	DeletedDate        sql.NullTime
-	LastModifiedDate   time.Time
-	ID_2               int64
-	Phonenum           interface{}
-	Pwd                string
-	Name               string
-	Belongcmp          int64
-	Role               int16
-	Initpwdchanged     bool
-	CreateDate_2       time.Time
-	DeletedDate_2      sql.NullTime
-	LastModifiedDate_2 time.Time
-}
-
-func (q *Queries) GetAllRepairByCMP(ctx context.Context, belongcmp int64) ([]GetAllRepairByCMPRow, error) {
-	rows, err := q.db.QueryContext(ctx, getAllRepairByCMP, belongcmp)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetAllRepairByCMPRow
-	for rows.Next() {
-		var i GetAllRepairByCMPRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Type,
-			&i.Driverid,
-			&i.Repairinfo,
-			&i.CreateDate,
-			&i.ApprovedDate,
-			&i.DeletedDate,
-			&i.LastModifiedDate,
-			&i.ID_2,
-			&i.Phonenum,
-			&i.Pwd,
-			&i.Name,
-			&i.Belongcmp,
-			&i.Role,
-			&i.Initpwdchanged,
-			&i.CreateDate_2,
-			&i.DeletedDate_2,
-			&i.LastModifiedDate_2,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getAllRepairByDriverID = `-- name: GetAllRepairByDriverID :many
-SELECT id, type, driverid, repairinfo, create_date, approved_date, deleted_date, last_modified_date from repairT where driverID = $1
-`
-
-func (q *Queries) GetAllRepairByDriverID(ctx context.Context, driverid int64) ([]Repairt, error) {
-	rows, err := q.db.QueryContext(ctx, getAllRepairByDriverID, driverid)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Repairt
-	for rows.Next() {
-		var i Repairt
-		if err := rows.Scan(
-			&i.ID,
-			&i.Type,
-			&i.Driverid,
-			&i.Repairinfo,
-			&i.CreateDate,
-			&i.ApprovedDate,
 			&i.DeletedDate,
 			&i.LastModifiedDate,
 		); err != nil {
@@ -725,24 +640,108 @@ func (q *Queries) GetJobById(ctx context.Context, id int64) (Jobst, error) {
 	return i, err
 }
 
-const getRepairByID = `-- name: GetRepairByID :one
-SELECT id, type, driverid, repairinfo, create_date, approved_date, deleted_date, last_modified_date from repairT where id = $1
+const getRepair = `-- name: GetRepair :many
+SELECT repairt.id, type, driverid, repairinfo, repairt.create_date, approved_date, repairt.deleted_date, repairt.last_modified_date, usert.id, phonenum, pwd, name, belongcmp, role, initpwdchanged, usert.create_date, usert.deleted_date, usert.last_modified_date
+from repairT 
+inner join UserT on UserT.id = repairT.driverID
+where 
+(repairT.id = $1 OR $1 IS NULL)AND
+(repairT.driverID = $2 OR $2 IS NULL)AND
+(UserT.name = $3 OR $3 IS NULL)AND
+(UserT.belongcmp = $4 OR $4 IS NULL)AND
+((repairT.create_date > $5 OR $5 IS NULL)
+ AND (repairT.create_date < $6 OR $6 IS NULL)) AND
+((repairT.deleted_date > $7 OR $7 IS NULL)
+ AND (repairT.deleted_date < $8 OR $8 IS NULL)) AND
+((repairT.last_modified_date > $9 OR $9 IS NULL) 
+AND (repairT.last_modified_date < $10 OR $10 IS NULL))
 `
 
-func (q *Queries) GetRepairByID(ctx context.Context, id int64) (Repairt, error) {
-	row := q.db.QueryRowContext(ctx, getRepairByID, id)
-	var i Repairt
-	err := row.Scan(
-		&i.ID,
-		&i.Type,
-		&i.Driverid,
-		&i.Repairinfo,
-		&i.CreateDate,
-		&i.ApprovedDate,
-		&i.DeletedDate,
-		&i.LastModifiedDate,
+type GetRepairParams struct {
+	ID                    sql.NullInt64
+	DriverID              sql.NullInt64
+	Name                  sql.NullString
+	Belongcmp             sql.NullInt64
+	CreateDateStart       sql.NullTime
+	CreateDateEnd         sql.NullTime
+	DeletedDateStart      sql.NullTime
+	DeletedDateEnd        sql.NullTime
+	LastModifiedDateStart sql.NullTime
+	LastModifiedDateEnd   sql.NullTime
+}
+
+type GetRepairRow struct {
+	ID                 int64
+	Type               string
+	Driverid           int64
+	Repairinfo         json.RawMessage
+	CreateDate         time.Time
+	ApprovedDate       sql.NullTime
+	DeletedDate        sql.NullTime
+	LastModifiedDate   time.Time
+	ID_2               int64
+	Phonenum           interface{}
+	Pwd                string
+	Name               string
+	Belongcmp          int64
+	Role               int16
+	Initpwdchanged     bool
+	CreateDate_2       time.Time
+	DeletedDate_2      sql.NullTime
+	LastModifiedDate_2 time.Time
+}
+
+func (q *Queries) GetRepair(ctx context.Context, arg GetRepairParams) ([]GetRepairRow, error) {
+	rows, err := q.db.QueryContext(ctx, getRepair,
+		arg.ID,
+		arg.DriverID,
+		arg.Name,
+		arg.Belongcmp,
+		arg.CreateDateStart,
+		arg.CreateDateEnd,
+		arg.DeletedDateStart,
+		arg.DeletedDateEnd,
+		arg.LastModifiedDateStart,
+		arg.LastModifiedDateEnd,
 	)
-	return i, err
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetRepairRow
+	for rows.Next() {
+		var i GetRepairRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Driverid,
+			&i.Repairinfo,
+			&i.CreateDate,
+			&i.ApprovedDate,
+			&i.DeletedDate,
+			&i.LastModifiedDate,
+			&i.ID_2,
+			&i.Phonenum,
+			&i.Pwd,
+			&i.Name,
+			&i.Belongcmp,
+			&i.Role,
+			&i.Initpwdchanged,
+			&i.CreateDate_2,
+			&i.DeletedDate_2,
+			&i.LastModifiedDate_2,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getUser = `-- name: GetUser :one
@@ -769,7 +768,7 @@ func (q *Queries) GetUser(ctx context.Context, arg GetUserParams) (GetUserRow, e
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
+SELECT UserT.id, phoneNum, UserT.name, UserT.belongCMP,cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
 from UserT 
 inner join cmpt on UserT.belongcmp = cmpt.id 
 where UserT.id=$1 LIMIT 1
@@ -779,6 +778,7 @@ type GetUserByIDRow struct {
 	ID               int64
 	Phonenum         interface{}
 	Name             string
+	Belongcmp        int64
 	Name_2           string
 	Role             int16
 	CreateDate       time.Time
@@ -793,6 +793,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, er
 		&i.ID,
 		&i.Phonenum,
 		&i.Name,
+		&i.Belongcmp,
 		&i.Name_2,
 		&i.Role,
 		&i.CreateDate,

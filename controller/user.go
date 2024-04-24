@@ -92,7 +92,6 @@ func (u *UserCtrlImpl) DeleteUser(c *gin.Context) {
 
 	c.Status(http.StatusOK)
 	c.Abort()
-	return
 }
 
 func (u *UserCtrlImpl) GetUserList(c *gin.Context) {
@@ -205,7 +204,7 @@ func (u *UserCtrlImpl) GetUserById(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"res": res})
-	return
+
 }
 
 func UserCtrlInit(svc *service.AppService) *UserCtrlImpl {

@@ -3,7 +3,7 @@ SELECT id, role, deleted_date FROM  UserT
 WHERE phoneNum=$1 AND pwd=$2 LIMIT 1;
 
 -- name: GetUserByID :one
-SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
+SELECT UserT.id, phoneNum, UserT.name, UserT.belongCMP,cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
 from UserT 
 inner join cmpt on UserT.belongcmp = cmpt.id 
 where UserT.id=$1 LIMIT 1;
@@ -202,14 +202,25 @@ SELECT t1.percentage*t2.price as earn from ClaimJobT t1 inner join JobsT t2 on t
 -- name: CreateNewRepair :one
 INSERT into repairT (type, driverID, repairInfo) values ($1, $2, $3) RETURNING id;
 
--- name: GetAllRepair :many
-SELECT * from repairT;
+-- name: GetRepair :many
+SELECT *
+from repairT 
+inner join UserT on UserT.id = repairT.driverID
+where 
+(repairT.id = sqlc.narg('id') OR sqlc.narg('id') IS NULL)AND
+(repairT.driverID = sqlc.narg('driverID') OR sqlc.narg('driverID') IS NULL)AND
+(UserT.name = sqlc.narg('name') OR sqlc.narg('name') IS NULL)AND
+(UserT.belongcmp = sqlc.narg('belongcmp') OR sqlc.narg('belongcmp') IS NULL)AND
+((repairT.create_date > sqlc.narg('create_date_start') OR sqlc.narg('create_date_start') IS NULL)
+ AND (repairT.create_date < sqlc.narg('create_date_end') OR sqlc.narg('create_date_end') IS NULL)) AND
+((repairT.deleted_date > sqlc.narg('deleted_date_start') OR sqlc.narg('deleted_date_start') IS NULL)
+ AND (repairT.deleted_date < sqlc.narg('deleted_date_end') OR sqlc.narg('deleted_date_end') IS NULL)) AND
+((repairT.last_modified_date > sqlc.narg('last_modified_date_start') OR sqlc.narg('last_modified_date_start') IS NULL) 
+AND (repairT.last_modified_date < sqlc.narg('last_modified_date_end') OR sqlc.narg('last_modified_date_end') IS NULL));
 
--- name: GetRepairByID :one
-SELECT * from repairT where id = $1;
+-- name: ApproveRepair :exec
+Update repairT set approved_date = NOW(), last_modified_date = NOW() where id =$1;
 
--- name: GetAllRepairByDriverID :many
-SELECT * from repairT where driverID = $1;
+-- name: DeleteRepair :exec
+Update repairT set deleted_date = NOW(), last_modified_date = NOW() where id =$1;
 
--- name: GetAllRepairByCMP :many
-SELECT * from repairT inner join UserT on repairT.Driverid = UserT.id where UserT.belongCMP= $1;
