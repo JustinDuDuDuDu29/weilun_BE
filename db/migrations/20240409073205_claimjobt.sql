@@ -6,6 +6,7 @@ CREATE TABLE ClaimJobT(
     driverID BigInt references DriverT(id) NOT NULL,
     percentage smallint,
     finished_date Timestamp,
+    finishPic varchar,
     create_date Timestamp NOT NULL DEFAULT NOW(),
     deleted_date Timestamp,
     deleted_by BigInt references UserT(id),

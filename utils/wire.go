@@ -15,6 +15,11 @@ import (
 	"github.com/google/wire"
 )
 
+var alertServSet = wire.NewSet(
+	service.AlertServInit,
+	wire.Bind(new(service.AlertServ), new(*service.AlertServImpl)),
+)
+
 var cmpServSet = wire.NewSet(
 	service.CmpServInit,
 	wire.Bind(new(service.CmpServ), new(*service.CmpServImpl)),
@@ -39,6 +44,11 @@ var userCtrlSet = wire.NewSet(
 	wire.Bind(new(controller.UserCtrl), new(*controller.UserCtrlImpl)),
 )
 
+var alertCtrlSet = wire.NewSet(
+	controller.AlertCtrlInit,
+	wire.Bind(new(controller.AlertCtrl), new(*controller.AlertCtrlImpl)),
+)
+
 var jobsCtrlSet = wire.NewSet(
 	controller.JobsCtrlInit,
 	wire.Bind(new(controller.JobsCtrl), new(*controller.JobsCtrlImpl)),
@@ -59,6 +69,11 @@ var repairCtrlSet = wire.NewSet(
 	wire.Bind(new(controller.RepairCtrl), new(*controller.RepairCtrlImpl)),
 )
 
+var socketCtrlSet = wire.NewSet(
+	controller.SocketCtrlInit,
+	wire.Bind(new(controller.SocketCtrl), new(*controller.SocketCtrlImpl)),
+)
+
 var roleMidSet = wire.NewSet(
 	middleware.RoleMidInit,
 	wire.Bind(new(middleware.RoleMid), new(*middleware.RoleMidImpl)),
@@ -77,6 +92,9 @@ func Init(q *db.Queries, conn *sql.DB) *controller.AppControllerImpl {
 		jobsServSet,
 		repairCtrlSet,
 		repairServSet,
+		alertServSet,
+		alertCtrlSet,
+		socketCtrlSet,
 	)
 
 	return nil
@@ -91,6 +109,7 @@ func MInit(q *db.Queries, conn *sql.DB) *middleware.AppMiddlewareImpl {
 		repairServSet,
 		middleware.AppMiddlewareInit,
 		roleMidSet,
+		alertServSet,
 	)
 
 	return nil

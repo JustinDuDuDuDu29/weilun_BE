@@ -7,10 +7,12 @@ import (
 	"main/service"
 	db "main/sql"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type JobsCtrl interface {
@@ -23,6 +25,7 @@ type JobsCtrl interface {
 	CancelClaimJob(c *gin.Context)
 	GetAllClaimedJobs(c *gin.Context)
 	GetCurrentClaimedJob(c *gin.Context)
+	ApproveClaimedJob(c *gin.Context)
 }
 
 type JobsCtrlImpl struct {
@@ -61,10 +64,6 @@ func (u *JobsCtrlImpl) GetCurrentClaimedJob(c *gin.Context) {
 }
 
 func (u *JobsCtrlImpl) GetAllJob(c *gin.Context) {
-	// cuid := c.MustGet("UserID")
-	//
-	// var UserID sql.NullInt64
-	// UserID.Scan(cuid)
 
 	jobList, err := u.svc.JobsServ.GetAllJobs()
 	if err != nil {
@@ -120,7 +119,93 @@ func (u *JobsCtrlImpl) ClaimJob(c *gin.Context) {
 }
 
 func (u *JobsCtrlImpl) FinishClaimJob(c *gin.Context) {
-	// UserID := c.MustGet("UserID")
+	sid := c.Param("id")
+	if sid == "" {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	id, err := strconv.Atoi(sid)
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+	}
+
+	UserID := c.MustGet("UserID").(int)
+
+	var reqBody apptypes.FinishClaimJobBodyT
+	if err := c.Bind(&reqBody); err != nil {
+		c.Abort()
+		return
+	}
+
+	cType := reqBody.File.Header["Content-Type"][0]
+
+	var fileExt string
+
+	switch cType {
+	case "image/jpeg":
+		fileExt = ".jpeg"
+	case "image/png":
+		fileExt = ".png"
+	default:
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	rand := uuid.NewString()
+
+	err = c.SaveUploadedFile(reqBody.File, "./img/"+rand+fileExt)
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	var Fp sql.NullString
+	Fp.Scan(rand)
+
+	param := db.FinishClaimedJobParams{
+		ID:        int64(id),
+		Driverid:  int64(UserID),
+		Finishpic: Fp,
+	}
+
+	err = u.svc.JobsServ.FinishClaimedJob(param)
+	if err != nil {
+		os.Remove("./img/" + rand + fileExt)
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	c.AbortWithStatus(http.StatusOK)
+
+}
+
+func (u *JobsCtrlImpl) ApproveClaimedJob(c *gin.Context) {
+	UserID := c.MustGet("UserID").(int)
+	if c.Param("id") == "" {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	var ApprovedBy sql.NullInt64
+	ApprovedBy.Scan(UserID)
+
+	param := db.ApproveFinishedJobParams{
+		ID:         int64(id),
+		ApprovedBy: ApprovedBy,
+	}
+	err = u.svc.JobsServ.ApproveFinishedJob(param)
+
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	c.AbortWithStatus(http.StatusOK)
 
 }
 
@@ -188,18 +273,25 @@ func (u *JobsCtrlImpl) CreateJob(c *gin.Context) {
 	err := c.BindJSON(&reqBody)
 
 	if err != nil {
-		fmt.Print(err)
 		c.Abort()
 		return
 	}
 
-	cuid := c.MustGet("UserID").(int)
+	// cuid := c.MustGet("UserID").(int)
 
 	var Mid sql.NullString
-	Mid.Scan(reqBody.Mid)
+	if reqBody.Mid == "" {
+		Mid.Valid = false
+	} else {
+		Mid.Scan(reqBody.Mid)
+	}
 
 	var Memo sql.NullString
-	Memo.Scan(reqBody.Memo)
+	if reqBody.Memo == "" {
+		Memo.Valid = false
+	} else {
+		Memo.Scan(reqBody.Memo)
+	}
 
 	Jobdate, err := time.Parse(time.DateOnly, reqBody.Jobdate)
 	if err != nil {
@@ -209,10 +301,14 @@ func (u *JobsCtrlImpl) CreateJob(c *gin.Context) {
 	}
 
 	var CloseDate sql.NullTime
-	CloseDate.Scan(reqBody.CloseDate)
+	if reqBody.CloseDate == "" {
+		CloseDate.Valid = false
+	} else {
+		CloseDate.Scan(reqBody.CloseDate)
+	}
 
-	var UserID sql.NullInt64
-	UserID.Scan(cuid)
+	// var UserID sql.NullInt64
+	// UserID.Scan(cuid)
 
 	param := db.CreateJobParams{
 		FromLoc:   reqBody.FromLoc,
@@ -224,6 +320,7 @@ func (u *JobsCtrlImpl) CreateJob(c *gin.Context) {
 		Source:    reqBody.Source,
 		Jobdate:   Jobdate,
 		Memo:      Memo,
+		CloseDate: CloseDate,
 	}
 	res, err := u.svc.JobsServ.CreateJob(param)
 

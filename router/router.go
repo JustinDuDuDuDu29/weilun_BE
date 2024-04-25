@@ -4,6 +4,7 @@ import (
 	// "main/middleware"
 	"main/controller"
 	"main/middleware"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,38 +20,45 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		auth := api.Group("/auth")
 		auth.POST("", c.AuthCtrl.Login)
 
+		io := api.Group("/io", m.RoleMid.IsLoggedIn)
+		io.GET("")
+
+		static := api.Group("/static", m.RoleMid.IsLoggedIn)
+		static.StaticFS("/img", http.Dir("./img"))
+
 		user := api.Group("/user")
-		user.GET("", middleware.IsLoggedIn, c.UserCtrl.GetUserList)
-		user.GET(":id", middleware.IsLoggedIn, c.UserCtrl.GetUserById)
-		user.POST("", middleware.IsLoggedIn, c.UserCtrl.RegisterUser)
-		user.PUT("", middleware.IsLoggedIn, c.UserCtrl.RegisterUser)
-		user.DELETE("", middleware.IsLoggedIn, c.UserCtrl.DeleteUser)
+		user.GET("", m.RoleMid.IsLoggedIn, c.UserCtrl.GetUserList)
+		user.GET(":id", m.RoleMid.IsLoggedIn, c.UserCtrl.GetUserById)
+		user.POST("", m.RoleMid.IsLoggedIn, c.UserCtrl.RegisterUser)
+		user.PUT("", m.RoleMid.IsLoggedIn, c.UserCtrl.RegisterUser)
+		user.DELETE("", m.RoleMid.IsLoggedIn, c.UserCtrl.DeleteUser)
 
 		cmp := api.Group("/cmp")
-		cmp.GET("", middleware.IsLoggedIn, c.CmpCtrl.GetCmp)
-		cmp.GET("/all", middleware.IsLoggedIn, c.CmpCtrl.GetAllCmp)
-		cmp.POST("", middleware.IsLoggedIn, c.CmpCtrl.RegisterCmp)
-		cmp.PUT("", middleware.IsLoggedIn, c.CmpCtrl.UpdateCmp)
-		cmp.DELETE("", middleware.IsLoggedIn, c.CmpCtrl.DeleteCmp)
+		cmp.GET("", m.RoleMid.IsLoggedIn, c.CmpCtrl.GetCmp)
+		cmp.GET("/all", m.RoleMid.IsLoggedIn, c.CmpCtrl.GetAllCmp)
+		cmp.POST("", m.RoleMid.IsLoggedIn, c.CmpCtrl.RegisterCmp)
+		cmp.PUT("", m.RoleMid.IsLoggedIn, c.CmpCtrl.UpdateCmp)
+		cmp.DELETE("", m.RoleMid.IsLoggedIn, c.CmpCtrl.DeleteCmp)
 
 		jobs := api.Group("/jobs")
-		jobs.GET("", middleware.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.GetAllJob)
-		jobs.POST("", middleware.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.CreateJob)
-		jobs.PUT("", middleware.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.UpdateJob)
-		jobs.DELETE(":id", middleware.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.DeleteJob)
+		jobs.GET("", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetAllJob)
+		jobs.POST("", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.CreateJob)
+		jobs.PUT("", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.UpdateJob)
+		jobs.DELETE(":id", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.DeleteJob)
 
 		claimed := api.Group("/claimed")
-		claimed.GET("", middleware.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.GetAllClaimedJobs)
-		claimed.GET("/current", middleware.IsLoggedIn, c.JobsCtrl.GetCurrentClaimedJob)
-		claimed.POST(":id", middleware.IsLoggedIn, c.JobsCtrl.ClaimJob)
-		claimed.POST("/finish/:id", middleware.IsLoggedIn, c.JobsCtrl.FinishClaimJob)
-		claimed.DELETE(":id", middleware.IsLoggedIn, c.JobsCtrl.CancelClaimJob)
+		claimed.GET("", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.GetAllClaimedJobs)
+		claimed.GET("/current", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetCurrentClaimedJob)
+		claimed.POST(":id", m.RoleMid.IsLoggedIn, c.JobsCtrl.ClaimJob)
+		claimed.POST("/finish/:id", m.RoleMid.IsLoggedIn, c.JobsCtrl.FinishClaimJob)
+		claimed.POST("/approve/:id", m.RoleMid.IsLoggedIn, c.JobsCtrl.ApproveClaimedJob)
+		claimed.DELETE(":id", m.RoleMid.IsLoggedIn, c.JobsCtrl.CancelClaimJob)
 
 		repair := api.Group("/repair")
-		repair.GET("", middleware.IsLoggedIn)
-		repair.POST(":id", middleware.IsLoggedIn, c.RepairCtrl.CreateNewRepair)
-		repair.POST("/finish/:id", middleware.IsLoggedIn)
-		repair.DELETE(":id", middleware.IsLoggedIn)
+		repair.GET("", m.RoleMid.IsLoggedIn, c.RepairCtrl.GetRepair)
+		repair.POST("", m.RoleMid.IsLoggedIn, c.RepairCtrl.CreateNewRepair)
+		repair.POST(":id", m.RoleMid.IsLoggedIn, c.RepairCtrl.ApproveRepair)
+		repair.DELETE(":id", m.RoleMid.IsLoggedIn, c.RepairCtrl.DeleteRepair)
 
 	}
 	router.Run(":8080")

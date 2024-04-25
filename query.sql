@@ -2,6 +2,10 @@
 SELECT id, role, deleted_date FROM  UserT
 WHERE phoneNum=$1 AND pwd=$2 LIMIT 1;
 
+-- name: GetDriver :one
+SELECT * FROM  DriverT inner join usert on DriverT.id = UserT.id where
+DriverT.id = $1 LIMIT 1;
+
 -- name: GetUserByID :one
 SELECT UserT.id, phoneNum, UserT.name, UserT.belongCMP,cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
 from UserT 
@@ -45,13 +49,35 @@ insert into driverT (id, percentage, nationalidnumber)
     values ($1, $2, $3)
 RETURNING id;
 
--- name: UpdateUser :exec
-UPDATE UserT
-  set 
+-- name: UpdateUserPassword :exec
+UPDATE UserT set 
   pwd = $2,
-  role = $3,
+  initPwdChanged = True,
   last_modified_date = NOW()
 WHERE id = $1;
+
+-- name: UpdateUser :exec
+UPDATE UserT set 
+  phoneNum = $2,
+  name = $3,
+  belongCMP = $4,
+  role = $5,
+  last_modified_date = NOW()
+WHERE id = $1;
+
+-- name: UpdateDriver :exec
+UPDATE DriverT set 
+  insurances = $2,
+  registration = $3,
+  driverLicense = $4,
+  truckLicense = $5,
+  nationalIDNumber= $6,
+  UserT.last_modified_date = NOW(),
+  approved_date = NULL
+  from DriverT
+  inner join UserT on DriverT.driverID = UserT.id
+WHERE DriverT.id = $1;
+
 
 -- name: DeleteUser :exec
 UPDATE UserT
@@ -181,10 +207,11 @@ Update ClaimJobT Set
 -- name: IncreaseRemaining :exec
 Update JobsT set remaining = remaining + 1, last_modified_date = NOW() where id = $1;
 
--- name: FinishClamedJob :exec
+-- name: FinishClaimedJob :exec
 Update ClaimJobT Set
+    finishPic =$3,
     finished_date = NOW(),
-    percentage = (SELECT percentage from driverT where usert.id = (SELECT driverID from ClaimJobT where ClaimJobT.id = $1)),
+    percentage = (SELECT percentage from driverT where driverT.id = (SELECT driverID from ClaimJobT where ClaimJobT.id = $1)),
     last_modified_date = NOW()
 WHERE id = $1 and ClaimJobT.Driverid = $2;
 
@@ -224,3 +251,45 @@ Update repairT set approved_date = NOW(), last_modified_date = NOW() where id =$
 -- name: DeleteRepair :exec
 Update repairT set deleted_date = NOW(), last_modified_date = NOW() where id =$1;
 
+-- name: CreateAlert :one
+INSERT INTO AlertT (alert, belongCMP) values ($1, $2) RETURNING id;
+
+-- name: UpdateAlert :exec
+Update AlertT Set
+alert = $2,
+last_modified_date = NOW()
+where id = $1;
+
+-- name: DeleteAlert :exec
+Update AlertT Set
+deleted_date = NOW(),
+last_modified_date = NOW()
+where id = $1;
+
+-- name: UpdateLastAlert :exec
+Update driverT set
+lastAlert = $2
+where id = $1;
+
+-- name: GetLastAlert :one
+SELECT lastAlert from driverT where id = $1;
+
+-- name: GetAlert :many
+SELECT *
+from alertT
+where 
+(id = sqlc.narg('id') OR sqlc.narg('id') IS NULL)AND
+(belongCMP = sqlc.narg('belongCMP') OR sqlc.narg('belongCMP') IS NULL)AND
+(alert like sqlc.narg('id') OR sqlc.narg('id') IS NULL)AND
+((create_date > sqlc.narg('create_date_start') OR sqlc.narg('create_date_start') IS NULL)
+ AND (create_date < sqlc.narg('create_date_end') OR sqlc.narg('create_date_end') IS NULL)) AND
+((deleted_date > sqlc.narg('deleted_date_start') OR sqlc.narg('deleted_date_start') IS NULL)
+ AND (deleted_date < sqlc.narg('deleted_date_end') OR sqlc.narg('deleted_date_end') IS NULL)) AND
+((last_modified_date > sqlc.narg('last_modified_date_start') OR sqlc.narg('last_modified_date_start') IS NULL) 
+AND (last_modified_date < sqlc.narg('last_modified_date_end') OR sqlc.narg('last_modified_date_end') IS NULL))
+order by id desc;
+
+-- name: GetAlertByCmp :many
+SELECT *
+from alertT
+where belongCMP = $1 order by id desc;

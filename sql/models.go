@@ -10,12 +10,22 @@ import (
 	"time"
 )
 
+type Alertt struct {
+	ID               int64
+	Alert            string
+	Belongcmp        int64
+	CreateDate       time.Time
+	DeletedDate      sql.NullTime
+	LastModifiedDate time.Time
+}
+
 type Claimjobt struct {
 	ID               int64
 	Jobid            int64
 	Driverid         int64
 	Percentage       sql.NullInt16
 	FinishedDate     sql.NullTime
+	Finishpic        sql.NullString
 	CreateDate       time.Time
 	DeletedDate      sql.NullTime
 	DeletedBy        sql.NullInt64
@@ -43,8 +53,14 @@ type Cmpt struct {
 
 type Drivert struct {
 	ID               int64
-	Percentage       int16
+	Insurances       sql.NullString
+	Registration     sql.NullString
+	Driverlicense    sql.NullString
+	Trucklicense     sql.NullString
 	Nationalidnumber interface{}
+	Percentage       int16
+	Lastalert        sql.NullInt64
+	ApprovedDate     sql.NullTime
 }
 
 type Jobst struct {

@@ -8,8 +8,14 @@ CHECK (
 CREATE TABLE DriverT(
     id bigint PRIMARY KEY references UserT(id),
     -- BLABLABLA
+    insurances varchar,
+    registration varchar,
+    driverLicense varchar,
+    truckLicense varchar,
+    nationalIDNumber nationalIDNumberType NOT NULL Unique,
     percentage smallint NOT NULL DEFAULT 20, 
-    nationalIDNumber nationalIDNumberType NOT NULL Unique
+    lastAlert bigint references alertT(id),
+    approved_date Timestamp
   );
 -- +goose StatementEnd
 

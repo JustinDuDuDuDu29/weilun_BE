@@ -62,7 +62,7 @@ func (r *RepairCtrlImpl) GetRepair(c *gin.Context) {
 
 	// cmp and up
 	var BelongCmp sql.NullInt64
-	if userRole > 100 {
+	if userRole >= 200 {
 		BelongCmp.Scan(res.Belongcmp)
 	} else {
 		if !(c.Query("belongCmp") == "") {

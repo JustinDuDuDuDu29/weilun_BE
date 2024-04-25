@@ -2,12 +2,17 @@ package apptypes
 
 import (
 	"encoding/json"
+	"mime/multipart"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type CustomClaims struct {
 	jwt.RegisteredClaims
+}
+
+type FinishClaimJobBodyT struct {
+	File *multipart.FileHeader `form:"file"`
 }
 
 type UpdateJobBodyT struct {
@@ -26,7 +31,12 @@ type UpdateJobBodyT struct {
 }
 
 type NewRepairBodyT struct {
-	Repairinfo json.RawMessage `json:"Repairinfo" binding:"required"`
+	Repairinfo json.RawMessage `json:"repairInfo" binding:"required"`
+}
+
+type CreateAlertBodyT struct {
+	Alert     string `json:"alert" binding:"required"`
+	BelongCmp int    `json:"belongCmp" binding:"required"`
 }
 
 type CreateJobBodyT struct {
@@ -39,7 +49,7 @@ type CreateJobBodyT struct {
 	Source    string `json:"source" binding:"required"`
 	Jobdate   string `json:"jobDate" binding:"required"`
 	Memo      string `json:"memo"`
-	CloseDate string `json:"sloseDate" binding:"required"`
+	CloseDate string `json:"closeDate"`
 }
 
 type DriverInfo struct {

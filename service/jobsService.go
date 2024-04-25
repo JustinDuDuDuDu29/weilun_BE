@@ -12,7 +12,7 @@ type JobsServ interface {
 	CreateJob(param db.CreateJobParams) (int64, error)
 	IncreaseRemaining(id int64) error
 	DecreaseRemaining(id int64) error
-	FinishClamedJob(param db.FinishClamedJobParams) error
+	FinishClaimedJob(param db.FinishClaimedJobParams) error
 	ClaimJob(param db.ClaimJobParams) (int64, error)
 	GetAllJobs() ([]db.Jobst, error)
 	GetAllJobsByCmp(belongCmp int64) ([]db.Jobst, error)
@@ -111,8 +111,8 @@ func (s *JobsServImpl) GetAllClaimedJobs() ([]db.Claimjobt, error) {
 	return res, err
 }
 
-func (s *JobsServImpl) FinishClamedJob(param db.FinishClamedJobParams) error {
-	err := s.q.FinishClamedJob(context.Background(), param)
+func (s *JobsServImpl) FinishClaimedJob(param db.FinishClaimedJobParams) error {
+	err := s.q.FinishClaimedJob(context.Background(), param)
 	return err
 }
 
