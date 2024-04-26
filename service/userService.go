@@ -10,16 +10,70 @@ import (
 
 type UserServ interface {
 	HaveUser(queryParam db.GetUserParams) (db.GetUserRow, error)
-	GetUserById(id sql.NullInt64) (db.GetUserByIDRow, error)
+	GetUserById(id int64) (db.GetUserByIDRow, error)
 	RegisterCmpAdmin(queryParam db.CreateUserParams) (int64, error)
 	RegisterDriver(queryParam db.CreateUserParams, percentage int, nationalIdNumber string) (int64, error)
 	DeleteUser(queryParam int64) error
 	GetUserList(queryParam db.GetUserListParams) ([]db.GetUserListRow, error)
+	UpdateUser(param db.UpdateUserParams) error
+	UpdateDriver(param db.UpdateDriverParams, userParam db.UpdateUserParams) error
+	ApproveDriver(id int64) error
+	UpdateDriverPic(param db.UpdateDriverPicParams) error
+	UpdatePassword(param db.UpdateUserPasswordParams) error
 }
 
 type UserServImpl struct {
 	q    *db.Queries
 	conn *sql.DB
+}
+
+func (u *UserServImpl) UpdatePassword(param db.UpdateUserPasswordParams) error {
+	err := u.q.UpdateUserPassword(context.Background(), param)
+	return err
+}
+
+func (u *UserServImpl) ApproveDriver(id int64) error {
+	err := u.q.ApproveDriver(context.Background(), id)
+	return err
+}
+
+func (u *UserServImpl) UpdateDriverPic(param db.UpdateDriverPicParams) error {
+	err := u.q.UpdateDriverPic(context.Background(), param)
+	return err
+}
+
+func (u *UserServImpl) UpdateDriver(param db.UpdateDriverParams, userParam db.UpdateUserParams) error {
+	tx, err := u.conn.BeginTx(context.Background(), nil)
+
+	if err != nil {
+		return err
+	}
+
+	qtx := u.q.WithTx(tx)
+	err = qtx.UpdateDriver(context.Background(), param)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = qtx.UpdateUser(context.Background(), userParam)
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return nil
+}
+
+func (u *UserServImpl) UpdateUser(param db.UpdateUserParams) error {
+	err := u.q.UpdateUser(context.Background(), param)
+	return err
 }
 
 func (u *UserServImpl) GetUserList(queryParam db.GetUserListParams) ([]db.GetUserListRow, error) {
@@ -57,7 +111,6 @@ func (u *UserServImpl) RegisterDriver(queryParam db.CreateUserParams, percentage
 	userid, err := qtx.CreateDriverInfo(context.Background(), driverParam)
 
 	if err != nil {
-		fmt.Print("HERE2")
 		tx.Rollback()
 		return -99, err
 	}
@@ -65,13 +118,13 @@ func (u *UserServImpl) RegisterDriver(queryParam db.CreateUserParams, percentage
 	err = tx.Commit()
 
 	if err != nil {
-		fmt.Print("HERE3")
 		tx.Rollback()
+		return -99, err
 	}
-	return int64(userid), err
+	return int64(userid), nil
 }
 
-func (u *UserServImpl) GetUserById(id sql.NullInt64) (db.GetUserByIDRow, error) {
+func (u *UserServImpl) GetUserById(id int64) (db.GetUserByIDRow, error) {
 	res, err := u.q.GetUserByID(context.Background(), id)
 	return res, err
 }

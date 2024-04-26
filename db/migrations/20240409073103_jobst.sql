@@ -15,10 +15,9 @@ CREATE TABLE JobsT(
     jobDate Timestamp NOT NULL DEFAULT NOW(),
     memo varchar(60),
     -- BLABLABLA
+    close_date Timestamp,
     create_date Timestamp NOT NULL DEFAULT NOW(),
-    end_date Timestamp,
     deleted_date Timestamp,
-    finished_date Timestamp,
     last_modified_date Timestamp NOT NULL DEFAULT NOW() 
   );
 -- +goose StatementEnd

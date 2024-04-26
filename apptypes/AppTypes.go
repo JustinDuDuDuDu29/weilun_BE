@@ -1,5 +1,68 @@
 package apptypes
 
+import (
+	"encoding/json"
+	"mime/multipart"
+
+	"github.com/golang-jwt/jwt/v5"
+)
+
+type CustomClaims struct {
+	jwt.RegisteredClaims
+}
+
+type UpdateDriverPic struct {
+	Insurances    *multipart.FileHeader `form:"Insurances"`
+	Registration  *multipart.FileHeader `form:"Registration"`
+	DriverLicense *multipart.FileHeader `form:"DriverLicense"`
+	TruckLicense  *multipart.FileHeader `form:"TruckLicense"`
+}
+
+type FinishClaimJobBodyT struct {
+	File *multipart.FileHeader `form:"file" binding:"required"`
+}
+
+type UpdatePasswordBodyT struct {
+	Pwd string `json:"pwd" binding:"required"`
+}
+
+type UpdateJobBodyT struct {
+	FromLoc   string `json:"fromLoc" binding:"required"`
+	Mid       string `json:"mid"`
+	ToLoc     string `json:"toLoc" binding:"required"`
+	Price     int    `json:"price" binding:"required"`
+	Remaining int    `json:"estimated" binding:"required"`
+	Belongcmp int    `json:"belongCmp" binding:"required"`
+	Source    string `json:"source" binding:"required"`
+	// Jobdate   time.Time `json:"jobDate" binding:"required"`
+	Jobdate   string `json:"jobDate" binding:"required"`
+	Memo      string `json:"memo"`
+	CloseDate string `json:"closeDate" binding:"required"`
+	ID        int    `json:"id" binding:"required"`
+}
+
+type NewRepairBodyT struct {
+	Repairinfo json.RawMessage `json:"repairInfo" binding:"required"`
+}
+
+type CreateAlertBodyT struct {
+	Alert     string `json:"alert" binding:"required"`
+	BelongCmp int    `json:"belongCmp" binding:"required"`
+}
+
+type CreateJobBodyT struct {
+	FromLoc   string `json:"fromLoc" binding:"required"`
+	Mid       string `json:"mid"`
+	ToLoc     string `json:"toLoc" binding:"required"`
+	Price     int    `json:"price" binding:"required"`
+	Estimated int    `json:"estimated" binding:"required"`
+	Belongcmp int    `json:"belongCmp" binding:"required"`
+	Source    string `json:"source" binding:"required"`
+	Jobdate   string `json:"jobDate" binding:"required"`
+	Memo      string `json:"memo"`
+	CloseDate string `json:"closeDate"`
+}
+
 type DriverInfo struct {
 	Percentage       int    `json:"percentage" binding:"required"`
 	NationalIdNumber string `json:"nationalIdNumber" binding:"required"`

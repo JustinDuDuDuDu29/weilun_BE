@@ -8,8 +8,21 @@ package sql
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"time"
 )
+
+const approveDriver = `-- name: ApproveDriver :exec
+UPDATE DriverT set 
+  UserT.last_modified_date = NOW(),
+  approved_date =  NOW()
+WHERE DriverT.id = $1
+`
+
+func (q *Queries) ApproveDriver(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, approveDriver, id)
+	return err
+}
 
 const approveFinishedJob = `-- name: ApproveFinishedJob :exec
 Update ClaimJobT set Approved_By = $2, approved_date = NOW(), last_modified_date = NOW() where id = $1
@@ -22,6 +35,15 @@ type ApproveFinishedJobParams struct {
 
 func (q *Queries) ApproveFinishedJob(ctx context.Context, arg ApproveFinishedJobParams) error {
 	_, err := q.db.ExecContext(ctx, approveFinishedJob, arg.ID, arg.ApprovedBy)
+	return err
+}
+
+const approveRepair = `-- name: ApproveRepair :exec
+Update repairT set approved_date = NOW(), last_modified_date = NOW() where id =$1
+`
+
+func (q *Queries) ApproveRepair(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, approveRepair, id)
 	return err
 }
 
@@ -77,6 +99,22 @@ func (q *Queries) CreateAdmin(ctx context.Context, arg CreateAdminParams) (int64
 	return id, err
 }
 
+const createAlert = `-- name: CreateAlert :one
+INSERT INTO AlertT (alert, belongCMP) values ($1, $2) RETURNING id
+`
+
+type CreateAlertParams struct {
+	Alert     string
+	Belongcmp int64
+}
+
+func (q *Queries) CreateAlert(ctx context.Context, arg CreateAlertParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createAlert, arg.Alert, arg.Belongcmp)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const createDriverInfo = `-- name: CreateDriverInfo :one
 insert into driverT (id, percentage, nationalidnumber) 
     values ($1, $2, $3)
@@ -108,7 +146,7 @@ INSERT INTO JobsT (
     source,
     jobDate,
     memo,
-    end_date
+    close_date
 ) values (
     $1,
     $2,
@@ -134,7 +172,7 @@ type CreateJobParams struct {
 	Source    string
 	Jobdate   time.Time
 	Memo      sql.NullString
-	EndDate   sql.NullTime
+	CloseDate sql.NullTime
 }
 
 func (q *Queries) CreateJob(ctx context.Context, arg CreateJobParams) (int64, error) {
@@ -148,8 +186,25 @@ func (q *Queries) CreateJob(ctx context.Context, arg CreateJobParams) (int64, er
 		arg.Source,
 		arg.Jobdate,
 		arg.Memo,
-		arg.EndDate,
+		arg.CloseDate,
 	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createNewRepair = `-- name: CreateNewRepair :one
+INSERT into repairT (type, driverID, repairInfo) values ($1, $2, $3) RETURNING id
+`
+
+type CreateNewRepairParams struct {
+	Type       string
+	Driverid   int64
+	Repairinfo json.RawMessage
+}
+
+func (q *Queries) CreateNewRepair(ctx context.Context, arg CreateNewRepairParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createNewRepair, arg.Type, arg.Driverid, arg.Repairinfo)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
@@ -191,6 +246,18 @@ Update JobsT set remaining = remaining - 1, last_modified_date = NOW() where id 
 
 func (q *Queries) DecreaseRemaining(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, decreaseRemaining, id)
+	return err
+}
+
+const deleteAlert = `-- name: DeleteAlert :exec
+Update AlertT Set
+deleted_date = NOW(),
+last_modified_date = NOW()
+where id = $1
+`
+
+func (q *Queries) DeleteAlert(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteAlert, id)
 	return err
 }
 
@@ -236,6 +303,15 @@ func (q *Queries) DeleteJob(ctx context.Context, id int64) error {
 	return err
 }
 
+const deleteRepair = `-- name: DeleteRepair :exec
+Update repairT set deleted_date = NOW(), last_modified_date = NOW() where id =$1
+`
+
+func (q *Queries) DeleteRepair(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteRepair, id)
+	return err
+}
+
 const deleteUser = `-- name: DeleteUser :exec
 UPDATE UserT
   set deleted_date= NOW(),
@@ -248,17 +324,168 @@ func (q *Queries) DeleteUser(ctx context.Context, id int64) error {
 	return err
 }
 
-const finishClamedJob = `-- name: FinishClamedJob :exec
+const finishClaimedJob = `-- name: FinishClaimedJob :exec
 Update ClaimJobT Set
+    finishPic =$3,
     finished_date = NOW(),
-    percentage = (SELECT percentage from driverT where usert.id = (SELECT driverID from ClaimJobT where ClaimJobT.id = $1)),
+    percentage = (SELECT percentage from driverT where driverT.id = (SELECT driverID from ClaimJobT where ClaimJobT.id = $1)),
     last_modified_date = NOW()
-WHERE id = $1
+WHERE id = $1 and ClaimJobT.Driverid = $2
 `
 
-func (q *Queries) FinishClamedJob(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, finishClamedJob, id)
+type FinishClaimedJobParams struct {
+	ID        int64
+	Driverid  int64
+	Finishpic sql.NullString
+}
+
+func (q *Queries) FinishClaimedJob(ctx context.Context, arg FinishClaimedJobParams) error {
+	_, err := q.db.ExecContext(ctx, finishClaimedJob, arg.ID, arg.Driverid, arg.Finishpic)
 	return err
+}
+
+const getAlert = `-- name: GetAlert :many
+SELECT id, alert, belongcmp, create_date, deleted_date, last_modified_date
+from alertT
+where 
+(id = $1 OR $1 IS NULL)AND
+(belongCMP = $2 OR $2 IS NULL)AND
+(alert like $3 OR $3 IS NULL)AND
+((create_date > $4 OR $4 IS NULL)
+ AND (create_date < $5 OR $5 IS NULL)) AND
+((deleted_date > $6 OR $6 IS NULL)
+ AND (deleted_date < $7 OR $7 IS NULL)) AND
+((last_modified_date > $8 OR $8 IS NULL) 
+AND (last_modified_date < $9 OR $9 IS NULL))
+order by id desc
+`
+
+type GetAlertParams struct {
+	ID                    sql.NullInt64
+	BelongCMP             sql.NullInt64
+	Alert                 sql.NullString
+	CreateDateStart       sql.NullTime
+	CreateDateEnd         sql.NullTime
+	DeletedDateStart      sql.NullTime
+	DeletedDateEnd        sql.NullTime
+	LastModifiedDateStart sql.NullTime
+	LastModifiedDateEnd   sql.NullTime
+}
+
+func (q *Queries) GetAlert(ctx context.Context, arg GetAlertParams) ([]Alertt, error) {
+	rows, err := q.db.QueryContext(ctx, getAlert,
+		arg.ID,
+		arg.BelongCMP,
+		arg.Alert,
+		arg.CreateDateStart,
+		arg.CreateDateEnd,
+		arg.DeletedDateStart,
+		arg.DeletedDateEnd,
+		arg.LastModifiedDateStart,
+		arg.LastModifiedDateEnd,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Alertt
+	for rows.Next() {
+		var i Alertt
+		if err := rows.Scan(
+			&i.ID,
+			&i.Alert,
+			&i.Belongcmp,
+			&i.CreateDate,
+			&i.DeletedDate,
+			&i.LastModifiedDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAlertByCmp = `-- name: GetAlertByCmp :many
+SELECT id, alert, belongcmp, create_date, deleted_date, last_modified_date
+from alertT
+where belongCMP = $1 order by id desc
+`
+
+func (q *Queries) GetAlertByCmp(ctx context.Context, belongcmp int64) ([]Alertt, error) {
+	rows, err := q.db.QueryContext(ctx, getAlertByCmp, belongcmp)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Alertt
+	for rows.Next() {
+		var i Alertt
+		if err := rows.Scan(
+			&i.ID,
+			&i.Alert,
+			&i.Belongcmp,
+			&i.CreateDate,
+			&i.DeletedDate,
+			&i.LastModifiedDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAllClaimedJobs = `-- name: GetAllClaimedJobs :many
+SELECT id, jobid, driverid, percentage, finished_date, finishpic, create_date, deleted_date, deleted_by, last_modified_date, approved_by, approved_date from ClaimJobT
+`
+
+func (q *Queries) GetAllClaimedJobs(ctx context.Context) ([]Claimjobt, error) {
+	rows, err := q.db.QueryContext(ctx, getAllClaimedJobs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Claimjobt
+	for rows.Next() {
+		var i Claimjobt
+		if err := rows.Scan(
+			&i.ID,
+			&i.Jobid,
+			&i.Driverid,
+			&i.Percentage,
+			&i.FinishedDate,
+			&i.Finishpic,
+			&i.CreateDate,
+			&i.DeletedDate,
+			&i.DeletedBy,
+			&i.LastModifiedDate,
+			&i.ApprovedBy,
+			&i.ApprovedDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getAllCmp = `-- name: GetAllCmp :many
@@ -295,7 +522,7 @@ func (q *Queries) GetAllCmp(ctx context.Context) ([]Cmpt, error) {
 }
 
 const getAllJobs = `-- name: GetAllJobs :many
-SELECT id, from_loc, mid, to_loc, price, estimated, remaining, belongcmp, source, jobdate, memo, create_date, end_date, deleted_date, finished_date, last_modified_date from JobsT
+SELECT id, from_loc, mid, to_loc, price, estimated, remaining, belongcmp, source, jobdate, memo, close_date, create_date, deleted_date, last_modified_date from JobsT
 `
 
 func (q *Queries) GetAllJobs(ctx context.Context) ([]Jobst, error) {
@@ -319,10 +546,9 @@ func (q *Queries) GetAllJobs(ctx context.Context) ([]Jobst, error) {
 			&i.Source,
 			&i.Jobdate,
 			&i.Memo,
+			&i.CloseDate,
 			&i.CreateDate,
-			&i.EndDate,
 			&i.DeletedDate,
-			&i.FinishedDate,
 			&i.LastModifiedDate,
 		); err != nil {
 			return nil, err
@@ -339,7 +565,7 @@ func (q *Queries) GetAllJobs(ctx context.Context) ([]Jobst, error) {
 }
 
 const getAllJobsByCmp = `-- name: GetAllJobsByCmp :many
-SELECT id, from_loc, mid, to_loc, price, estimated, remaining, belongcmp, source, jobdate, memo, create_date, end_date, deleted_date, finished_date, last_modified_date from JobsT where belongcmp = $1
+SELECT id, from_loc, mid, to_loc, price, estimated, remaining, belongcmp, source, jobdate, memo, close_date, create_date, deleted_date, last_modified_date from JobsT where belongcmp = $1
 `
 
 func (q *Queries) GetAllJobsByCmp(ctx context.Context, belongcmp int64) ([]Jobst, error) {
@@ -363,10 +589,9 @@ func (q *Queries) GetAllJobsByCmp(ctx context.Context, belongcmp int64) ([]Jobst
 			&i.Source,
 			&i.Jobdate,
 			&i.Memo,
+			&i.CloseDate,
 			&i.CreateDate,
-			&i.EndDate,
 			&i.DeletedDate,
-			&i.FinishedDate,
 			&i.LastModifiedDate,
 		); err != nil {
 			return nil, err
@@ -382,51 +607,26 @@ func (q *Queries) GetAllJobsByCmp(ctx context.Context, belongcmp int64) ([]Jobst
 	return items, nil
 }
 
-const getClaimedJob = `-- name: GetClaimedJob :one
-SELECT t2.id, t1.id, t1.from_loc, t1.mid, t1.to_loc, t1.price, t1.estimated, t1.remaining, t1.belongcmp, t1.source, t1.jobdate, t1.memo, t1.create_date, t1.end_date, t1.deleted_date, t1.finished_date, t1.last_modified_date  FROM ClaimJobT t2 inner join JobsT t1 on t1.id = t2.jobID where t2.driverID = $1 and (t2.deleted_date IS NULL and t2.finished_date IS NULL) order by t2.create_date LIMIT 1
+const getClaimedJobByID = `-- name: GetClaimedJobByID :one
+SELECT id, jobid, driverid, percentage, finished_date, finishpic, create_date, deleted_date, deleted_by, last_modified_date, approved_by, approved_date from ClaimJobT where id = $1
 `
 
-type GetClaimedJobRow struct {
-	ID               int64
-	ID_2             int64
-	FromLoc          string
-	Mid              sql.NullString
-	ToLoc            string
-	Price            int16
-	Estimated        int16
-	Remaining        int16
-	Belongcmp        int64
-	Source           string
-	Jobdate          time.Time
-	Memo             sql.NullString
-	CreateDate       time.Time
-	EndDate          sql.NullTime
-	DeletedDate      sql.NullTime
-	FinishedDate     sql.NullTime
-	LastModifiedDate time.Time
-}
-
-func (q *Queries) GetClaimedJob(ctx context.Context, driverid int64) (GetClaimedJobRow, error) {
-	row := q.db.QueryRowContext(ctx, getClaimedJob, driverid)
-	var i GetClaimedJobRow
+func (q *Queries) GetClaimedJobByID(ctx context.Context, id int64) (Claimjobt, error) {
+	row := q.db.QueryRowContext(ctx, getClaimedJobByID, id)
+	var i Claimjobt
 	err := row.Scan(
 		&i.ID,
-		&i.ID_2,
-		&i.FromLoc,
-		&i.Mid,
-		&i.ToLoc,
-		&i.Price,
-		&i.Estimated,
-		&i.Remaining,
-		&i.Belongcmp,
-		&i.Source,
-		&i.Jobdate,
-		&i.Memo,
-		&i.CreateDate,
-		&i.EndDate,
-		&i.DeletedDate,
+		&i.Jobid,
+		&i.Driverid,
+		&i.Percentage,
 		&i.FinishedDate,
+		&i.Finishpic,
+		&i.CreateDate,
+		&i.DeletedDate,
+		&i.DeletedBy,
 		&i.LastModifiedDate,
+		&i.ApprovedBy,
+		&i.ApprovedDate,
 	)
 	return i, err
 }
@@ -479,6 +679,107 @@ func (q *Queries) GetCmp(ctx context.Context, id int64) (GetCmpRow, error) {
 	return i, err
 }
 
+const getCurrentClaimedJob = `-- name: GetCurrentClaimedJob :one
+SELECT t2.id, t1.id, t1.from_loc, t1.mid, t1.to_loc, t1.price, t1.estimated, t1.remaining, t1.belongcmp, t1.source, t1.jobdate, t1.memo, t1.close_date, t1.create_date, t1.deleted_date, t1.last_modified_date  FROM ClaimJobT t2 inner join JobsT t1 on t1.id = t2.jobID where t2.driverID = $1 and (t2.deleted_date IS NULL and t2.finished_date IS NULL) order by t2.create_date LIMIT 1
+`
+
+type GetCurrentClaimedJobRow struct {
+	ID               int64
+	ID_2             int64
+	FromLoc          string
+	Mid              sql.NullString
+	ToLoc            string
+	Price            int16
+	Estimated        int16
+	Remaining        int16
+	Belongcmp        int64
+	Source           string
+	Jobdate          time.Time
+	Memo             sql.NullString
+	CloseDate        sql.NullTime
+	CreateDate       time.Time
+	DeletedDate      sql.NullTime
+	LastModifiedDate time.Time
+}
+
+func (q *Queries) GetCurrentClaimedJob(ctx context.Context, driverid int64) (GetCurrentClaimedJobRow, error) {
+	row := q.db.QueryRowContext(ctx, getCurrentClaimedJob, driverid)
+	var i GetCurrentClaimedJobRow
+	err := row.Scan(
+		&i.ID,
+		&i.ID_2,
+		&i.FromLoc,
+		&i.Mid,
+		&i.ToLoc,
+		&i.Price,
+		&i.Estimated,
+		&i.Remaining,
+		&i.Belongcmp,
+		&i.Source,
+		&i.Jobdate,
+		&i.Memo,
+		&i.CloseDate,
+		&i.CreateDate,
+		&i.DeletedDate,
+		&i.LastModifiedDate,
+	)
+	return i, err
+}
+
+const getDriver = `-- name: GetDriver :one
+SELECT drivert.id, insurances, registration, driverlicense, trucklicense, nationalidnumber, percentage, lastalert, approved_date, usert.id, phonenum, pwd, name, belongcmp, role, initpwdchanged, create_date, deleted_date, last_modified_date FROM  DriverT inner join usert on DriverT.id = UserT.id where
+DriverT.id = $1 LIMIT 1
+`
+
+type GetDriverRow struct {
+	ID               int64
+	Insurances       sql.NullString
+	Registration     sql.NullString
+	Driverlicense    sql.NullString
+	Trucklicense     sql.NullString
+	Nationalidnumber interface{}
+	Percentage       int16
+	Lastalert        sql.NullInt64
+	ApprovedDate     sql.NullTime
+	ID_2             int64
+	Phonenum         interface{}
+	Pwd              string
+	Name             string
+	Belongcmp        int64
+	Role             int16
+	Initpwdchanged   bool
+	CreateDate       time.Time
+	DeletedDate      sql.NullTime
+	LastModifiedDate time.Time
+}
+
+func (q *Queries) GetDriver(ctx context.Context, id int64) (GetDriverRow, error) {
+	row := q.db.QueryRowContext(ctx, getDriver, id)
+	var i GetDriverRow
+	err := row.Scan(
+		&i.ID,
+		&i.Insurances,
+		&i.Registration,
+		&i.Driverlicense,
+		&i.Trucklicense,
+		&i.Nationalidnumber,
+		&i.Percentage,
+		&i.Lastalert,
+		&i.ApprovedDate,
+		&i.ID_2,
+		&i.Phonenum,
+		&i.Pwd,
+		&i.Name,
+		&i.Belongcmp,
+		&i.Role,
+		&i.Initpwdchanged,
+		&i.CreateDate,
+		&i.DeletedDate,
+		&i.LastModifiedDate,
+	)
+	return i, err
+}
+
 const getDriverRevenue = `-- name: GetDriverRevenue :many
 SELECT t1.percentage*t2.price as earn from ClaimJobT t1 inner join JobsT t2 on t1.jobID = t2.id where t1.driverID = $1 and (t1.finished_date IS NOT NULL 
     and approved_date IS NOT NULL and deleted_date IS NOT NULL) and t1.finished_date 
@@ -514,6 +815,148 @@ func (q *Queries) GetDriverRevenue(ctx context.Context, arg GetDriverRevenuePara
 	return items, nil
 }
 
+const getJobById = `-- name: GetJobById :one
+SELECT id, from_loc, mid, to_loc, price, estimated, remaining, belongcmp, source, jobdate, memo, close_date, create_date, deleted_date, last_modified_date from JobsT where id = $1 LIMIT 1
+`
+
+func (q *Queries) GetJobById(ctx context.Context, id int64) (Jobst, error) {
+	row := q.db.QueryRowContext(ctx, getJobById, id)
+	var i Jobst
+	err := row.Scan(
+		&i.ID,
+		&i.FromLoc,
+		&i.Mid,
+		&i.ToLoc,
+		&i.Price,
+		&i.Estimated,
+		&i.Remaining,
+		&i.Belongcmp,
+		&i.Source,
+		&i.Jobdate,
+		&i.Memo,
+		&i.CloseDate,
+		&i.CreateDate,
+		&i.DeletedDate,
+		&i.LastModifiedDate,
+	)
+	return i, err
+}
+
+const getLastAlert = `-- name: GetLastAlert :one
+SELECT lastAlert from driverT where id = $1
+`
+
+func (q *Queries) GetLastAlert(ctx context.Context, id int64) (sql.NullInt64, error) {
+	row := q.db.QueryRowContext(ctx, getLastAlert, id)
+	var lastalert sql.NullInt64
+	err := row.Scan(&lastalert)
+	return lastalert, err
+}
+
+const getRepair = `-- name: GetRepair :many
+SELECT repairt.id, type, driverid, repairinfo, repairt.create_date, approved_date, repairt.deleted_date, repairt.last_modified_date, usert.id, phonenum, pwd, name, belongcmp, role, initpwdchanged, usert.create_date, usert.deleted_date, usert.last_modified_date
+from repairT 
+inner join UserT on UserT.id = repairT.driverID
+where 
+(repairT.id = $1 OR $1 IS NULL)AND
+(repairT.driverID = $2 OR $2 IS NULL)AND
+(UserT.name = $3 OR $3 IS NULL)AND
+(UserT.belongcmp = $4 OR $4 IS NULL)AND
+((repairT.create_date > $5 OR $5 IS NULL)
+ AND (repairT.create_date < $6 OR $6 IS NULL)) AND
+((repairT.deleted_date > $7 OR $7 IS NULL)
+ AND (repairT.deleted_date < $8 OR $8 IS NULL)) AND
+((repairT.last_modified_date > $9 OR $9 IS NULL) 
+AND (repairT.last_modified_date < $10 OR $10 IS NULL))
+`
+
+type GetRepairParams struct {
+	ID                    sql.NullInt64
+	DriverID              sql.NullInt64
+	Name                  sql.NullString
+	Belongcmp             sql.NullInt64
+	CreateDateStart       sql.NullTime
+	CreateDateEnd         sql.NullTime
+	DeletedDateStart      sql.NullTime
+	DeletedDateEnd        sql.NullTime
+	LastModifiedDateStart sql.NullTime
+	LastModifiedDateEnd   sql.NullTime
+}
+
+type GetRepairRow struct {
+	ID                 int64
+	Type               string
+	Driverid           int64
+	Repairinfo         json.RawMessage
+	CreateDate         time.Time
+	ApprovedDate       sql.NullTime
+	DeletedDate        sql.NullTime
+	LastModifiedDate   time.Time
+	ID_2               int64
+	Phonenum           interface{}
+	Pwd                string
+	Name               string
+	Belongcmp          int64
+	Role               int16
+	Initpwdchanged     bool
+	CreateDate_2       time.Time
+	DeletedDate_2      sql.NullTime
+	LastModifiedDate_2 time.Time
+}
+
+func (q *Queries) GetRepair(ctx context.Context, arg GetRepairParams) ([]GetRepairRow, error) {
+	rows, err := q.db.QueryContext(ctx, getRepair,
+		arg.ID,
+		arg.DriverID,
+		arg.Name,
+		arg.Belongcmp,
+		arg.CreateDateStart,
+		arg.CreateDateEnd,
+		arg.DeletedDateStart,
+		arg.DeletedDateEnd,
+		arg.LastModifiedDateStart,
+		arg.LastModifiedDateEnd,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetRepairRow
+	for rows.Next() {
+		var i GetRepairRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Driverid,
+			&i.Repairinfo,
+			&i.CreateDate,
+			&i.ApprovedDate,
+			&i.DeletedDate,
+			&i.LastModifiedDate,
+			&i.ID_2,
+			&i.Phonenum,
+			&i.Pwd,
+			&i.Name,
+			&i.Belongcmp,
+			&i.Role,
+			&i.Initpwdchanged,
+			&i.CreateDate_2,
+			&i.DeletedDate_2,
+			&i.LastModifiedDate_2,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUser = `-- name: GetUser :one
 SELECT id, role, deleted_date FROM  UserT
 WHERE phoneNum=$1 AND pwd=$2 LIMIT 1
@@ -538,16 +981,17 @@ func (q *Queries) GetUser(ctx context.Context, arg GetUserParams) (GetUserRow, e
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
+SELECT UserT.id, phoneNum, UserT.name, UserT.belongCMP,cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
 from UserT 
 inner join cmpt on UserT.belongcmp = cmpt.id 
-where (UserT.id = $1 OR $1 IS NULL)
+where UserT.id=$1 LIMIT 1
 `
 
 type GetUserByIDRow struct {
 	ID               int64
 	Phonenum         interface{}
 	Name             string
+	Belongcmp        int64
 	Name_2           string
 	Role             int16
 	CreateDate       time.Time
@@ -555,13 +999,14 @@ type GetUserByIDRow struct {
 	LastModifiedDate time.Time
 }
 
-func (q *Queries) GetUserByID(ctx context.Context, id sql.NullInt64) (GetUserByIDRow, error) {
+func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, error) {
 	row := q.db.QueryRowContext(ctx, getUserByID, id)
 	var i GetUserByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.Phonenum,
 		&i.Name,
+		&i.Belongcmp,
 		&i.Name_2,
 		&i.Role,
 		&i.CreateDate,
@@ -572,7 +1017,6 @@ func (q *Queries) GetUserByID(ctx context.Context, id sql.NullInt64) (GetUserByI
 }
 
 const getUserList = `-- name: GetUserList :many
-
 SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
 from UserT 
 inner join cmpt on UserT.belongcmp = cmpt.id 
@@ -613,7 +1057,6 @@ type GetUserListRow struct {
 	LastModifiedDate time.Time
 }
 
-// where UserT.id=$1 LIMIT 1;
 func (q *Queries) GetUserList(ctx context.Context, arg GetUserListParams) ([]GetUserListRow, error) {
 	rows, err := q.db.QueryContext(ctx, getUserList,
 		arg.ID,
@@ -689,6 +1132,23 @@ func (q *Queries) SetJobNoMore(ctx context.Context, id int64) error {
 	return err
 }
 
+const updateAlert = `-- name: UpdateAlert :exec
+Update AlertT Set
+alert = $2,
+last_modified_date = NOW()
+where id = $1
+`
+
+type UpdateAlertParams struct {
+	ID    int64
+	Alert string
+}
+
+func (q *Queries) UpdateAlert(ctx context.Context, arg UpdateAlertParams) error {
+	_, err := q.db.ExecContext(ctx, updateAlert, arg.ID, arg.Alert)
+	return err
+}
+
 const updateCmp = `-- name: UpdateCmp :exec
 UPDATE cmpt
     set
@@ -707,6 +1167,52 @@ func (q *Queries) UpdateCmp(ctx context.Context, arg UpdateCmpParams) error {
 	return err
 }
 
+const updateDriver = `-- name: UpdateDriver :exec
+UPDATE DriverT set 
+  percentage = COALESCE($2, percentage),
+  nationalidnumber = COALESCE($2, nationalidnumber)
+WHERE id = $1
+`
+
+type UpdateDriverParams struct {
+	ID         int64
+	Percentage int16
+}
+
+func (q *Queries) UpdateDriver(ctx context.Context, arg UpdateDriverParams) error {
+	_, err := q.db.ExecContext(ctx, updateDriver, arg.ID, arg.Percentage)
+	return err
+}
+
+const updateDriverPic = `-- name: UpdateDriverPic :exec
+UPDATE DriverT set 
+  insurances = COALESCE($2, insurances),
+  registration = COALESCE($3, registration),
+  driverLicense = COALESCE($4, driverLicense),
+  truckLicense = COALESCE($5, truckLicense),
+  approved_date = NULL
+WHERE DriverT.id = $1
+`
+
+type UpdateDriverPicParams struct {
+	ID            int64
+	Insurances    sql.NullString
+	Registration  sql.NullString
+	Driverlicense sql.NullString
+	Trucklicense  sql.NullString
+}
+
+func (q *Queries) UpdateDriverPic(ctx context.Context, arg UpdateDriverPicParams) error {
+	_, err := q.db.ExecContext(ctx, updateDriverPic,
+		arg.ID,
+		arg.Insurances,
+		arg.Registration,
+		arg.Driverlicense,
+		arg.Trucklicense,
+	)
+	return err
+}
+
 const updateJob = `-- name: UpdateJob :one
 UPDATE JobsT set 
     from_loc = $1,
@@ -718,7 +1224,7 @@ UPDATE JobsT set
     source = $7,
     jobDate = $8,
     memo = $9,
-    end_date = $10,
+    close_date = $10,
     last_modified_date = NOW()
 where id = $11
  RETURNING id
@@ -734,7 +1240,7 @@ type UpdateJobParams struct {
 	Source    string
 	Jobdate   time.Time
 	Memo      sql.NullString
-	EndDate   sql.NullTime
+	CloseDate sql.NullTime
 	ID        int64
 }
 
@@ -749,7 +1255,7 @@ func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (int64, er
 		arg.Source,
 		arg.Jobdate,
 		arg.Memo,
-		arg.EndDate,
+		arg.CloseDate,
 		arg.ID,
 	)
 	var id int64
@@ -757,22 +1263,76 @@ func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (int64, er
 	return id, err
 }
 
+const updateLastAlert = `-- name: UpdateLastAlert :exec
+Update driverT set
+lastAlert = $2
+where id = $1
+`
+
+type UpdateLastAlertParams struct {
+	ID        int64
+	Lastalert sql.NullInt64
+}
+
+func (q *Queries) UpdateLastAlert(ctx context.Context, arg UpdateLastAlertParams) error {
+	_, err := q.db.ExecContext(ctx, updateLastAlert, arg.ID, arg.Lastalert)
+	return err
+}
+
 const updateUser = `-- name: UpdateUser :exec
-UPDATE UserT
-  set 
+UPDATE UserT set 
+  phoneNum = COALESCE($2, phoneNum),
+  name = COALESCE($3, name),
+  belongCMP = COALESCE($4, belongCMP),
+  role = COALESCE($5, role),
+  last_modified_date = NOW()
+WHERE UserT.id = $1
+`
+
+type UpdateUserParams struct {
+	ID        int64
+	Phonenum  interface{}
+	Name      string
+	Belongcmp int64
+	Role      int16
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
+	_, err := q.db.ExecContext(ctx, updateUser,
+		arg.ID,
+		arg.Phonenum,
+		arg.Name,
+		arg.Belongcmp,
+		arg.Role,
+	)
+	return err
+}
+
+const updateUserPassword = `-- name: UpdateUserPassword :exec
+UPDATE UserT set 
   pwd = $2,
-  role = $3,
+  initPwdChanged = True,
   last_modified_date = NOW()
 WHERE id = $1
 `
 
-type UpdateUserParams struct {
-	ID   int64
-	Pwd  string
-	Role int16
+type UpdateUserPasswordParams struct {
+	ID  int64
+	Pwd string
 }
 
-func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
-	_, err := q.db.ExecContext(ctx, updateUser, arg.ID, arg.Pwd, arg.Role)
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserPassword, arg.ID, arg.Pwd)
+	return err
+}
+
+const userHasModified = `-- name: UserHasModified :exec
+UPDATE UserT set 
+  last_modified_date = NOW()
+WHERE id = $1
+`
+
+func (q *Queries) UserHasModified(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, userHasModified, id)
 	return err
 }

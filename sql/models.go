@@ -6,8 +6,18 @@ package sql
 
 import (
 	"database/sql"
+	"encoding/json"
 	"time"
 )
+
+type Alertt struct {
+	ID               int64
+	Alert            string
+	Belongcmp        int64
+	CreateDate       time.Time
+	DeletedDate      sql.NullTime
+	LastModifiedDate time.Time
+}
 
 type Claimjobt struct {
 	ID               int64
@@ -15,6 +25,7 @@ type Claimjobt struct {
 	Driverid         int64
 	Percentage       sql.NullInt16
 	FinishedDate     sql.NullTime
+	Finishpic        sql.NullString
 	CreateDate       time.Time
 	DeletedDate      sql.NullTime
 	DeletedBy        sql.NullInt64
@@ -42,8 +53,14 @@ type Cmpt struct {
 
 type Drivert struct {
 	ID               int64
-	Percentage       int16
+	Insurances       sql.NullString
+	Registration     sql.NullString
+	Driverlicense    sql.NullString
+	Trucklicense     sql.NullString
 	Nationalidnumber interface{}
+	Percentage       int16
+	Lastalert        sql.NullInt64
+	ApprovedDate     sql.NullTime
 }
 
 type Jobst struct {
@@ -58,10 +75,9 @@ type Jobst struct {
 	Source           string
 	Jobdate          time.Time
 	Memo             sql.NullString
+	CloseDate        sql.NullTime
 	CreateDate       time.Time
-	EndDate          sql.NullTime
 	DeletedDate      sql.NullTime
-	FinishedDate     sql.NullTime
 	LastModifiedDate time.Time
 }
 
@@ -69,6 +85,17 @@ type Logint struct {
 	ID         int64
 	Userid     int64
 	CreateDate time.Time
+}
+
+type Repairt struct {
+	ID               int64
+	Type             string
+	Driverid         int64
+	Repairinfo       json.RawMessage
+	CreateDate       time.Time
+	ApprovedDate     sql.NullTime
+	DeletedDate      sql.NullTime
+	LastModifiedDate time.Time
 }
 
 type Usert struct {

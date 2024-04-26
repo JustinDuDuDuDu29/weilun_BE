@@ -26,6 +26,14 @@ func (u *CmpCtrlImpl) GetCmp(c *gin.Context) {
 
 	var reqBody apptypes.GetCmpT
 
+	err := c.BindJSON(&reqBody)
+
+	if err != nil {
+		c.Status(http.StatusConflict)
+		c.Abort()
+		return
+	}
+
 	data, err := u.svc.CmpServ.GetCmp(int64(reqBody.Id))
 
 	if err != nil {
@@ -109,7 +117,6 @@ func (u *CmpCtrlImpl) DeleteCmp(c *gin.Context) {
 
 	c.Status(http.StatusOK)
 	c.Abort()
-	return
 }
 
 func CmpCtrlInit(svc *service.AppService) *CmpCtrlImpl {
