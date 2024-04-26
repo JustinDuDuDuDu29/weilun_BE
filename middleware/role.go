@@ -15,6 +15,7 @@ import (
 type RoleMid interface {
 	SuperAdminOnly(c *gin.Context)
 	IsLoggedIn(c *gin.Context)
+	DriverOnly(c *gin.Context)
 }
 
 type RoleMidImpl struct {
@@ -95,14 +96,25 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 }
 
 func (m *RoleMidImpl) SuperAdminOnly(c *gin.Context) {
-	res := c.MustGet("Role").(int)
-	if res > 100 {
+	res := c.MustGet("Role").(int16)
+	if (res) > 100 {
 		c.Status(http.StatusForbidden)
 		c.Abort()
 		return
 	}
 	c.Next()
 }
+
+func (m *RoleMidImpl) DriverOnly(c *gin.Context) {
+	res := c.MustGet("Role").(int16)
+	if res < 300 {
+		c.Status(http.StatusForbidden)
+		c.Abort()
+		return
+	}
+	c.Next()
+}
+
 func RoleMidInit(svc *service.AppService) *RoleMidImpl {
 	return &RoleMidImpl{
 		svc: svc,

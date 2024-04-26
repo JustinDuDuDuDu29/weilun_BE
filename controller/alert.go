@@ -2,6 +2,7 @@ package controller
 
 import (
 	"database/sql"
+	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -14,8 +15,8 @@ import (
 type AlertCtrl interface {
 	CreateAlert(c *gin.Context)
 	DeleteAlert(c *gin.Context)
-	UpdateLastAlert(c *gin.Context)
 	CheckNewAlert(c *gin.Context)
+	GetAlert(c *gin.Context)
 }
 
 type AlertCtrlImpl struct {
@@ -34,9 +35,9 @@ func (a *AlertCtrlImpl) CheckNewAlert(c *gin.Context) {
 }
 
 func (a *AlertCtrlImpl) GetAlert(c *gin.Context) {
-	role := c.MustGet("Role").(int)
+	role := c.MustGet("Role").(int16)
 	cuid := c.MustGet("UserID").(int)
-	belongCmp := c.MustGet("belongCmp").(int)
+	belongCmp := c.MustGet("belongCmp").(int64)
 	var ID sql.NullInt64
 	if role >= 200 {
 		ID.Valid = false
@@ -52,11 +53,18 @@ func (a *AlertCtrlImpl) GetAlert(c *gin.Context) {
 	if role >= 200 {
 		BelongCMP.Scan(belongCmp)
 	} else {
-		if c.Query("Id") == "" {
-			ID.Valid = false
+		if c.Query("belongCMP") == "" {
+			BelongCMP.Valid = false
 		} else {
-			ID.Scan(c.Query("Id"))
+			BelongCMP.Scan(c.Query("belongCMP"))
 		}
+	}
+
+	var Alert sql.NullString
+	if c.Query("alert") == "" {
+		Alert.Valid = false
+	} else {
+		Alert.Scan(c.Query("alert"))
 	}
 
 	var CreateDateStart sql.NullTime
@@ -104,6 +112,7 @@ func (a *AlertCtrlImpl) GetAlert(c *gin.Context) {
 	param := db.GetAlertParams{
 		ID:                    ID,
 		BelongCMP:             BelongCMP,
+		Alert:                 Alert,
 		CreateDateStart:       CreateDateStart,
 		CreateDateEnd:         CreateDateEnd,
 		DeletedDateStart:      DeletedDateStart,
@@ -115,6 +124,12 @@ func (a *AlertCtrlImpl) GetAlert(c *gin.Context) {
 
 	if err != nil && err != sql.ErrNoRows {
 		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	if err == sql.ErrNoRows || len(res) == 0 {
+		c.JSON(http.StatusOK, gin.H{})
+		c.Abort()
 		return
 	}
 
@@ -159,7 +174,9 @@ func (a *AlertCtrlImpl) DeleteAlert(c *gin.Context) {
 
 func (a *AlertCtrlImpl) CreateAlert(c *gin.Context) {
 	var reqBody apptypes.CreateAlertBodyT
-	if err := c.Bind(reqBody); err != nil {
+	if err := c.BindJSON(&reqBody); err != nil {
+		fmt.Print(err)
+
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -168,7 +185,13 @@ func (a *AlertCtrlImpl) CreateAlert(c *gin.Context) {
 		Alert:     reqBody.Alert,
 		Belongcmp: int64(reqBody.BelongCmp),
 	}
-	a.svc.AlertServ.CreateAlert(param)
+	res, err := a.svc.AlertServ.CreateAlert(param)
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"res": res})
 }
 
 func AlertCtrlInit(svc *service.AppService) *AlertCtrlImpl {

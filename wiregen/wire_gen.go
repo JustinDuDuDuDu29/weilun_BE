@@ -4,7 +4,7 @@
 //go:build !wireinject
 // +build !wireinject
 
-package utils
+package wiregen
 
 import (
 	sql2 "database/sql"

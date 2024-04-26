@@ -6,13 +6,13 @@ import (
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
+	"main/utils"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 type JobsCtrl interface {
@@ -139,27 +139,20 @@ func (u *JobsCtrlImpl) FinishClaimJob(c *gin.Context) {
 
 	cType := reqBody.File.Header["Content-Type"][0]
 
-	var fileExt string
-
-	switch cType {
-	case "image/jpeg":
-		fileExt = ".jpeg"
-	case "image/png":
-		fileExt = ".png"
-	default:
-		c.AbortWithStatus(http.StatusBadRequest)
+	path, uuid, err := utils.GenPicRoute(cType)
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
-	rand := uuid.NewString()
 
-	err = c.SaveUploadedFile(reqBody.File, "./img/"+rand+fileExt)
+	err = c.SaveUploadedFile(reqBody.File, path)
 	if err != nil {
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
 	var Fp sql.NullString
-	Fp.Scan(rand)
+	Fp.Scan(uuid)
 
 	param := db.FinishClaimedJobParams{
 		ID:        int64(id),
@@ -169,7 +162,7 @@ func (u *JobsCtrlImpl) FinishClaimJob(c *gin.Context) {
 
 	err = u.svc.JobsServ.FinishClaimedJob(param)
 	if err != nil {
-		os.Remove("./img/" + rand + fileExt)
+		os.Remove(path)
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}

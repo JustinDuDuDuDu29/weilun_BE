@@ -11,8 +11,19 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
+type UpdateDriverPic struct {
+	Insurances    *multipart.FileHeader `form:"Insurances"`
+	Registration  *multipart.FileHeader `form:"Registration"`
+	DriverLicense *multipart.FileHeader `form:"DriverLicense"`
+	TruckLicense  *multipart.FileHeader `form:"TruckLicense"`
+}
+
 type FinishClaimJobBodyT struct {
-	File *multipart.FileHeader `form:"file"`
+	File *multipart.FileHeader `form:"file" binding:"required"`
+}
+
+type UpdatePasswordBodyT struct {
+	Pwd string `json:"pwd" binding:"required"`
 }
 
 type UpdateJobBodyT struct {

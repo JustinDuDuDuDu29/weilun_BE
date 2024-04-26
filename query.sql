@@ -49,6 +49,17 @@ insert into driverT (id, percentage, nationalidnumber)
     values ($1, $2, $3)
 RETURNING id;
 
+-- name: UserHasModified :exec
+UPDATE UserT set 
+  last_modified_date = NOW()
+WHERE id = $1;
+
+-- name: UpdateDriver :exec
+UPDATE DriverT set 
+  percentage = COALESCE($2, percentage),
+  nationalidnumber = COALESCE($2, nationalidnumber)
+WHERE id = $1;
+
 -- name: UpdateUserPassword :exec
 UPDATE UserT set 
   pwd = $2,
@@ -58,24 +69,26 @@ WHERE id = $1;
 
 -- name: UpdateUser :exec
 UPDATE UserT set 
-  phoneNum = $2,
-  name = $3,
-  belongCMP = $4,
-  role = $5,
+  phoneNum = COALESCE($2, phoneNum),
+  name = COALESCE($3, name),
+  belongCMP = COALESCE($4, belongCMP),
+  role = COALESCE($5, role),
   last_modified_date = NOW()
-WHERE id = $1;
+WHERE UserT.id = $1;
 
--- name: UpdateDriver :exec
+-- name: UpdateDriverPic :exec
 UPDATE DriverT set 
-  insurances = $2,
-  registration = $3,
-  driverLicense = $4,
-  truckLicense = $5,
-  nationalIDNumber= $6,
-  UserT.last_modified_date = NOW(),
+  insurances = COALESCE($2, insurances),
+  registration = COALESCE($3, registration),
+  driverLicense = COALESCE($4, driverLicense),
+  truckLicense = COALESCE($5, truckLicense),
   approved_date = NULL
-  from DriverT
-  inner join UserT on DriverT.driverID = UserT.id
+WHERE DriverT.id = $1;
+
+-- name: ApproveDriver :exec
+UPDATE DriverT set 
+  UserT.last_modified_date = NOW(),
+  approved_date =  NOW()
 WHERE DriverT.id = $1;
 
 
@@ -280,7 +293,7 @@ from alertT
 where 
 (id = sqlc.narg('id') OR sqlc.narg('id') IS NULL)AND
 (belongCMP = sqlc.narg('belongCMP') OR sqlc.narg('belongCMP') IS NULL)AND
-(alert like sqlc.narg('id') OR sqlc.narg('id') IS NULL)AND
+(alert like sqlc.narg('alert') OR sqlc.narg('alert') IS NULL)AND
 ((create_date > sqlc.narg('create_date_start') OR sqlc.narg('create_date_start') IS NULL)
  AND (create_date < sqlc.narg('create_date_end') OR sqlc.narg('create_date_end') IS NULL)) AND
 ((deleted_date > sqlc.narg('deleted_date_start') OR sqlc.narg('deleted_date_start') IS NULL)

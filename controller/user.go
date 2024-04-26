@@ -5,7 +5,9 @@ import (
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
+	"main/utils"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,10 +17,192 @@ type UserCtrl interface {
 	DeleteUser(c *gin.Context)
 	GetUserById(c *gin.Context)
 	GetUserList(c *gin.Context)
+	UpdateUser(c *gin.Context)
+	UpdatePassword(c *gin.Context)
+	UpdateDriverPic(c *gin.Context)
 }
 
 type UserCtrlImpl struct {
 	svc *service.AppService
+}
+
+func (u *UserCtrlImpl) UpdateDriverPic(c *gin.Context) {
+
+	var reqBody apptypes.UpdateDriverPic
+	if err := c.ShouldBind(&reqBody); err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	var DriverLicense sql.NullString
+	if reqBody.DriverLicense != nil {
+		path, uuid, err := utils.GenPicRoute(reqBody.DriverLicense.Header["Content-Type"][0])
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		err = c.SaveUploadedFile(reqBody.DriverLicense, path)
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		DriverLicense.Scan(uuid)
+
+	}
+
+	var Insurances sql.NullString
+	if reqBody.Insurances != nil {
+		path, uuid, err := utils.GenPicRoute(reqBody.Insurances.Header["Content-Type"][0])
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		err = c.SaveUploadedFile(reqBody.Insurances, path)
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		Insurances.Scan(uuid)
+
+	}
+
+	var Registration sql.NullString
+	if reqBody.Registration != nil {
+		path, uuid, err := utils.GenPicRoute(reqBody.Registration.Header["Content-Type"][0])
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		err = c.SaveUploadedFile(reqBody.Registration, path)
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		Registration.Scan(uuid)
+
+	}
+
+	var TruckLicense sql.NullString
+	if reqBody.TruckLicense != nil {
+		path, uuid, err := utils.GenPicRoute(reqBody.TruckLicense.Header["Content-Type"][0])
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		err = c.SaveUploadedFile(reqBody.TruckLicense, path)
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		TruckLicense.Scan(uuid)
+
+	}
+
+	param := db.UpdateDriverPicParams{
+		ID:            int64(c.MustGet("UserID").(int)),
+		Insurances:    Insurances,
+		Registration:  Registration,
+		Driverlicense: DriverLicense,
+		Trucklicense:  TruckLicense,
+	}
+	err := u.svc.UserServ.UpdateDriverPic(param)
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	c.AbortWithStatus(http.StatusOK)
+}
+
+func (u *UserCtrlImpl) UpdatePassword(c *gin.Context) {
+	cuid := c.MustGet("UserID").(int)
+
+	var reqBody apptypes.UpdatePasswordBodyT
+	if err := c.BindJSON(&reqBody); err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	param := db.UpdateUserPasswordParams{
+		ID:  int64(cuid),
+		Pwd: reqBody.Pwd,
+	}
+	err := u.svc.UserServ.UpdatePassword(param)
+
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	c.AbortWithStatus(http.StatusOK)
+}
+
+func (u *UserCtrlImpl) UpdateUser(c *gin.Context) {
+	sid := c.Param("id")
+
+	if sid == "" {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.Atoi(sid)
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	// cuid := c.MustGet("UserID").(int)
+	// role := c.MustGet("Role").(int)
+	// bcmp := c.MustGet("belongCmp").(int)
+
+	res, err := u.svc.UserServ.GetUserById(int64(id))
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	var reqBody apptypes.RegisterDriverBodyT
+	if err := c.BindJSON(&reqBody); err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	var role int
+	var param db.UpdateUserParams
+
+	if reqBody.Role == "cmpAdmin" {
+		role = 200
+		param = db.UpdateUserParams{
+			ID:        int64(id),
+			Phonenum:  reqBody.PhoneNum,
+			Name:      reqBody.Name,
+			Belongcmp: res.Belongcmp,
+			Role:      int16(role),
+		}
+		u.svc.UserServ.UpdateUser(param)
+	} else {
+		role = 300
+		param = db.UpdateUserParams{
+			ID:        int64(id),
+			Phonenum:  reqBody.PhoneNum,
+			Name:      reqBody.Name,
+			Belongcmp: res.Belongcmp,
+			Role:      int16(role),
+		}
+		driverParam := db.UpdateDriverParams{
+			ID:         int64(id),
+			Percentage: int16(reqBody.DriverInfo.Percentage),
+		}
+
+		u.svc.UserServ.UpdateDriver(driverParam, param)
+
+	}
 }
 
 func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
@@ -204,7 +388,6 @@ func (u *UserCtrlImpl) GetUserById(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"res": res})
-
 }
 
 func UserCtrlInit(svc *service.AppService) *UserCtrlImpl {

@@ -30,6 +30,8 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		user.GET("", m.RoleMid.IsLoggedIn, c.UserCtrl.GetUserList)
 		user.GET(":id", m.RoleMid.IsLoggedIn, c.UserCtrl.GetUserById)
 		user.POST("", m.RoleMid.IsLoggedIn, c.UserCtrl.RegisterUser)
+		user.POST("/pwd", m.RoleMid.IsLoggedIn, c.UserCtrl.UpdatePassword)
+		user.POST("/UpdateDriverPic", m.RoleMid.IsLoggedIn, c.UserCtrl.UpdateDriverPic)
 		user.PUT("", m.RoleMid.IsLoggedIn, c.UserCtrl.RegisterUser)
 		user.DELETE("", m.RoleMid.IsLoggedIn, c.UserCtrl.DeleteUser)
 
@@ -60,6 +62,11 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		repair.POST(":id", m.RoleMid.IsLoggedIn, c.RepairCtrl.ApproveRepair)
 		repair.DELETE(":id", m.RoleMid.IsLoggedIn, c.RepairCtrl.DeleteRepair)
 
+		alert := api.Group("/alert")
+		alert.GET("", m.RoleMid.IsLoggedIn, c.AlertCtrl.GetAlert)
+		alert.POST("", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.AlertCtrl.CreateAlert)
+		alert.POST("", m.RoleMid.IsLoggedIn, c.AlertCtrl.CheckNewAlert)
+		alert.DELETE(":id", m.RoleMid.IsLoggedIn, c.AlertCtrl.DeleteAlert)
 	}
 	router.Run(":8080")
 }

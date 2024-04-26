@@ -81,7 +81,13 @@ func (s *JobsServImpl) DeleteClaimedJob(param db.DeleteClaimedJobParams) error {
 		}
 	}
 
-	return err
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return nil
 }
 
 func (s *JobsServImpl) GetCurrentClaimedJob(id int64) (db.GetCurrentClaimedJobRow, error) {
@@ -153,9 +159,10 @@ func (s *JobsServImpl) ClaimJob(param db.ClaimJobParams) (int64, error) {
 
 	if err != nil {
 		tx.Rollback()
+		return -99, err
 	}
 
-	return res, err
+	return res, nil
 }
 
 func (s *JobsServImpl) GetAllJobs() ([]db.Jobst, error) {

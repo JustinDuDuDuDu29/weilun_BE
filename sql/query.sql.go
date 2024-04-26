@@ -12,6 +12,18 @@ import (
 	"time"
 )
 
+const approveDriver = `-- name: ApproveDriver :exec
+UPDATE DriverT set 
+  UserT.last_modified_date = NOW(),
+  approved_date =  NOW()
+WHERE DriverT.id = $1
+`
+
+func (q *Queries) ApproveDriver(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, approveDriver, id)
+	return err
+}
+
 const approveFinishedJob = `-- name: ApproveFinishedJob :exec
 Update ClaimJobT set Approved_By = $2, approved_date = NOW(), last_modified_date = NOW() where id = $1
 `
@@ -338,19 +350,20 @@ from alertT
 where 
 (id = $1 OR $1 IS NULL)AND
 (belongCMP = $2 OR $2 IS NULL)AND
-(alert like $1 OR $1 IS NULL)AND
-((create_date > $3 OR $3 IS NULL)
- AND (create_date < $4 OR $4 IS NULL)) AND
-((deleted_date > $5 OR $5 IS NULL)
- AND (deleted_date < $6 OR $6 IS NULL)) AND
-((last_modified_date > $7 OR $7 IS NULL) 
-AND (last_modified_date < $8 OR $8 IS NULL))
+(alert like $3 OR $3 IS NULL)AND
+((create_date > $4 OR $4 IS NULL)
+ AND (create_date < $5 OR $5 IS NULL)) AND
+((deleted_date > $6 OR $6 IS NULL)
+ AND (deleted_date < $7 OR $7 IS NULL)) AND
+((last_modified_date > $8 OR $8 IS NULL) 
+AND (last_modified_date < $9 OR $9 IS NULL))
 order by id desc
 `
 
 type GetAlertParams struct {
 	ID                    sql.NullInt64
 	BelongCMP             sql.NullInt64
+	Alert                 sql.NullString
 	CreateDateStart       sql.NullTime
 	CreateDateEnd         sql.NullTime
 	DeletedDateStart      sql.NullTime
@@ -363,6 +376,7 @@ func (q *Queries) GetAlert(ctx context.Context, arg GetAlertParams) ([]Alertt, e
 	rows, err := q.db.QueryContext(ctx, getAlert,
 		arg.ID,
 		arg.BelongCMP,
+		arg.Alert,
 		arg.CreateDateStart,
 		arg.CreateDateEnd,
 		arg.DeletedDateStart,
@@ -1155,35 +1169,46 @@ func (q *Queries) UpdateCmp(ctx context.Context, arg UpdateCmpParams) error {
 
 const updateDriver = `-- name: UpdateDriver :exec
 UPDATE DriverT set 
-  insurances = $2,
-  registration = $3,
-  driverLicense = $4,
-  truckLicense = $5,
-  nationalIDNumber= $6,
-  UserT.last_modified_date = NOW(),
-  approved_date = NULL
-  from DriverT
-  inner join UserT on DriverT.driverID = UserT.id
-WHERE DriverT.id = $1
+  percentage = COALESCE($2, percentage),
+  nationalidnumber = COALESCE($2, nationalidnumber)
+WHERE id = $1
 `
 
 type UpdateDriverParams struct {
-	ID               int64
-	Insurances       sql.NullString
-	Registration     sql.NullString
-	Driverlicense    sql.NullString
-	Trucklicense     sql.NullString
-	Nationalidnumber interface{}
+	ID         int64
+	Percentage int16
 }
 
 func (q *Queries) UpdateDriver(ctx context.Context, arg UpdateDriverParams) error {
-	_, err := q.db.ExecContext(ctx, updateDriver,
+	_, err := q.db.ExecContext(ctx, updateDriver, arg.ID, arg.Percentage)
+	return err
+}
+
+const updateDriverPic = `-- name: UpdateDriverPic :exec
+UPDATE DriverT set 
+  insurances = COALESCE($2, insurances),
+  registration = COALESCE($3, registration),
+  driverLicense = COALESCE($4, driverLicense),
+  truckLicense = COALESCE($5, truckLicense),
+  approved_date = NULL
+WHERE DriverT.id = $1
+`
+
+type UpdateDriverPicParams struct {
+	ID            int64
+	Insurances    sql.NullString
+	Registration  sql.NullString
+	Driverlicense sql.NullString
+	Trucklicense  sql.NullString
+}
+
+func (q *Queries) UpdateDriverPic(ctx context.Context, arg UpdateDriverPicParams) error {
+	_, err := q.db.ExecContext(ctx, updateDriverPic,
 		arg.ID,
 		arg.Insurances,
 		arg.Registration,
 		arg.Driverlicense,
 		arg.Trucklicense,
-		arg.Nationalidnumber,
 	)
 	return err
 }
@@ -1256,12 +1281,12 @@ func (q *Queries) UpdateLastAlert(ctx context.Context, arg UpdateLastAlertParams
 
 const updateUser = `-- name: UpdateUser :exec
 UPDATE UserT set 
-  phoneNum = $2,
-  name = $3,
-  belongCMP = $4,
-  role = $5,
+  phoneNum = COALESCE($2, phoneNum),
+  name = COALESCE($3, name),
+  belongCMP = COALESCE($4, belongCMP),
+  role = COALESCE($5, role),
   last_modified_date = NOW()
-WHERE id = $1
+WHERE UserT.id = $1
 `
 
 type UpdateUserParams struct {
@@ -1298,5 +1323,16 @@ type UpdateUserPasswordParams struct {
 
 func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
 	_, err := q.db.ExecContext(ctx, updateUserPassword, arg.ID, arg.Pwd)
+	return err
+}
+
+const userHasModified = `-- name: UserHasModified :exec
+UPDATE UserT set 
+  last_modified_date = NOW()
+WHERE id = $1
+`
+
+func (q *Queries) UserHasModified(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, userHasModified, id)
 	return err
 }
