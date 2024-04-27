@@ -957,26 +957,47 @@ func (q *Queries) GetRepair(ctx context.Context, arg GetRepairParams) ([]GetRepa
 	return items, nil
 }
 
-const getUser = `-- name: GetUser :one
-SELECT id, role, deleted_date FROM  UserT
-WHERE phoneNum=$1 AND pwd=$2 LIMIT 1
+const getRepairById = `-- name: GetRepairById :one
+SELECT id, type, driverid, repairinfo, create_date, approved_date, deleted_date, last_modified_date from repairT where id = $1
 `
 
-type GetUserParams struct {
-	Phonenum interface{}
-	Pwd      string
+func (q *Queries) GetRepairById(ctx context.Context, id int64) (Repairt, error) {
+	row := q.db.QueryRowContext(ctx, getRepairById, id)
+	var i Repairt
+	err := row.Scan(
+		&i.ID,
+		&i.Type,
+		&i.Driverid,
+		&i.Repairinfo,
+		&i.CreateDate,
+		&i.ApprovedDate,
+		&i.DeletedDate,
+		&i.LastModifiedDate,
+	)
+	return i, err
 }
+
+const getUser = `-- name: GetUser :one
+SELECT id, role, deleted_date,pwd FROM  UserT
+WHERE phoneNum=$1  LIMIT 1
+`
 
 type GetUserRow struct {
 	ID          int64
 	Role        int16
 	DeletedDate sql.NullTime
+	Pwd         string
 }
 
-func (q *Queries) GetUser(ctx context.Context, arg GetUserParams) (GetUserRow, error) {
-	row := q.db.QueryRowContext(ctx, getUser, arg.Phonenum, arg.Pwd)
+func (q *Queries) GetUser(ctx context.Context, phonenum interface{}) (GetUserRow, error) {
+	row := q.db.QueryRowContext(ctx, getUser, phonenum)
 	var i GetUserRow
-	err := row.Scan(&i.ID, &i.Role, &i.DeletedDate)
+	err := row.Scan(
+		&i.ID,
+		&i.Role,
+		&i.DeletedDate,
+		&i.Pwd,
+	)
 	return i, err
 }
 

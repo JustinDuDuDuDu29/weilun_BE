@@ -3,7 +3,6 @@ package controller
 import (
 	"main/apptypes"
 	"main/service"
-	db "main/sql"
 	"strconv"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/thanhpk/randstr"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthCtrl interface {
@@ -33,16 +33,20 @@ func (a *AuthCtrlImpl) Login(c *gin.Context) {
 		return
 	}
 
-	res, err := a.svc.UserServ.HaveUser(db.GetUserParams{
-		Phonenum: reqBody.Phonenum,
-		Pwd:      reqBody.Pwd,
-	})
+	res, err := a.svc.UserServ.HaveUser(reqBody.Phonenum)
 
 	if err != nil {
 		c.Status(http.StatusNotFound)
 		c.Abort()
 		return
 	}
+
+	if err = bcrypt.CompareHashAndPassword([]byte(res.Pwd), []byte(reqBody.Pwd)); err != nil {
+		c.Status(http.StatusNotFound)
+		c.Abort()
+		return
+	}
+
 	if res.DeletedDate.Valid {
 		c.JSON(http.StatusOK, gin.H{"err": "Account is deleted"})
 		return
@@ -52,7 +56,7 @@ func (a *AuthCtrlImpl) Login(c *gin.Context) {
 	newClaim.Audience = []string{strconv.Itoa(int(res.ID))}
 	newClaim.IssuedAt = jwt.NewNumericDate(time.Now())
 	newClaim.NotBefore = jwt.NewNumericDate(time.Now())
-	newClaim.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Second * 2000))
+	newClaim.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Hour * 1999999))
 	newClaim.ID = randstr.Hex(16)
 	newClaim.Issuer = "Weilun"
 

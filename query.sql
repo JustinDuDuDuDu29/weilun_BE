@@ -1,6 +1,6 @@
 -- name: GetUser :one
-SELECT id, role, deleted_date FROM  UserT
-WHERE phoneNum=$1 AND pwd=$2 LIMIT 1;
+SELECT id, role, deleted_date,pwd FROM  UserT
+WHERE phoneNum=$1  LIMIT 1;
 
 -- name: GetDriver :one
 SELECT * FROM  DriverT inner join usert on DriverT.id = UserT.id where
@@ -306,3 +306,6 @@ order by id desc;
 SELECT *
 from alertT
 where belongCMP = $1 order by id desc;
+
+-- name: GetRepairById :one
+SELECT * from repairT where id = $1;

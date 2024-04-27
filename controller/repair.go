@@ -5,6 +5,7 @@ import (
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
+	"main/utils"
 	"net/http"
 	"strconv"
 
@@ -162,6 +163,15 @@ func (r *RepairCtrlImpl) ApproveRepair(c *gin.Context) {
 		c.Abort()
 		return
 	}
+
+	res, err := r.svc.RepairServ.GetRepairById(int64(id))
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		c.Abort()
+		return
+	}
+	utils.SandMsg(int(res.Driverid), 300, "Repair "+strconv.Itoa(id)+" is approved")
+
 	c.Status(http.StatusOK)
 	c.Abort()
 }
