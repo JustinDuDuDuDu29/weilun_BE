@@ -6,6 +6,7 @@ import (
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
+	"main/utils"
 	"net/http"
 	"strconv"
 
@@ -190,6 +191,8 @@ func (a *AlertCtrlImpl) CreateAlert(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
+
+	utils.SandByCmp(reqBody.BelongCmp, 100, reqBody.Alert)
 
 	c.JSON(http.StatusOK, gin.H{"res": res})
 }

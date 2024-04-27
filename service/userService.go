@@ -9,7 +9,7 @@ import (
 )
 
 type UserServ interface {
-	HaveUser(queryParam db.GetUserParams) (db.GetUserRow, error)
+	HaveUser(phonenum interface{}) (db.GetUserRow, error)
 	GetUserById(id int64) (db.GetUserByIDRow, error)
 	RegisterCmpAdmin(queryParam db.CreateUserParams) (int64, error)
 	RegisterDriver(queryParam db.CreateUserParams, percentage int, nationalIdNumber string) (int64, error)
@@ -129,8 +129,8 @@ func (u *UserServImpl) GetUserById(id int64) (db.GetUserByIDRow, error) {
 	return res, err
 }
 
-func (u *UserServImpl) HaveUser(queryParam db.GetUserParams) (db.GetUserRow, error) {
-	res, err := u.q.GetUser(context.Background(), queryParam)
+func (u *UserServImpl) HaveUser(phonenum interface{}) (db.GetUserRow, error) {
+	res, err := u.q.GetUser(context.Background(), phonenum)
 	return res, err
 }
 

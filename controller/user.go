@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserCtrl interface {
@@ -20,10 +21,37 @@ type UserCtrl interface {
 	UpdateUser(c *gin.Context)
 	UpdatePassword(c *gin.Context)
 	UpdateDriverPic(c *gin.Context)
+	ApproveUser(c *gin.Context)
 }
 
 type UserCtrlImpl struct {
 	svc *service.AppService
+}
+
+func (u *UserCtrlImpl) ApproveUser(c *gin.Context) {
+	sid := c.Param("id")
+
+	if sid == "" {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.Atoi(sid)
+
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	err = u.svc.UserServ.ApproveDriver(int64(id))
+
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	utils.SandMsg(id, 200, "driver Approved")
+	c.AbortWithStatus(http.StatusOK)
 }
 
 func (u *UserCtrlImpl) UpdateDriverPic(c *gin.Context) {
@@ -130,11 +158,17 @@ func (u *UserCtrlImpl) UpdatePassword(c *gin.Context) {
 		return
 	}
 
+	hash, err := bcrypt.GenerateFromPassword([]byte(reqBody.Pwd), bcrypt.MinCost)
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
 	param := db.UpdateUserPasswordParams{
 		ID:  int64(cuid),
-		Pwd: reqBody.Pwd,
+		Pwd: string(hash),
 	}
-	err := u.svc.UserServ.UpdatePassword(param)
+	err = u.svc.UserServ.UpdatePassword(param)
 
 	if err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
@@ -209,7 +243,6 @@ func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
 	userType := c.Query("userType")
 
 	var newid int64
-	var err error
 
 	switch userType {
 	case "cmpAdmin":
@@ -218,15 +251,27 @@ func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
 		if err := c.BindJSON(&reqBody); err != nil {
 			return
 		}
+		hash, err := bcrypt.GenerateFromPassword([]byte(reqBody.PhoneNum), bcrypt.MinCost)
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
 
 		param := db.CreateUserParams{
-			Pwd:       reqBody.PhoneNum,
+			Pwd:       string(hash),
 			Name:      reqBody.Name,
 			Belongcmp: int64(reqBody.BelongCmp),
 			Phonenum:  reqBody.PhoneNum,
 			Role:      200,
 		}
 		newid, err = u.svc.UserServ.RegisterCmpAdmin(param)
+		if err != nil {
+			c.Status(http.StatusConflict)
+			c.Abort()
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"id": newid})
 
 	case "driver":
 		var reqBody apptypes.RegisterDriverBodyT
@@ -234,8 +279,14 @@ func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
 		if err := c.BindJSON(&reqBody); err != nil {
 			return
 		}
+		hash, err := bcrypt.GenerateFromPassword([]byte(reqBody.PhoneNum), bcrypt.MinCost)
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
 		param := db.CreateUserParams{
-			Pwd:       reqBody.PhoneNum,
+			Pwd:       string(hash),
 			Name:      reqBody.Name,
 			Belongcmp: int64(reqBody.BelongCmp),
 			Phonenum:  reqBody.PhoneNum,
@@ -243,19 +294,19 @@ func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
 		}
 
 		newid, err = u.svc.UserServ.RegisterDriver(param, reqBody.DriverInfo.Percentage, reqBody.DriverInfo.NationalIdNumber)
+		if err != nil {
+			c.Status(http.StatusConflict)
+			c.Abort()
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"id": newid})
 
 	default:
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 
-	if err != nil {
-		c.Status(http.StatusConflict)
-		c.Abort()
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"id": newid})
 }
 
 func (u *UserCtrlImpl) DeleteUser(c *gin.Context) {

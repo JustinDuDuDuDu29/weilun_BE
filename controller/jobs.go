@@ -198,6 +198,14 @@ func (u *JobsCtrlImpl) ApproveClaimedJob(c *gin.Context) {
 		return
 	}
 
+	cJobInfo, err := u.svc.JobsServ.GetClaimedJobByID(int64(id))
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	utils.SandMsg(int(cJobInfo.Driverid), 300, "Job "+strconv.Itoa(id)+" is approved")
+
 	c.AbortWithStatus(http.StatusOK)
 
 }

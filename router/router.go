@@ -4,7 +4,9 @@ import (
 	// "main/middleware"
 	"main/controller"
 	"main/middleware"
+	"main/utils"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,11 +19,16 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 
 	api := router.Group("/api")
 	{
+
+		api.GET("", func(ctx *gin.Context) {
+			ctx.JSON(http.StatusOK, gin.H{"version": os.Getenv("version")})
+		})
+
 		auth := api.Group("/auth")
 		auth.POST("", c.AuthCtrl.Login)
 
 		io := api.Group("/io", m.RoleMid.IsLoggedIn)
-		io.GET("")
+		io.GET("", utils.HandleWS)
 
 		static := api.Group("/static", m.RoleMid.IsLoggedIn)
 		static.StaticFS("/img", http.Dir("./img"))
@@ -30,6 +37,7 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		user.GET("", m.RoleMid.IsLoggedIn, c.UserCtrl.GetUserList)
 		user.GET(":id", m.RoleMid.IsLoggedIn, c.UserCtrl.GetUserById)
 		user.POST("", m.RoleMid.IsLoggedIn, c.UserCtrl.RegisterUser)
+		user.POST(":id", m.RoleMid.IsLoggedIn, c.UserCtrl.RegisterUser)
 		user.POST("/pwd", m.RoleMid.IsLoggedIn, c.UserCtrl.UpdatePassword)
 		user.POST("/UpdateDriverPic", m.RoleMid.IsLoggedIn, c.UserCtrl.UpdateDriverPic)
 		user.PUT("", m.RoleMid.IsLoggedIn, c.UserCtrl.RegisterUser)
@@ -65,7 +73,7 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		alert := api.Group("/alert")
 		alert.GET("", m.RoleMid.IsLoggedIn, c.AlertCtrl.GetAlert)
 		alert.POST("", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.AlertCtrl.CreateAlert)
-		alert.POST("", m.RoleMid.IsLoggedIn, c.AlertCtrl.CheckNewAlert)
+		alert.PUT("", m.RoleMid.IsLoggedIn, c.AlertCtrl.CheckNewAlert)
 		alert.DELETE(":id", m.RoleMid.IsLoggedIn, c.AlertCtrl.DeleteAlert)
 	}
 	router.Run(":8080")

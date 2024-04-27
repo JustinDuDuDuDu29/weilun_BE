@@ -53,7 +53,7 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 			return
 
 		default:
-			c.JSON(http.StatusBadRequest, gin.H{"err": "grow up, K? get a real job or something..."})
+			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
 		}
@@ -64,21 +64,21 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 		res, err := claims.GetAudience()
 
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"err": "grow up, K? get a real job or something..."})
+			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
 		}
 
 		id, err := strconv.Atoi(res[0])
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"err": "grow up, K? get a real job or something..."})
+			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
 		}
 		c.Set("UserID", id)
 		info, err := m.svc.UserServ.GetUserById(int64(id))
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"err": "grow up, K? get a real job or something..."})
+			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
 		}
@@ -88,7 +88,7 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 
 		return
 	} else {
-		c.JSON(http.StatusBadRequest, gin.H{"err": "grow up, K? get a real job or something..."})
+		c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 		c.Abort()
 		return
 	}
