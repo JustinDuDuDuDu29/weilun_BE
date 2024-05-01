@@ -65,14 +65,322 @@ func (u *JobsCtrlImpl) GetCurrentClaimedJob(c *gin.Context) {
 
 func (u *JobsCtrlImpl) GetAllJob(c *gin.Context) {
 
-	jobList, err := u.svc.JobsServ.GetAllJobs()
-	if err != nil {
-		c.Status(http.StatusInternalServerError)
+	role := c.MustGet("Role").(int16)
+	belongCmp := c.MustGet("belongCmp").(int64)
+	// UserID := c.MustGet("UserID").(int)
+
+	if role <= 100 {
+		var reqBody apptypes.GetJobsBodyT
+		if err := c.Bind(&reqBody); err != nil {
+			c.Abort()
+			return
+		}
+
+		var ID sql.NullInt64
+		if reqBody.ID != 0 {
+			ID.Scan(reqBody.ID)
+		}
+
+		var FromLoc sql.NullString
+		if reqBody.FromLoc != "" {
+			FromLoc.Scan(reqBody.FromLoc)
+		}
+
+		var Mid sql.NullString
+		if reqBody.Mid != "" {
+			Mid.Scan(reqBody.Mid)
+		}
+
+		var ToLoc sql.NullString
+		if reqBody.ToLoc != "" {
+			ToLoc.Scan(reqBody.ToLoc)
+		}
+
+		var Belongcmp sql.NullInt64
+		if reqBody.Belongcmp != 0 {
+			Belongcmp.Scan(reqBody.Belongcmp)
+		}
+
+		var Remaining sql.NullInt16
+		if reqBody.Remaining != 0 {
+			Remaining.Scan(reqBody.Remaining)
+		}
+
+		var CloseDateStart sql.NullTime
+		if reqBody.CloseDateStart != "" {
+			dt, err := time.Parse(time.DateOnly, reqBody.CloseDateStart)
+			if err != nil {
+				c.Status(http.StatusBadRequest)
+				c.Abort()
+				return
+			}
+			CloseDateStart.Scan(dt)
+		}
+
+		var CloseDateEnd sql.NullTime
+		if reqBody.CloseDateEnd != "" {
+			dt, err := time.Parse(time.DateOnly, reqBody.CloseDateEnd)
+			if err != nil {
+				c.Status(http.StatusBadRequest)
+				c.Abort()
+				return
+			}
+			CloseDateEnd.Scan(dt)
+		}
+
+		var CreateDateStart sql.NullTime
+		if reqBody.CreateDateStart != "" {
+			dt, err := time.Parse(time.DateOnly, reqBody.CreateDateStart)
+			if err != nil {
+				c.Status(http.StatusBadRequest)
+				c.Abort()
+				return
+			}
+			CreateDateStart.Scan(dt)
+		}
+
+		var CreateDateEnd sql.NullTime
+		if reqBody.CreateDateEnd != "" {
+			dt, err := time.Parse(time.DateOnly, reqBody.CreateDateEnd)
+			if err != nil {
+				c.Status(http.StatusBadRequest)
+				c.Abort()
+				return
+			}
+			CreateDateEnd.Scan(dt)
+		}
+
+		var DeletedDateStart sql.NullTime
+		if reqBody.DeletedDateStart != "" {
+			dt, err := time.Parse(time.DateOnly, reqBody.DeletedDateStart)
+			if err != nil {
+				c.Status(http.StatusBadRequest)
+				c.Abort()
+				return
+			}
+			DeletedDateStart.Scan(dt)
+		}
+
+		var DeletedDateEnd sql.NullTime
+		if reqBody.DeletedDateEnd != "" {
+			dt, err := time.Parse(time.DateOnly, reqBody.DeletedDateEnd)
+			if err != nil {
+				c.Status(http.StatusBadRequest)
+				c.Abort()
+				return
+			}
+			DeletedDateEnd.Scan(dt)
+		}
+
+		var LastModifiedDateStart sql.NullTime
+		if reqBody.LastModifiedDateStart != "" {
+			dt, err := time.Parse(time.DateOnly, reqBody.LastModifiedDateStart)
+			if err != nil {
+				c.Status(http.StatusBadRequest)
+				c.Abort()
+				return
+			}
+			LastModifiedDateStart.Scan(dt)
+		}
+
+		var LastModifiedDateEnd sql.NullTime
+		if reqBody.LastModifiedDateEnd != "" {
+			dt, err := time.Parse(time.DateOnly, reqBody.LastModifiedDateEnd)
+			if err != nil {
+				c.Status(http.StatusBadRequest)
+				c.Abort()
+				return
+			}
+			LastModifiedDateEnd.Scan(dt)
+		}
+
+		param := db.GetAllJobsAdminParams{
+			ID:                    ID,
+			FromLoc:               FromLoc,
+			Mid:                   Mid,
+			ToLoc:                 ToLoc,
+			Belongcmp:             Belongcmp,
+			Remaining:             Remaining,
+			CloseDateStart:        CloseDateStart,
+			CloseDateEnd:          CloseDateEnd,
+			CreateDateStart:       CreateDateStart,
+			CreateDateEnd:         CreateDateEnd,
+			DeletedDateStart:      DeletedDateStart,
+			DeletedDateEnd:        DeletedDateEnd,
+			LastModifiedDateStart: LastModifiedDateStart,
+			LastModifiedDateEnd:   LastModifiedDateEnd,
+		}
+		res, err := u.svc.JobsServ.GetAllJobs(param)
+
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+			c.Abort()
+			return
+		}
+		c.JSON(http.StatusOK, res)
+
+	} else {
+
+		var reqBody apptypes.GetJobsClientBodyT
+		if err := c.Bind(&reqBody); err != nil {
+			c.Abort()
+			return
+		}
+
+		var ID sql.NullInt64
+		if reqBody.ID != 0 {
+			ID.Scan(reqBody.ID)
+		}
+
+		var FromLoc sql.NullString
+		if reqBody.FromLoc != "" {
+			FromLoc.Scan(reqBody.FromLoc)
+		}
+
+		var Mid sql.NullString
+		if reqBody.Mid != "" {
+			Mid.Scan(reqBody.Mid)
+		}
+
+		var ToLoc sql.NullString
+		if reqBody.ToLoc != "" {
+			ToLoc.Scan(reqBody.ToLoc)
+		}
+
+		var Belongcmp sql.NullInt64
+		Belongcmp.Scan(belongCmp)
+
+		param := db.GetAllJobsClientParams{
+			ID:        ID,
+			FromLoc:   FromLoc,
+			Mid:       Mid,
+			ToLoc:     ToLoc,
+			Belongcmp: Belongcmp,
+		}
+		res, err := u.svc.JobsServ.GetAllJobsClient(param)
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+			c.Abort()
+			return
+		}
+		c.JSON(http.StatusOK, res)
+	}
+
+}
+
+func (u *JobsCtrlImpl) GetAllJobN(c *gin.Context) {
+
+	role := c.MustGet("Role").(int16)
+	cuid := c.MustGet("UserID").(int)
+	belongCmp := c.MustGet("belongCmp").(int64)
+	var ID sql.NullInt64
+	if role >= 200 {
+		ID.Valid = false
+	} else {
+		if c.Query("Id") == "" {
+			ID.Valid = false
+		} else {
+			ID.Scan(c.Query("Id"))
+		}
+	}
+
+	var BelongCMP sql.NullInt64
+	if role >= 200 {
+		BelongCMP.Scan(belongCmp)
+	} else {
+		if c.Query("belongCMP") == "" {
+			BelongCMP.Valid = false
+		} else {
+			BelongCMP.Scan(c.Query("belongCMP"))
+		}
+	}
+
+	var Alert sql.NullString
+	if c.Query("alert") == "" {
+		Alert.Valid = false
+	} else {
+		Alert.Scan(c.Query("alert"))
+	}
+
+	var CreateDateStart sql.NullTime
+	if c.Query("CreateDateStart") == "" {
+		CreateDateStart.Valid = false
+	} else {
+		CreateDateStart.Scan(c.Query("CreateDateStart"))
+	}
+
+	var CreateDateEnd sql.NullTime
+	if c.Query("CreateDateEnd") == "" {
+		CreateDateEnd.Valid = false
+	} else {
+		CreateDateEnd.Scan(c.Query("CreateDateEnd"))
+	}
+
+	var DeletedDateStart sql.NullTime
+	if c.Query("DeletedDateStart") == "" {
+		DeletedDateStart.Valid = false
+	} else {
+		DeletedDateStart.Scan(c.Query("DeletedDateStart"))
+	}
+
+	var DeletedDateEnd sql.NullTime
+	if c.Query("DeletedDateEnd") == "" {
+		DeletedDateEnd.Valid = false
+	} else {
+		DeletedDateEnd.Scan(c.Query("DeletedDateEnd"))
+	}
+
+	var LastModifiedDateStart sql.NullTime
+	if c.Query("LastModifiedDateStart") == "" {
+		LastModifiedDateStart.Valid = false
+	} else {
+		LastModifiedDateStart.Scan(c.Query("LastModifiedDateStart"))
+	}
+
+	var LastModifiedDateEnd sql.NullTime
+	if c.Query("LastModifiedDateEnd") == "" {
+		LastModifiedDateEnd.Valid = false
+	} else {
+		LastModifiedDateEnd.Scan(c.Query("LastModifiedDateEnd"))
+	}
+
+	param := db.GetAlertParams{
+		ID:                    ID,
+		BelongCMP:             BelongCMP,
+		Alert:                 Alert,
+		CreateDateStart:       CreateDateStart,
+		CreateDateEnd:         CreateDateEnd,
+		DeletedDateStart:      DeletedDateStart,
+		DeletedDateEnd:        DeletedDateEnd,
+		LastModifiedDateStart: LastModifiedDateStart,
+		LastModifiedDateEnd:   LastModifiedDateEnd,
+	}
+	res, err := u.svc.AlertServ.GetAlert(param)
+
+	if err != nil && err != sql.ErrNoRows {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	if err == sql.ErrNoRows || len(res) == 0 {
+		c.JSON(http.StatusOK, gin.H{})
 		c.Abort()
 		return
 	}
 
-	c.JSON(http.StatusOK, jobList)
+	var Lastalert sql.NullInt64
+	Lastalert.Scan(res[0].ID)
+
+	updateParam := db.UpdateLastAlertParams{
+		ID:        int64(cuid),
+		Lastalert: Lastalert,
+	}
+
+	if role >= 300 {
+		u.svc.AlertServ.UpdateLastAlert(updateParam)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"res": res})
 }
 
 func (u *JobsCtrlImpl) ClaimJob(c *gin.Context) {
@@ -95,7 +403,7 @@ func (u *JobsCtrlImpl) ClaimJob(c *gin.Context) {
 		Jobid:    int64(id),
 		Driverid: int64(UserID),
 	}
-	res, err := u.svc.JobsServ.ClaimJob(param)
+	res, err, num := u.svc.JobsServ.ClaimJob(param)
 
 	if err != nil {
 		fmt.Print(err)
@@ -113,7 +421,9 @@ func (u *JobsCtrlImpl) ClaimJob(c *gin.Context) {
 		c.Abort()
 		return
 	}
-
+	if num == 1 {
+		utils.SandMsg(1, 400, "check job open")
+	}
 	c.JSON(http.StatusOK, gin.H{"res": res})
 
 }
@@ -126,7 +436,9 @@ func (u *JobsCtrlImpl) FinishClaimJob(c *gin.Context) {
 	}
 	id, err := strconv.Atoi(sid)
 	if err != nil {
+
 		c.AbortWithStatus(http.StatusBadRequest)
+		return
 	}
 
 	UserID := c.MustGet("UserID").(int)
@@ -163,6 +475,8 @@ func (u *JobsCtrlImpl) FinishClaimJob(c *gin.Context) {
 	err = u.svc.JobsServ.FinishClaimedJob(param)
 	if err != nil {
 		os.Remove(path)
+
+		fmt.Print(err)
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
@@ -255,7 +569,10 @@ func (u *JobsCtrlImpl) CancelClaimJob(c *gin.Context) {
 		DeletedBy: uid,
 	}
 
-	err = u.svc.JobsServ.DeleteClaimedJob(param)
+	num, err := u.svc.JobsServ.DeleteClaimedJob(param)
+	if num == 1 {
+		utils.SandMsg(1, 400, "check job open")
+	}
 
 	if err != nil {
 		fmt.Print(err)
@@ -387,12 +704,26 @@ func (u *JobsCtrlImpl) UpdateJob(c *gin.Context) {
 	}
 
 	var CloseDate sql.NullTime
-	CloseDate.Scan(reqBody.CloseDate)
+	if reqBody.CloseDate != "" {
+
+		ct, err := time.Parse(time.DateOnly, reqBody.CloseDate)
+		if err != nil {
+			c.Status(http.StatusBadRequest)
+			c.Abort()
+			return
+		}
+		fmt.Print("ct: ", ct)
+		CloseDate.Scan(ct)
+
+	} else {
+		CloseDate.Valid = false
+	}
 
 	var UserID sql.NullInt64
 	UserID.Scan(cuid)
 
 	param := db.UpdateJobParams{
+		ID:        int64(reqBody.ID),
 		FromLoc:   reqBody.FromLoc,
 		Mid:       Mid,
 		ToLoc:     reqBody.ToLoc,

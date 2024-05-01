@@ -10,16 +10,16 @@ import (
 type JobsServ interface {
 	GetClaimedJobByID(id int64) (db.Claimjobt, error)
 	CreateJob(param db.CreateJobParams) (int64, error)
-	IncreaseRemaining(id int64) error
-	DecreaseRemaining(id int64) error
+	IncreaseRemaining(id int64) (int16, error)
+	DecreaseRemaining(id int64) (int16, error)
 	FinishClaimedJob(param db.FinishClaimedJobParams) error
-	ClaimJob(param db.ClaimJobParams) (int64, error)
-	GetAllJobs() ([]db.Jobst, error)
-	GetAllJobsByCmp(belongCmp int64) ([]db.Jobst, error)
+	ClaimJob(param db.ClaimJobParams) (int64, error, int16)
+	GetAllJobs(param db.GetAllJobsAdminParams) ([]db.GetAllJobsAdminRow, error)
+	GetAllJobsClient(param db.GetAllJobsClientParams) ([]db.GetAllJobsClientRow, error)
 	DeleteJob(id int64) error
 	UpdateJob(param db.UpdateJobParams) (int64, error)
 	GetCurrentClaimedJob(id int64) (db.GetCurrentClaimedJobRow, error)
-	DeleteClaimedJob(param db.DeleteClaimedJobParams) error
+	DeleteClaimedJob(param db.DeleteClaimedJobParams) (int16, error)
 	ApproveFinishedJob(param db.ApproveFinishedJobParams) error
 	SetJobNoMore(id int64) error
 	GetAllClaimedJobs() ([]db.Claimjobt, error)
@@ -45,12 +45,12 @@ func (s *JobsServImpl) ApproveFinishedJob(param db.ApproveFinishedJobParams) err
 	return err
 }
 
-func (s *JobsServImpl) DeleteClaimedJob(param db.DeleteClaimedJobParams) error {
+func (s *JobsServImpl) DeleteClaimedJob(param db.DeleteClaimedJobParams) (int16, error) {
 
 	tx, err := s.conn.BeginTx(context.Background(), nil)
 
 	if err != nil {
-		return err
+		return -99, err
 	}
 
 	qtx := s.q.WithTx(tx)
@@ -58,36 +58,37 @@ func (s *JobsServImpl) DeleteClaimedJob(param db.DeleteClaimedJobParams) error {
 
 	if err != nil {
 		tx.Rollback()
-		return err
+		return -99, err
 	}
 
 	res, err := qtx.GetClaimedJobByID(context.Background(), param.ID)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return -99, err
 	}
 
 	jres, err := qtx.GetJobById(context.Background(), res.Jobid)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return -99, err
 	}
+	var remain int16
 
 	if !(jres.CloseDate.Valid) {
-		err = qtx.IncreaseRemaining(context.Background(), res.Jobid)
+		remain, err = qtx.IncreaseRemaining(context.Background(), res.Jobid)
 		if err != nil {
 			tx.Rollback()
-			return err
+			return -99, err
 		}
 	}
 
 	err = tx.Commit()
 	if err != nil {
 		tx.Rollback()
-		return err
+		return -99, err
 	}
 
-	return nil
+	return remain, nil
 }
 
 func (s *JobsServImpl) GetCurrentClaimedJob(id int64) (db.GetCurrentClaimedJobRow, error) {
@@ -96,15 +97,15 @@ func (s *JobsServImpl) GetCurrentClaimedJob(id int64) (db.GetCurrentClaimedJobRo
 	return res, err
 }
 
-func (s *JobsServImpl) IncreaseRemaining(id int64) error {
-	err := s.q.IncreaseRemaining(context.Background(), id)
+func (s *JobsServImpl) IncreaseRemaining(id int64) (int16, error) {
+	res, err := s.q.IncreaseRemaining(context.Background(), id)
 
-	return err
+	return res, err
 }
 
-func (s *JobsServImpl) DecreaseRemaining(id int64) error {
-	err := s.q.DecreaseRemaining(context.Background(), id)
-	return err
+func (s *JobsServImpl) DecreaseRemaining(id int64) (int16, error) {
+	res, err := s.q.DecreaseRemaining(context.Background(), id)
+	return res, err
 }
 
 func (s *JobsServImpl) GetClaimedJobByID(id int64) (db.Claimjobt, error) {
@@ -122,11 +123,11 @@ func (s *JobsServImpl) FinishClaimedJob(param db.FinishClaimedJobParams) error {
 	return err
 }
 
-func (s *JobsServImpl) ClaimJob(param db.ClaimJobParams) (int64, error) {
+func (s *JobsServImpl) ClaimJob(param db.ClaimJobParams) (int64, error, int16) {
 	tx, err := s.conn.BeginTx(context.Background(), nil)
 
 	if err != nil {
-		return -99, err
+		return -99, err, -99
 	}
 
 	qtx := s.q.WithTx(tx)
@@ -134,44 +135,44 @@ func (s *JobsServImpl) ClaimJob(param db.ClaimJobParams) (int64, error) {
 	cres, err := qtx.GetCurrentClaimedJob(context.Background(), param.Driverid)
 
 	if err == nil {
-		return cres.ID, errors.New("already have ongoing job")
+		return cres.ID, errors.New("already have ongoing job"), -99
 	}
 
 	// if err != nil && err != sql.ErrNoRows {
 	if err != sql.ErrNoRows {
 		tx.Rollback()
-		return -99, err
+		return -99, err, -99
 	}
 
 	res, err := qtx.ClaimJob(context.Background(), param)
 	if err != nil {
 		tx.Rollback()
-		return -99, err
+		return -99, err, -99
 	}
 
-	err = qtx.DecreaseRemaining(context.Background(), param.Jobid)
+	remain, err := qtx.DecreaseRemaining(context.Background(), param.Jobid)
 	if err != nil {
 		tx.Rollback()
-		return -99, err
+		return -99, err, -99
 	}
 
 	err = tx.Commit()
 
 	if err != nil {
 		tx.Rollback()
-		return -99, err
+		return -99, err, -99
 	}
 
-	return res, nil
+	return res, nil, remain
 }
 
-func (s *JobsServImpl) GetAllJobs() ([]db.Jobst, error) {
-	res, err := s.q.GetAllJobs(context.Background())
+func (s *JobsServImpl) GetAllJobs(param db.GetAllJobsAdminParams) ([]db.GetAllJobsAdminRow, error) {
+	res, err := s.q.GetAllJobsAdmin(context.Background(), param)
 	return res, err
 }
 
-func (s *JobsServImpl) GetAllJobsByCmp(belongCmp int64) ([]db.Jobst, error) {
-	res, err := s.q.GetAllJobsByCmp(context.Background(), belongCmp)
+func (s *JobsServImpl) GetAllJobsClient(param db.GetAllJobsClientParams) ([]db.GetAllJobsClientRow, error) {
+	res, err := s.q.GetAllJobsClient(context.Background(), param)
 	return res, err
 }
 

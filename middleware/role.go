@@ -82,6 +82,18 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 			c.Abort()
 			return
 		}
+
+		issuer, err := claims.GetIssuer()
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
+			c.Abort()
+			return
+		}
+		if info.Seed.String != issuer {
+			c.JSON(http.StatusNotAcceptable, gin.H{"err": "Revalid"})
+			c.Abort()
+			return
+		}
 		c.Set("Role", info.Role)
 		c.Set("belongCmp", info.Belongcmp)
 		c.Next()

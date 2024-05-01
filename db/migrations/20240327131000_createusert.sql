@@ -15,6 +15,7 @@ CREATE TABLE UserT(
     pwd  varchar(76) NOT NULL,
     name varchar(25) NOT NULL,
     belongCMP bigint NOT NULL references CMPT(id),
+    seed varchar(20), 
     role smallint NOT NULL,
     -- 0~100:super admin
     -- 101~200:company

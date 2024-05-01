@@ -11,6 +11,29 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
+type GetJobsClientBodyT struct {
+	ID      int    `json:"id"`
+	FromLoc string `json:"fromLoc"`
+	Mid     string `json:"mid"`
+	ToLoc   string `json:"toLoc"`
+}
+type GetJobsBodyT struct {
+	ID                    int    `json:"id"`
+	FromLoc               string `json:"fromLoc"`
+	Mid                   string `json:"mid"`
+	ToLoc                 string `json:"toLoc"`
+	Belongcmp             int    `json:"belongCmp"`
+	Remaining             int    `json:"remaining"`
+	CloseDateStart        string `json:"closeDateStart"`
+	CloseDateEnd          string `json:"closeDateEnd"`
+	CreateDateStart       string `json:"createDateStart"`
+	CreateDateEnd         string `json:"createDateEnd"`
+	DeletedDateStart      string `json:"deletedDateStart"`
+	DeletedDateEnd        string `json:"deletedDateEnd"`
+	LastModifiedDateStart string `json:"lastModifiedDateStart"`
+	LastModifiedDateEnd   string `json:"lastModifiedDateEnd"`
+}
+
 type UpdateDriverPic struct {
 	Insurances    *multipart.FileHeader `form:"Insurances"`
 	Registration  *multipart.FileHeader `form:"Registration"`
@@ -31,13 +54,12 @@ type UpdateJobBodyT struct {
 	Mid       string `json:"mid"`
 	ToLoc     string `json:"toLoc" binding:"required"`
 	Price     int    `json:"price" binding:"required"`
-	Remaining int    `json:"estimated" binding:"required"`
+	Remaining int    `json:"remaining" binding:"required"`
 	Belongcmp int    `json:"belongCmp" binding:"required"`
 	Source    string `json:"source" binding:"required"`
-	// Jobdate   time.Time `json:"jobDate" binding:"required"`
 	Jobdate   string `json:"jobDate" binding:"required"`
 	Memo      string `json:"memo"`
-	CloseDate string `json:"closeDate" binding:"required"`
+	CloseDate string `json:"closeDate"`
 	ID        int    `json:"id" binding:"required"`
 }
 

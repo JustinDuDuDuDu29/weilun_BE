@@ -2,6 +2,7 @@ package controller
 
 import (
 	"database/sql"
+	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -22,12 +23,25 @@ type UserCtrl interface {
 	UpdatePassword(c *gin.Context)
 	UpdateDriverPic(c *gin.Context)
 	ApproveUser(c *gin.Context)
+	Me(c *gin.Context)
 }
 
 type UserCtrlImpl struct {
 	svc *service.AppService
 }
 
+func (u *UserCtrlImpl) Me(c *gin.Context) {
+	id := c.MustGet("UserID").(int)
+	fmt.Print("PROCESSING")
+	res, err := u.svc.UserServ.GetUserById(int64(id))
+
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"res": res})
+}
 func (u *UserCtrlImpl) ApproveUser(c *gin.Context) {
 	sid := c.Param("id")
 

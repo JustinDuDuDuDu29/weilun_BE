@@ -104,6 +104,7 @@ type Usert struct {
 	Pwd              string
 	Name             string
 	Belongcmp        int64
+	Seed             sql.NullString
 	Role             int16
 	Initpwdchanged   bool
 	CreateDate       time.Time

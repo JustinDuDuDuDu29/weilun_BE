@@ -2,7 +2,6 @@ package controller
 
 import (
 	"database/sql"
-	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -176,8 +175,6 @@ func (a *AlertCtrlImpl) DeleteAlert(c *gin.Context) {
 func (a *AlertCtrlImpl) CreateAlert(c *gin.Context) {
 	var reqBody apptypes.CreateAlertBodyT
 	if err := c.BindJSON(&reqBody); err != nil {
-		fmt.Print(err)
-
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}

@@ -20,11 +20,17 @@ type UserServ interface {
 	ApproveDriver(id int64) error
 	UpdateDriverPic(param db.UpdateDriverPicParams) error
 	UpdatePassword(param db.UpdateUserPasswordParams) error
+	NewSeed(param db.NewSeedParams) error
 }
 
 type UserServImpl struct {
 	q    *db.Queries
 	conn *sql.DB
+}
+
+func (u *UserServImpl) NewSeed(param db.NewSeedParams) error {
+	err := u.q.NewSeed(context.Background(), param)
+	return err
 }
 
 func (u *UserServImpl) UpdatePassword(param db.UpdateUserPasswordParams) error {

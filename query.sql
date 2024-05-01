@@ -7,10 +7,11 @@ SELECT * FROM  DriverT inner join usert on DriverT.id = UserT.id where
 DriverT.id = $1 LIMIT 1;
 
 -- name: GetUserByID :one
-SELECT UserT.id, phoneNum, UserT.name, UserT.belongCMP,cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
+SELECT UserT.id, phoneNum, UserT.name, UserT.belongCMP,cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date, seed 
 from UserT 
 inner join cmpt on UserT.belongcmp = cmpt.id 
 where UserT.id=$1 LIMIT 1;
+
 
 -- name: GetUserList :many
 SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
@@ -51,6 +52,12 @@ RETURNING id;
 
 -- name: UserHasModified :exec
 UPDATE UserT set 
+  last_modified_date = NOW()
+WHERE id = $1;
+
+-- name: NewSeed :exec
+UPDATE UserT set 
+  seed = $2,
   last_modified_date = NOW()
 WHERE id = $1;
 
@@ -124,9 +131,48 @@ UPDATE cmpt
   last_modified_date = NOW()
 WHERE id = $1;
 
+-- name: GetAllJobsClient :many
+SELECT  *
+from JobsT
+inner join cmpt on JobsT.belongcmp = cmpt.id 
+where 
+(JobsT.id = sqlc.narg('id') OR sqlc.narg('id') IS NULL)AND
+(JobsT.From_Loc= sqlc.narg('FromLoc') OR sqlc.narg('FromLoc') IS NULL)AND
+(JobsT.Mid= sqlc.narg('Mid') OR sqlc.narg('Mid') IS NULL)AND
+(JobsT.To_Loc= sqlc.narg('ToLoc') OR sqlc.narg('ToLoc') IS NULL)AND
+(belongcmp = sqlc.narg('belongcmp') OR sqlc.narg('belongcmp') IS NULL)AND
+(remaining <> 0)AND
+(JobsT.close_date is NULL)AND
+(JobsT.deleted_date is NULL);
 
--- name: GetAllJobs :many
-SELECT * from JobsT;
+-- AND
+-- ((JobsT.create_date > sqlc.narg('create_date_start') OR sqlc.narg('create_date_start') IS NULL)
+--  AND (JobsT.create_date < sqlc.narg('create_date_end') OR sqlc.narg('create_date_end') IS NULL)) AND
+-- ((JobsT.deleted_date > sqlc.narg('deleted_date_start') OR sqlc.narg('deleted_date_start') IS NULL)
+--  AND (JobsT.deleted_date < sqlc.narg('deleted_date_end') OR sqlc.narg('deleted_date_end') IS NULL)) AND
+-- ((JobsT.last_modified_date > sqlc.narg('last_modified_date_start') OR sqlc.narg('last_modified_date_start') IS NULL) 
+-- AND (JobsT.last_modified_date < sqlc.narg('last_modified_date_end') OR sqlc.narg('last_modified_date_end') IS NULL));
+
+-- name: GetAllJobsAdmin :many
+SELECT  *
+from JobsT
+inner join cmpt on JobsT.belongcmp = cmpt.id 
+where 
+(JobsT.id = sqlc.narg('id') OR sqlc.narg('id') IS NULL)AND
+(JobsT.From_Loc= sqlc.narg('FromLoc') OR sqlc.narg('FromLoc') IS NULL)AND
+(JobsT.Mid= sqlc.narg('Mid') OR sqlc.narg('Mid') IS NULL)AND
+(JobsT.To_Loc= sqlc.narg('ToLoc') OR sqlc.narg('ToLoc') IS NULL)AND
+(belongcmp = sqlc.narg('belongcmp') OR sqlc.narg('belongcmp') IS NULL)AND
+(remaining <> sqlc.narg('remaining') OR sqlc.narg('remaining') IS NULL)AND
+((JobsT.close_date> sqlc.narg('close_date_start') OR sqlc.narg('close_date_start') IS NULL)
+ AND (JobsT.create_date < sqlc.narg('close_date_end') OR sqlc.narg('close_date_end') IS NULL)) AND
+((JobsT.create_date > sqlc.narg('create_date_start') OR sqlc.narg('create_date_start') IS NULL)
+ AND (JobsT.create_date < sqlc.narg('create_date_end') OR sqlc.narg('create_date_end') IS NULL)) AND
+((JobsT.deleted_date > sqlc.narg('deleted_date_start') OR sqlc.narg('deleted_date_start') IS NULL)
+ AND (JobsT.deleted_date < sqlc.narg('deleted_date_end') OR sqlc.narg('deleted_date_end') IS NULL)) AND
+((JobsT.last_modified_date > sqlc.narg('last_modified_date_start') OR sqlc.narg('last_modified_date_start') IS NULL) 
+AND (JobsT.last_modified_date < sqlc.narg('last_modified_date_end') OR sqlc.narg('last_modified_date_end') IS NULL));
+
 
 
 -- name: GetAllJobsByCmp :many
@@ -207,8 +253,8 @@ INSERT into ClaimJobT (
     $2
 ) RETURNING id;
 
--- name: DecreaseRemaining :exec
-Update JobsT set remaining = remaining - 1, last_modified_date = NOW() where id = $1;
+-- name: DecreaseRemaining :one
+Update JobsT set remaining = remaining - 1, last_modified_date = NOW() where id = $1 RETURNING remaining;
 
 -- name: DeleteClaimedJob :exec 
 Update ClaimJobT Set
@@ -217,8 +263,8 @@ Update ClaimJobT Set
     last_modified_date = NOW()
     where id = $1;
 
--- name: IncreaseRemaining :exec
-Update JobsT set remaining = remaining + 1, last_modified_date = NOW() where id = $1;
+-- name: IncreaseRemaining :one
+Update JobsT set remaining = remaining + 1, last_modified_date = NOW() where id = $1 RETURNING remaining;
 
 -- name: FinishClaimedJob :exec
 Update ClaimJobT Set
