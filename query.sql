@@ -3,15 +3,20 @@ SELECT id, role, deleted_date,pwd FROM  UserT
 WHERE phoneNum=$1  LIMIT 1;
 
 -- name: GetDriver :one
-SELECT * FROM  DriverT inner join usert on DriverT.id = UserT.id where
+SELECT UserT.id as ID, insurances, registration, driverLicense, TruckLicense, nationalidnumber, percentage, cmpt.name as cmpName, usert.phoneNum, usert.name as userName, usert.belongCMP, usert.role, usert.initPwdChanged, DriverT.lastAlert, DriverT.Approved_date, UserT.Deleted_Date as Deleted_Date FROM  DriverT inner join usert on DriverT.id = UserT.id inner join cmpt on usert.belongCMP = cmpt.id where
 DriverT.id = $1 LIMIT 1;
 
 -- name: GetUserByID :one
-SELECT UserT.id, phoneNum, UserT.name, UserT.belongCMP,cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date, seed 
+SELECT
+UserT.id as ID, cmpt.name, usert.phoneNum, usert.name, usert.belongCMP, usert.role, usert.initPwdChanged, UserT.Deleted_Date as Deleted_Date 
 from UserT 
 inner join cmpt on UserT.belongcmp = cmpt.id 
 where UserT.id=$1 LIMIT 1;
 
+-- name: GetUserSeed :one
+SELECT seed from UserT 
+inner join cmpt on UserT.belongcmp = cmpt.id 
+where UserT.id=$1 LIMIT 1;
 
 -- name: GetUserList :many
 SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
@@ -132,7 +137,19 @@ UPDATE cmpt
 WHERE id = $1;
 
 -- name: GetAllJobsClient :many
-SELECT  *
+SELECT  
+    JobsT.ID,
+    JobsT.From_Loc,
+    JobsT.Mid,
+    JobsT.To_Loc,
+    JobsT.Price,
+    JobsT.Remaining,
+    JobsT.Belongcmp,
+    JobsT.Source,
+    JobsT.Jobdate,
+    JobsT.Memo,
+    JobsT.Close_Date,
+    JobsT.deleted_date
 from JobsT
 inner join cmpt on JobsT.belongcmp = cmpt.id 
 where 

@@ -699,7 +699,19 @@ func (q *Queries) GetAllJobsByCmp(ctx context.Context, belongcmp int64) ([]Jobst
 }
 
 const getAllJobsClient = `-- name: GetAllJobsClient :many
-SELECT  jobst.id, from_loc, mid, to_loc, price, estimated, remaining, belongcmp, source, jobdate, memo, close_date, jobst.create_date, jobst.deleted_date, jobst.last_modified_date, cmpt.id, name, cmpt.create_date, cmpt.deleted_date, cmpt.last_modified_date
+SELECT  
+    JobsT.ID,
+    JobsT.From_Loc,
+    JobsT.Mid,
+    JobsT.To_Loc,
+    JobsT.Price,
+    JobsT.Remaining,
+    JobsT.Belongcmp,
+    JobsT.Source,
+    JobsT.Jobdate,
+    JobsT.Memo,
+    JobsT.Close_Date,
+    JobsT.deleted_date
 from JobsT
 inner join cmpt on JobsT.belongcmp = cmpt.id 
 where 
@@ -722,26 +734,18 @@ type GetAllJobsClientParams struct {
 }
 
 type GetAllJobsClientRow struct {
-	ID                 int64
-	FromLoc            string
-	Mid                sql.NullString
-	ToLoc              string
-	Price              int16
-	Estimated          int16
-	Remaining          int16
-	Belongcmp          int64
-	Source             string
-	Jobdate            time.Time
-	Memo               sql.NullString
-	CloseDate          sql.NullTime
-	CreateDate         time.Time
-	DeletedDate        sql.NullTime
-	LastModifiedDate   time.Time
-	ID_2               int64
-	Name               string
-	CreateDate_2       time.Time
-	DeletedDate_2      sql.NullTime
-	LastModifiedDate_2 time.Time
+	ID          int64
+	FromLoc     string
+	Mid         sql.NullString
+	ToLoc       string
+	Price       int16
+	Remaining   int16
+	Belongcmp   int64
+	Source      string
+	Jobdate     time.Time
+	Memo        sql.NullString
+	CloseDate   sql.NullTime
+	DeletedDate sql.NullTime
 }
 
 func (q *Queries) GetAllJobsClient(ctx context.Context, arg GetAllJobsClientParams) ([]GetAllJobsClientRow, error) {
@@ -765,21 +769,13 @@ func (q *Queries) GetAllJobsClient(ctx context.Context, arg GetAllJobsClientPara
 			&i.Mid,
 			&i.ToLoc,
 			&i.Price,
-			&i.Estimated,
 			&i.Remaining,
 			&i.Belongcmp,
 			&i.Source,
 			&i.Jobdate,
 			&i.Memo,
 			&i.CloseDate,
-			&i.CreateDate,
 			&i.DeletedDate,
-			&i.LastModifiedDate,
-			&i.ID_2,
-			&i.Name,
-			&i.CreateDate_2,
-			&i.DeletedDate_2,
-			&i.LastModifiedDate_2,
 		); err != nil {
 			return nil, err
 		}
@@ -916,7 +912,7 @@ func (q *Queries) GetCurrentClaimedJob(ctx context.Context, driverid int64) (Get
 }
 
 const getDriver = `-- name: GetDriver :one
-SELECT drivert.id, insurances, registration, driverlicense, trucklicense, nationalidnumber, percentage, lastalert, approved_date, usert.id, phonenum, pwd, name, belongcmp, seed, role, initpwdchanged, create_date, deleted_date, last_modified_date FROM  DriverT inner join usert on DriverT.id = UserT.id where
+SELECT UserT.id as ID, insurances, registration, driverLicense, TruckLicense, nationalidnumber, percentage, cmpt.name as cmpName, usert.phoneNum, usert.name as userName, usert.belongCMP, usert.role, usert.initPwdChanged, DriverT.lastAlert, DriverT.Approved_date, UserT.Deleted_Date as Deleted_Date FROM  DriverT inner join usert on DriverT.id = UserT.id inner join cmpt on usert.belongCMP = cmpt.id where
 DriverT.id = $1 LIMIT 1
 `
 
@@ -928,19 +924,15 @@ type GetDriverRow struct {
 	Trucklicense     sql.NullString
 	Nationalidnumber interface{}
 	Percentage       int16
-	Lastalert        sql.NullInt64
-	ApprovedDate     sql.NullTime
-	ID_2             int64
+	Cmpname          string
 	Phonenum         interface{}
-	Pwd              string
-	Name             string
+	Username         string
 	Belongcmp        int64
-	Seed             sql.NullString
 	Role             int16
 	Initpwdchanged   bool
-	CreateDate       time.Time
+	Lastalert        sql.NullInt64
+	ApprovedDate     sql.NullTime
 	DeletedDate      sql.NullTime
-	LastModifiedDate time.Time
 }
 
 func (q *Queries) GetDriver(ctx context.Context, id int64) (GetDriverRow, error) {
@@ -954,19 +946,15 @@ func (q *Queries) GetDriver(ctx context.Context, id int64) (GetDriverRow, error)
 		&i.Trucklicense,
 		&i.Nationalidnumber,
 		&i.Percentage,
-		&i.Lastalert,
-		&i.ApprovedDate,
-		&i.ID_2,
+		&i.Cmpname,
 		&i.Phonenum,
-		&i.Pwd,
-		&i.Name,
+		&i.Username,
 		&i.Belongcmp,
-		&i.Seed,
 		&i.Role,
 		&i.Initpwdchanged,
-		&i.CreateDate,
+		&i.Lastalert,
+		&i.ApprovedDate,
 		&i.DeletedDate,
-		&i.LastModifiedDate,
 	)
 	return i, err
 }
@@ -1195,23 +1183,22 @@ func (q *Queries) GetUser(ctx context.Context, phonenum interface{}) (GetUserRow
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT UserT.id, phoneNum, UserT.name, UserT.belongCMP,cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date, seed 
+SELECT
+UserT.id as ID, cmpt.name, usert.phoneNum, usert.name, usert.belongCMP, usert.role, usert.initPwdChanged, UserT.Deleted_Date as Deleted_Date 
 from UserT 
 inner join cmpt on UserT.belongcmp = cmpt.id 
 where UserT.id=$1 LIMIT 1
 `
 
 type GetUserByIDRow struct {
-	ID               int64
-	Phonenum         interface{}
-	Name             string
-	Belongcmp        int64
-	Name_2           string
-	Role             int16
-	CreateDate       time.Time
-	DeletedDate      sql.NullTime
-	LastModifiedDate time.Time
-	Seed             sql.NullString
+	ID             int64
+	Name           string
+	Phonenum       interface{}
+	Name_2         string
+	Belongcmp      int64
+	Role           int16
+	Initpwdchanged bool
+	DeletedDate    sql.NullTime
 }
 
 func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, error) {
@@ -1219,15 +1206,13 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, er
 	var i GetUserByIDRow
 	err := row.Scan(
 		&i.ID,
-		&i.Phonenum,
 		&i.Name,
-		&i.Belongcmp,
+		&i.Phonenum,
 		&i.Name_2,
+		&i.Belongcmp,
 		&i.Role,
-		&i.CreateDate,
+		&i.Initpwdchanged,
 		&i.DeletedDate,
-		&i.LastModifiedDate,
-		&i.Seed,
 	)
 	return i, err
 }
@@ -1314,6 +1299,19 @@ func (q *Queries) GetUserList(ctx context.Context, arg GetUserListParams) ([]Get
 		return nil, err
 	}
 	return items, nil
+}
+
+const getUserSeed = `-- name: GetUserSeed :one
+SELECT seed from UserT 
+inner join cmpt on UserT.belongcmp = cmpt.id 
+where UserT.id=$1 LIMIT 1
+`
+
+func (q *Queries) GetUserSeed(ctx context.Context, id int64) (sql.NullString, error) {
+	row := q.db.QueryRowContext(ctx, getUserSeed, id)
+	var seed sql.NullString
+	err := row.Scan(&seed)
+	return seed, err
 }
 
 const increaseRemaining = `-- name: IncreaseRemaining :one

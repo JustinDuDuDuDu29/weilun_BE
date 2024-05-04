@@ -40,6 +40,18 @@ func (u *UserCtrlImpl) Me(c *gin.Context) {
 		return
 	}
 
+	if res.Role >= 300 {
+		res, err := u.svc.UserServ.GetDriverInfo(int64(id))
+
+		if err != nil {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"res": res})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"res": res})
 }
 func (u *UserCtrlImpl) ApproveUser(c *gin.Context) {
@@ -165,11 +177,26 @@ func (u *UserCtrlImpl) UpdateDriverPic(c *gin.Context) {
 
 func (u *UserCtrlImpl) UpdatePassword(c *gin.Context) {
 	cuid := c.MustGet("UserID").(int)
+	role := c.MustGet("Role").(int16)
 
 	var reqBody apptypes.UpdatePasswordBodyT
 	if err := c.BindJSON(&reqBody); err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
+	}
+	if role != 100 && cuid != reqBody.Id {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	if role != 100 {
+		user, err := u.svc.UserServ.GetUserById(int64(reqBody.Id))
+		res, err := u.svc.UserServ.HaveUser(user.Phonenum)
+		if err = bcrypt.CompareHashAndPassword([]byte(res.Pwd), []byte(reqBody.OldPwd)); err != nil {
+			c.Status(http.StatusNotAcceptable)
+			c.Abort()
+			return
+		}
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(reqBody.Pwd), bcrypt.MinCost)

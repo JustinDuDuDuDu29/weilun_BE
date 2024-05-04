@@ -46,7 +46,9 @@ type FinishClaimJobBodyT struct {
 }
 
 type UpdatePasswordBodyT struct {
-	Pwd string `json:"pwd" binding:"required"`
+	Id     int    `json:"id" binding:"required"`
+	Pwd    string `json:"pwd" binding:"required"`
+	OldPwd string `json:"oldPwd"`
 }
 
 type UpdateJobBodyT struct {

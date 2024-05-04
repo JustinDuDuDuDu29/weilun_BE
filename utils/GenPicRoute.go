@@ -19,5 +19,5 @@ func GenPicRoute(cType string) (string, string, error) {
 	}
 	rand := uuid.NewString()
 
-	return "./img/" + rand + fileExt, rand, nil
+	return "./img/" + rand + fileExt, rand + fileExt, nil
 }

@@ -21,11 +21,18 @@ type UserServ interface {
 	UpdateDriverPic(param db.UpdateDriverPicParams) error
 	UpdatePassword(param db.UpdateUserPasswordParams) error
 	NewSeed(param db.NewSeedParams) error
+	GetDriverInfo(id int64) (db.GetDriverRow, error)
+	GetSeed(id int64) (sql.NullString, error)
 }
 
 type UserServImpl struct {
 	q    *db.Queries
 	conn *sql.DB
+}
+
+func (u *UserServImpl) GetSeed(id int64) (sql.NullString, error) {
+	res, err := u.q.GetUserSeed(context.Background(), id)
+	return res, err
 }
 
 func (u *UserServImpl) NewSeed(param db.NewSeedParams) error {
@@ -132,6 +139,11 @@ func (u *UserServImpl) RegisterDriver(queryParam db.CreateUserParams, percentage
 
 func (u *UserServImpl) GetUserById(id int64) (db.GetUserByIDRow, error) {
 	res, err := u.q.GetUserByID(context.Background(), id)
+	return res, err
+}
+
+func (u *UserServImpl) GetDriverInfo(id int64) (db.GetDriverRow, error) {
+	res, err := u.q.GetDriver(context.Background(), id)
 	return res, err
 }
 
