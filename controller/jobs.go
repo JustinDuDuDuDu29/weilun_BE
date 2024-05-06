@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -422,7 +423,7 @@ func (u *JobsCtrlImpl) ClaimJob(c *gin.Context) {
 		return
 	}
 	if num == 1 {
-		utils.SandMsg(1, 400, "check job open")
+		SandMsg(1, 400, "check job open")
 	}
 	c.JSON(http.StatusOK, gin.H{"res": res})
 
@@ -445,6 +446,7 @@ func (u *JobsCtrlImpl) FinishClaimJob(c *gin.Context) {
 
 	var reqBody apptypes.FinishClaimJobBodyT
 	if err := c.Bind(&reqBody); err != nil {
+		fmt.Print("NOT OK")
 		c.Abort()
 		return
 	}
@@ -456,6 +458,7 @@ func (u *JobsCtrlImpl) FinishClaimJob(c *gin.Context) {
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
+	fmt.Print(reqBody.File)
 
 	err = c.SaveUploadedFile(reqBody.File, path)
 	if err != nil {
@@ -518,7 +521,7 @@ func (u *JobsCtrlImpl) ApproveClaimedJob(c *gin.Context) {
 		return
 	}
 
-	utils.SandMsg(int(cJobInfo.Driverid), 300, "Job "+strconv.Itoa(id)+" is approved")
+	SandMsg(int(cJobInfo.Driverid), 300, "Job "+strconv.Itoa(id)+" is approved")
 
 	c.AbortWithStatus(http.StatusOK)
 
@@ -571,7 +574,7 @@ func (u *JobsCtrlImpl) CancelClaimJob(c *gin.Context) {
 
 	num, err := u.svc.JobsServ.DeleteClaimedJob(param)
 	if num == 1 {
-		utils.SandMsg(1, 400, "check job open")
+		SandMsg(1, 400, "check job open")
 	}
 
 	if err != nil {
@@ -691,13 +694,23 @@ func (u *JobsCtrlImpl) UpdateJob(c *gin.Context) {
 	cuid := c.MustGet("UserID").(int)
 
 	var Mid sql.NullString
-	Mid.Scan(reqBody.Mid)
+
+	if !(reqBody.Mid == "") {
+		Mid.Scan(reqBody.Mid)
+	} else {
+		Mid.Valid = false
+	}
 
 	var Memo sql.NullString
-	Memo.Scan(reqBody.Memo)
+	if !(reqBody.Memo == "") {
+		Memo.Scan(reqBody.Memo)
+	} else {
+		Memo.Valid = false
+	}
 
-	Jobdate, err := time.Parse(time.DateOnly, reqBody.Jobdate)
+	Jobdate, err := time.Parse(time.DateOnly, strings.Split(reqBody.Jobdate, "T")[0])
 	if err != nil {
+		fmt.Print(err)
 		c.Status(http.StatusBadRequest)
 		c.Abort()
 		return
@@ -706,8 +719,10 @@ func (u *JobsCtrlImpl) UpdateJob(c *gin.Context) {
 	var CloseDate sql.NullTime
 	if reqBody.CloseDate != "" {
 
-		ct, err := time.Parse(time.DateOnly, reqBody.CloseDate)
+		ct, err := time.Parse(time.DateOnly, strings.Split(reqBody.CloseDate, "T")[0])
 		if err != nil {
+
+			fmt.Print(2)
 			c.Status(http.StatusBadRequest)
 			c.Abort()
 			return

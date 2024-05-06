@@ -347,19 +347,19 @@ func (q *Queries) FinishClaimedJob(ctx context.Context, arg FinishClaimedJobPara
 }
 
 const getAlert = `-- name: GetAlert :many
-SELECT id, alert, belongcmp, create_date, deleted_date, last_modified_date
-from alertT
+SELECT alertT.id as ID, cmpt.name as cmpName, alertT.belongCMP as cmpID, alertT.alert as alert, alertT.create_date as Createdate, alertT.Deleted_Date as Deletedate from alertT
+inner join cmpt on alertT.Belongcmp = cmpt.id
 where 
-(id = $1 OR $1 IS NULL)AND
+(alertT.id = $1 OR $1 IS NULL)AND
 (belongCMP = $2 OR $2 IS NULL)AND
 (alert like $3 OR $3 IS NULL)AND
-((create_date > $4 OR $4 IS NULL)
- AND (create_date < $5 OR $5 IS NULL)) AND
-((deleted_date > $6 OR $6 IS NULL)
- AND (deleted_date < $7 OR $7 IS NULL)) AND
-((last_modified_date > $8 OR $8 IS NULL) 
-AND (last_modified_date < $9 OR $9 IS NULL))
-order by id desc
+((alertT.create_date > $4 OR $4 IS NULL)
+ AND (alertT.create_date < $5 OR $5 IS NULL)) AND
+((alertT.deleted_date > $6 OR $6 IS NULL)
+ AND (alertT.deleted_date < $7 OR $7 IS NULL)) AND
+((alertT.last_modified_date > $8 OR $8 IS NULL) 
+AND (alertT.last_modified_date < $9 OR $9 IS NULL))
+order by alertT.id desc
 `
 
 type GetAlertParams struct {
@@ -374,7 +374,16 @@ type GetAlertParams struct {
 	LastModifiedDateEnd   sql.NullTime
 }
 
-func (q *Queries) GetAlert(ctx context.Context, arg GetAlertParams) ([]Alertt, error) {
+type GetAlertRow struct {
+	ID         int64
+	Cmpname    string
+	Cmpid      int64
+	Alert      string
+	Createdate time.Time
+	Deletedate sql.NullTime
+}
+
+func (q *Queries) GetAlert(ctx context.Context, arg GetAlertParams) ([]GetAlertRow, error) {
 	rows, err := q.db.QueryContext(ctx, getAlert,
 		arg.ID,
 		arg.BelongCMP,
@@ -390,16 +399,16 @@ func (q *Queries) GetAlert(ctx context.Context, arg GetAlertParams) ([]Alertt, e
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Alertt
+	var items []GetAlertRow
 	for rows.Next() {
-		var i Alertt
+		var i GetAlertRow
 		if err := rows.Scan(
 			&i.ID,
+			&i.Cmpname,
+			&i.Cmpid,
 			&i.Alert,
-			&i.Belongcmp,
-			&i.CreateDate,
-			&i.DeletedDate,
-			&i.LastModifiedDate,
+			&i.Createdate,
+			&i.Deletedate,
 		); err != nil {
 			return nil, err
 		}
@@ -1033,7 +1042,7 @@ func (q *Queries) GetLastAlert(ctx context.Context, id int64) (sql.NullInt64, er
 }
 
 const getRepair = `-- name: GetRepair :many
-SELECT repairt.id, type, driverid, repairinfo, repairt.create_date, approved_date, repairt.deleted_date, repairt.last_modified_date, usert.id, phonenum, pwd, name, belongcmp, seed, role, initpwdchanged, usert.create_date, usert.deleted_date, usert.last_modified_date
+SELECT repairT.id as ID, UserT.id as Driverid, UserT.Name as Drivername, repairT.type as type, repairT.Repairinfo as Repairinfo, repairT.Create_Date as CreateDate, repairT.Approved_Date as ApprovedDate
 from repairT 
 inner join UserT on UserT.id = repairT.driverID
 where 
@@ -1043,10 +1052,9 @@ where
 (UserT.belongcmp = $4 OR $4 IS NULL)AND
 ((repairT.create_date > $5 OR $5 IS NULL)
  AND (repairT.create_date < $6 OR $6 IS NULL)) AND
-((repairT.deleted_date > $7 OR $7 IS NULL)
- AND (repairT.deleted_date < $8 OR $8 IS NULL)) AND
-((repairT.last_modified_date > $9 OR $9 IS NULL) 
-AND (repairT.last_modified_date < $10 OR $10 IS NULL))
+repairT.deleted_date is null AND
+((repairT.last_modified_date > $7 OR $7 IS NULL) 
+AND (repairT.last_modified_date < $8 OR $8 IS NULL))
 `
 
 type GetRepairParams struct {
@@ -1056,32 +1064,18 @@ type GetRepairParams struct {
 	Belongcmp             sql.NullInt64
 	CreateDateStart       sql.NullTime
 	CreateDateEnd         sql.NullTime
-	DeletedDateStart      sql.NullTime
-	DeletedDateEnd        sql.NullTime
 	LastModifiedDateStart sql.NullTime
 	LastModifiedDateEnd   sql.NullTime
 }
 
 type GetRepairRow struct {
-	ID                 int64
-	Type               string
-	Driverid           int64
-	Repairinfo         json.RawMessage
-	CreateDate         time.Time
-	ApprovedDate       sql.NullTime
-	DeletedDate        sql.NullTime
-	LastModifiedDate   time.Time
-	ID_2               int64
-	Phonenum           interface{}
-	Pwd                string
-	Name               string
-	Belongcmp          int64
-	Seed               sql.NullString
-	Role               int16
-	Initpwdchanged     bool
-	CreateDate_2       time.Time
-	DeletedDate_2      sql.NullTime
-	LastModifiedDate_2 time.Time
+	ID           int64
+	Driverid     int64
+	Drivername   string
+	Type         string
+	Repairinfo   json.RawMessage
+	Createdate   time.Time
+	Approveddate sql.NullTime
 }
 
 func (q *Queries) GetRepair(ctx context.Context, arg GetRepairParams) ([]GetRepairRow, error) {
@@ -1092,8 +1086,6 @@ func (q *Queries) GetRepair(ctx context.Context, arg GetRepairParams) ([]GetRepa
 		arg.Belongcmp,
 		arg.CreateDateStart,
 		arg.CreateDateEnd,
-		arg.DeletedDateStart,
-		arg.DeletedDateEnd,
 		arg.LastModifiedDateStart,
 		arg.LastModifiedDateEnd,
 	)
@@ -1106,24 +1098,12 @@ func (q *Queries) GetRepair(ctx context.Context, arg GetRepairParams) ([]GetRepa
 		var i GetRepairRow
 		if err := rows.Scan(
 			&i.ID,
-			&i.Type,
 			&i.Driverid,
+			&i.Drivername,
+			&i.Type,
 			&i.Repairinfo,
-			&i.CreateDate,
-			&i.ApprovedDate,
-			&i.DeletedDate,
-			&i.LastModifiedDate,
-			&i.ID_2,
-			&i.Phonenum,
-			&i.Pwd,
-			&i.Name,
-			&i.Belongcmp,
-			&i.Seed,
-			&i.Role,
-			&i.Initpwdchanged,
-			&i.CreateDate_2,
-			&i.DeletedDate_2,
-			&i.LastModifiedDate_2,
+			&i.Createdate,
+			&i.Approveddate,
 		); err != nil {
 			return nil, err
 		}
@@ -1184,7 +1164,7 @@ func (q *Queries) GetUser(ctx context.Context, phonenum interface{}) (GetUserRow
 
 const getUserByID = `-- name: GetUserByID :one
 SELECT
-UserT.id as ID, cmpt.name, usert.phoneNum, usert.name, usert.belongCMP, usert.role, usert.initPwdChanged, UserT.Deleted_Date as Deleted_Date 
+UserT.id as ID, cmpt.name as Cmpname, usert.phoneNum as phoneNum, usert.name as Username, usert.belongCMP, usert.role, usert.initPwdChanged, UserT.Deleted_Date as Deleted_Date 
 from UserT 
 inner join cmpt on UserT.belongcmp = cmpt.id 
 where UserT.id=$1 LIMIT 1
@@ -1192,9 +1172,9 @@ where UserT.id=$1 LIMIT 1
 
 type GetUserByIDRow struct {
 	ID             int64
-	Name           string
+	Cmpname        string
 	Phonenum       interface{}
-	Name_2         string
+	Username       string
 	Belongcmp      int64
 	Role           int16
 	Initpwdchanged bool
@@ -1206,9 +1186,9 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, er
 	var i GetUserByIDRow
 	err := row.Scan(
 		&i.ID,
-		&i.Name,
+		&i.Cmpname,
 		&i.Phonenum,
-		&i.Name_2,
+		&i.Username,
 		&i.Belongcmp,
 		&i.Role,
 		&i.Initpwdchanged,
@@ -1218,7 +1198,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, er
 }
 
 const getUserList = `-- name: GetUserList :many
-SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
+SELECT UserT.id as ID, phoneNum, UserT.name as Username, cmpt.name as Cmpname , role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
 from UserT 
 inner join cmpt on UserT.belongcmp = cmpt.id 
 where 
@@ -1250,8 +1230,8 @@ type GetUserListParams struct {
 type GetUserListRow struct {
 	ID               int64
 	Phonenum         interface{}
-	Name             string
-	Name_2           string
+	Username         string
+	Cmpname          string
 	Role             int16
 	CreateDate       time.Time
 	DeletedDate      sql.NullTime
@@ -1281,8 +1261,8 @@ func (q *Queries) GetUserList(ctx context.Context, arg GetUserListParams) ([]Get
 		if err := rows.Scan(
 			&i.ID,
 			&i.Phonenum,
-			&i.Name,
-			&i.Name_2,
+			&i.Username,
+			&i.Cmpname,
 			&i.Role,
 			&i.CreateDate,
 			&i.DeletedDate,

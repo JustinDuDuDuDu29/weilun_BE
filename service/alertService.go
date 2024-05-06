@@ -9,7 +9,7 @@ import (
 
 type AlertServ interface {
 	CreateAlert(param db.CreateAlertParams) (int64, error)
-	GetAlert(param db.GetAlertParams) ([]db.Alertt, error)
+	GetAlert(param db.GetAlertParams) ([]db.GetAlertRow, error)
 	DeleteAlert(id int64) error
 	UpdateAlert(param db.UpdateAlertParams) error
 	UpdateLastAlert(param db.UpdateLastAlertParams) error
@@ -49,7 +49,7 @@ func (s *AlertServImpl) CreateAlert(param db.CreateAlertParams) (int64, error) {
 	return res, err
 }
 
-func (s *AlertServImpl) GetAlert(param db.GetAlertParams) ([]db.Alertt, error) {
+func (s *AlertServImpl) GetAlert(param db.GetAlertParams) ([]db.GetAlertRow, error) {
 	res, err := s.q.GetAlert(context.Background(), param)
 	return res, err
 }

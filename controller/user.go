@@ -2,7 +2,6 @@ package controller
 
 import (
 	"database/sql"
-	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -32,7 +31,7 @@ type UserCtrlImpl struct {
 
 func (u *UserCtrlImpl) Me(c *gin.Context) {
 	id := c.MustGet("UserID").(int)
-	fmt.Print("PROCESSING")
+
 	res, err := u.svc.UserServ.GetUserById(int64(id))
 
 	if err != nil {
@@ -76,7 +75,7 @@ func (u *UserCtrlImpl) ApproveUser(c *gin.Context) {
 		return
 	}
 
-	utils.SandMsg(id, 200, "driver Approved")
+	SandMsg(id, 200, "driver Approved")
 	c.AbortWithStatus(http.StatusOK)
 }
 

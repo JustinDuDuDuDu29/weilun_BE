@@ -8,7 +8,7 @@ DriverT.id = $1 LIMIT 1;
 
 -- name: GetUserByID :one
 SELECT
-UserT.id as ID, cmpt.name, usert.phoneNum, usert.name, usert.belongCMP, usert.role, usert.initPwdChanged, UserT.Deleted_Date as Deleted_Date 
+UserT.id as ID, cmpt.name as Cmpname, usert.phoneNum as phoneNum, usert.name as Username, usert.belongCMP, usert.role, usert.initPwdChanged, UserT.Deleted_Date as Deleted_Date 
 from UserT 
 inner join cmpt on UserT.belongcmp = cmpt.id 
 where UserT.id=$1 LIMIT 1;
@@ -19,7 +19,7 @@ inner join cmpt on UserT.belongcmp = cmpt.id
 where UserT.id=$1 LIMIT 1;
 
 -- name: GetUserList :many
-SELECT UserT.id, phoneNum, UserT.name, cmpt.name, role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
+SELECT UserT.id as ID, phoneNum, UserT.name as Username, cmpt.name as Cmpname , role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
 from UserT 
 inner join cmpt on UserT.belongcmp = cmpt.id 
 where 
@@ -306,7 +306,7 @@ SELECT t1.percentage*t2.price as earn from ClaimJobT t1 inner join JobsT t2 on t
 INSERT into repairT (type, driverID, repairInfo) values ($1, $2, $3) RETURNING id;
 
 -- name: GetRepair :many
-SELECT *
+SELECT repairT.id as ID, UserT.id as Driverid, UserT.Name as Drivername, repairT.type as type, repairT.Repairinfo as Repairinfo, repairT.Create_Date as CreateDate, repairT.Approved_Date as ApprovedDate
 from repairT 
 inner join UserT on UserT.id = repairT.driverID
 where 
@@ -316,8 +316,7 @@ where
 (UserT.belongcmp = sqlc.narg('belongcmp') OR sqlc.narg('belongcmp') IS NULL)AND
 ((repairT.create_date > sqlc.narg('create_date_start') OR sqlc.narg('create_date_start') IS NULL)
  AND (repairT.create_date < sqlc.narg('create_date_end') OR sqlc.narg('create_date_end') IS NULL)) AND
-((repairT.deleted_date > sqlc.narg('deleted_date_start') OR sqlc.narg('deleted_date_start') IS NULL)
- AND (repairT.deleted_date < sqlc.narg('deleted_date_end') OR sqlc.narg('deleted_date_end') IS NULL)) AND
+repairT.deleted_date is null AND
 ((repairT.last_modified_date > sqlc.narg('last_modified_date_start') OR sqlc.narg('last_modified_date_start') IS NULL) 
 AND (repairT.last_modified_date < sqlc.narg('last_modified_date_end') OR sqlc.narg('last_modified_date_end') IS NULL));
 
@@ -351,19 +350,19 @@ where id = $1;
 SELECT lastAlert from driverT where id = $1;
 
 -- name: GetAlert :many
-SELECT *
-from alertT
+SELECT alertT.id as ID, cmpt.name as cmpName, alertT.belongCMP as cmpID, alertT.alert as alert, alertT.create_date as Createdate, alertT.Deleted_Date as Deletedate from alertT
+inner join cmpt on alertT.Belongcmp = cmpt.id
 where 
-(id = sqlc.narg('id') OR sqlc.narg('id') IS NULL)AND
+(alertT.id = sqlc.narg('id') OR sqlc.narg('id') IS NULL)AND
 (belongCMP = sqlc.narg('belongCMP') OR sqlc.narg('belongCMP') IS NULL)AND
 (alert like sqlc.narg('alert') OR sqlc.narg('alert') IS NULL)AND
-((create_date > sqlc.narg('create_date_start') OR sqlc.narg('create_date_start') IS NULL)
- AND (create_date < sqlc.narg('create_date_end') OR sqlc.narg('create_date_end') IS NULL)) AND
-((deleted_date > sqlc.narg('deleted_date_start') OR sqlc.narg('deleted_date_start') IS NULL)
- AND (deleted_date < sqlc.narg('deleted_date_end') OR sqlc.narg('deleted_date_end') IS NULL)) AND
-((last_modified_date > sqlc.narg('last_modified_date_start') OR sqlc.narg('last_modified_date_start') IS NULL) 
-AND (last_modified_date < sqlc.narg('last_modified_date_end') OR sqlc.narg('last_modified_date_end') IS NULL))
-order by id desc;
+((alertT.create_date > sqlc.narg('create_date_start') OR sqlc.narg('create_date_start') IS NULL)
+ AND (alertT.create_date < sqlc.narg('create_date_end') OR sqlc.narg('create_date_end') IS NULL)) AND
+((alertT.deleted_date > sqlc.narg('deleted_date_start') OR sqlc.narg('deleted_date_start') IS NULL)
+ AND (alertT.deleted_date < sqlc.narg('deleted_date_end') OR sqlc.narg('deleted_date_end') IS NULL)) AND
+((alertT.last_modified_date > sqlc.narg('last_modified_date_start') OR sqlc.narg('last_modified_date_start') IS NULL) 
+AND (alertT.last_modified_date < sqlc.narg('last_modified_date_end') OR sqlc.narg('last_modified_date_end') IS NULL))
+order by alertT.id desc;
 
 -- name: GetAlertByCmp :many
 SELECT *

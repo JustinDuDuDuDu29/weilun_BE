@@ -2,10 +2,10 @@ package controller
 
 import (
 	"database/sql"
+	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
-	"main/utils"
 	"net/http"
 	"strconv"
 
@@ -123,6 +123,7 @@ func (a *AlertCtrlImpl) GetAlert(c *gin.Context) {
 	res, err := a.svc.AlertServ.GetAlert(param)
 
 	if err != nil && err != sql.ErrNoRows {
+		fmt.Print(err)
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -189,7 +190,7 @@ func (a *AlertCtrlImpl) CreateAlert(c *gin.Context) {
 		return
 	}
 
-	utils.SandByCmp(reqBody.BelongCmp, 100, reqBody.Alert)
+	SandByCmp(reqBody.BelongCmp, 100, reqBody.Alert)
 
 	c.JSON(http.StatusOK, gin.H{"res": res})
 }

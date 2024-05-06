@@ -25,9 +25,7 @@ type RoleMidImpl struct {
 
 func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 	authHeader := c.Request.Header.Get("Authorization")
-	HAHA := c.Request.Header.Get("HAHA")
 
-	fmt.Print(HAHA)
 	if authHeader == "" {
 		fmt.Print(1)
 		c.JSON(http.StatusUnauthorized, gin.H{

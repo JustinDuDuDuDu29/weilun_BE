@@ -4,7 +4,6 @@ import (
 	// "main/middleware"
 	"main/controller"
 	"main/middleware"
-	"main/utils"
 	"net/http"
 	"os"
 
@@ -27,8 +26,8 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		auth := api.Group("/auth")
 		auth.POST("", c.AuthCtrl.Login)
 
-		io := api.Group("/io", m.RoleMid.IsLoggedIn)
-		io.GET("", utils.HandleWS)
+		io := api.Group("/io")
+		io.GET("", c.SocketCtrl.TestSocket)
 
 		static := api.Group("/static", m.RoleMid.IsLoggedIn)
 		static.StaticFS("/img", http.Dir("./img"))

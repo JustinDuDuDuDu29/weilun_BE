@@ -2,10 +2,11 @@ package controller
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
-	"main/utils"
 	"net/http"
 	"strconv"
 
@@ -85,19 +86,19 @@ func (r *RepairCtrlImpl) GetRepair(c *gin.Context) {
 		CreateDateEnd.Scan(c.Query("CreateDateEnd"))
 	}
 
-	var DeletedDateStart sql.NullTime
-	if c.Query("DeletedDateStart") == "" {
-		DeletedDateStart.Valid = false
-	} else {
-		DeletedDateStart.Scan(c.Query("DeletedDateStart"))
-	}
-
-	var DeletedDateEnd sql.NullTime
-	if c.Query("DeletedDateEnd") == "" {
-		DeletedDateEnd.Valid = false
-	} else {
-		DeletedDateEnd.Scan(c.Query("DeletedDateEnd"))
-	}
+	// var DeletedDateStart sql.NullTime
+	// if c.Query("DeletedDateStart") == "" {
+	// 	DeletedDateStart.Valid = false
+	// } else {
+	// 	DeletedDateStart.Scan(c.Query("DeletedDateStart"))
+	// }
+	//
+	// var DeletedDateEnd sql.NullTime
+	// if c.Query("DeletedDateEnd") == "" {
+	// 	DeletedDateEnd.Valid = false
+	// } else {
+	// 	DeletedDateEnd.Scan(c.Query("DeletedDateEnd"))
+	// }
 
 	var LastModifiedDateStart sql.NullTime
 	if c.Query("LastModifiedDateStart") == "" {
@@ -114,20 +115,21 @@ func (r *RepairCtrlImpl) GetRepair(c *gin.Context) {
 	}
 
 	param := db.GetRepairParams{
-		ID:                    Id,
-		DriverID:              DriverId,
-		Name:                  Name,
-		Belongcmp:             BelongCmp,
-		CreateDateStart:       CreateDateStart,
-		CreateDateEnd:         CreateDateEnd,
-		DeletedDateStart:      DeletedDateStart,
-		DeletedDateEnd:        DeletedDateEnd,
+		ID:              Id,
+		DriverID:        DriverId,
+		Name:            Name,
+		Belongcmp:       BelongCmp,
+		CreateDateStart: CreateDateStart,
+		CreateDateEnd:   CreateDateEnd,
+		// DeletedDateStart:      DeletedDateStart,
+		// DeletedDateEnd:        DeletedDateEnd,
 		LastModifiedDateStart: LastModifiedDateStart,
 		LastModifiedDateEnd:   LastModifiedDateEnd,
 	}
 	repairRes, err := r.svc.RepairServ.GetRepair(param)
 
 	if err != nil && err != sql.ErrNoRows {
+		fmt.Print(err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
@@ -170,7 +172,7 @@ func (r *RepairCtrlImpl) ApproveRepair(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	utils.SandMsg(int(res.Driverid), 300, "Repair "+strconv.Itoa(id)+" is approved")
+	SandMsg(int(res.Driverid), 300, "Repair "+strconv.Itoa(id)+" is approved")
 
 	c.Status(http.StatusOK)
 	c.Abort()
@@ -213,7 +215,7 @@ func (r *RepairCtrlImpl) CreateNewRepair(c *gin.Context) {
 	}
 
 	var reqBody apptypes.NewRepairBodyT
-	err := c.BindJSON(&reqBody)
+	err := c.Bind(&reqBody)
 
 	if err != nil {
 		c.Abort()
@@ -222,10 +224,12 @@ func (r *RepairCtrlImpl) CreateNewRepair(c *gin.Context) {
 
 	cuid := c.MustGet("UserID").(int)
 
+	info := json.RawMessage(reqBody.Repairinfo)
+
 	param := db.CreateNewRepairParams{
 		Type:       repairType,
 		Driverid:   int64(cuid),
-		Repairinfo: reqBody.Repairinfo,
+		Repairinfo: info,
 	}
 
 	res, err := r.svc.RepairServ.NewRepair(param)
