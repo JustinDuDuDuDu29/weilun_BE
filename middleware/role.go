@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"errors"
-	"fmt"
 	"main/service"
 	"net/http"
 	"os"
@@ -27,7 +26,6 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 	authHeader := c.Request.Header.Get("Authorization")
 
 	if authHeader == "" {
-		fmt.Print(1)
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"msg": "Authorization is null in Header",
 		})
@@ -38,7 +36,6 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 	parts := strings.SplitN(authHeader, " ", 2)
 	if !(len(parts) == 2 && parts[0] == "Bearer") {
 
-		fmt.Print(2)
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"msg": "Format of Authorization is wrong",
 		})
@@ -54,14 +51,12 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 		switch {
 		case errors.Is(err, jwt.ErrTokenExpired):
 
-			fmt.Print(3)
 			c.JSON(http.StatusUnauthorized, gin.H{"err": "Token has expired!!!"})
 			c.Abort()
 			return
 
 		default:
 
-			fmt.Print(4)
 			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
@@ -74,7 +69,6 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 
 		if err != nil {
 
-			fmt.Print(5)
 			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
@@ -83,7 +77,6 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 		id, err := strconv.Atoi(res[0])
 		if err != nil {
 
-			fmt.Print(6)
 			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
@@ -92,7 +85,6 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 		info, err := m.svc.UserServ.GetSeed(int64(id))
 		if err != nil {
 
-			fmt.Print(7)
 			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
@@ -101,7 +93,6 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 		issuer, err := claims.GetIssuer()
 		if err != nil {
 
-			fmt.Print(8)
 			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
@@ -114,7 +105,6 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 		userInfo, err := m.svc.UserServ.GetUserById(int64(id))
 		if err != nil {
 
-			fmt.Print(9)
 			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
@@ -127,7 +117,6 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 
 	} else {
 
-		fmt.Print(0)
 		c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 		c.Abort()
 		return

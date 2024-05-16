@@ -23,7 +23,8 @@ func Init(q *sql.Queries, conn *sql2.DB) *controller.AppControllerImpl {
 	jobsServImpl := service.JobsServInit(q, conn)
 	repairServImpl := service.RepairServInit(q, conn)
 	alertServImpl := service.AlertServInit(q, conn)
-	appService := service.AppServiceInit(userServImpl, cmpServImpl, jobsServImpl, repairServImpl, alertServImpl)
+	revenueServImpl := service.RevenueServInit(q, conn)
+	appService := service.AppServiceInit(userServImpl, cmpServImpl, jobsServImpl, repairServImpl, alertServImpl, revenueServImpl)
 	userCtrlImpl := controller.UserCtrlInit(appService)
 	authCtrlImpl := controller.AuthCtrlInit(appService)
 	cmpCtrlImpl := controller.CmpCtrlInit(appService)
@@ -31,7 +32,8 @@ func Init(q *sql.Queries, conn *sql2.DB) *controller.AppControllerImpl {
 	repairCtrlImpl := controller.RepairCtrlInit(appService)
 	alertCtrlImpl := controller.AlertCtrlInit(appService)
 	socketCtrlImpl := controller.SocketCtrlInit(appService)
-	appControllerImpl := controller.AppControllerInit(userCtrlImpl, authCtrlImpl, cmpCtrlImpl, jobsCtrlImpl, repairCtrlImpl, alertCtrlImpl, socketCtrlImpl)
+	revenueCtrlImpl := controller.RevenueCtrlInit(appService)
+	appControllerImpl := controller.AppControllerInit(userCtrlImpl, authCtrlImpl, cmpCtrlImpl, jobsCtrlImpl, repairCtrlImpl, alertCtrlImpl, socketCtrlImpl, revenueCtrlImpl)
 	return appControllerImpl
 }
 
@@ -41,7 +43,8 @@ func MInit(q *sql.Queries, conn *sql2.DB) *middleware.AppMiddlewareImpl {
 	jobsServImpl := service.JobsServInit(q, conn)
 	repairServImpl := service.RepairServInit(q, conn)
 	alertServImpl := service.AlertServInit(q, conn)
-	appService := service.AppServiceInit(userServImpl, cmpServImpl, jobsServImpl, repairServImpl, alertServImpl)
+	revenueServImpl := service.RevenueServInit(q, conn)
+	appService := service.AppServiceInit(userServImpl, cmpServImpl, jobsServImpl, repairServImpl, alertServImpl, revenueServImpl)
 	roleMidImpl := middleware.RoleMidInit(appService)
 	appMiddlewareImpl := middleware.AppMiddlewareInit(roleMidImpl)
 	return appMiddlewareImpl
@@ -51,6 +54,8 @@ func MInit(q *sql.Queries, conn *sql2.DB) *middleware.AppMiddlewareImpl {
 
 var alertServSet = wire.NewSet(service.AlertServInit, wire.Bind(new(service.AlertServ), new(*service.AlertServImpl)))
 
+var revenueServSet = wire.NewSet(service.RevenueServInit, wire.Bind(new(service.RevenueServ), new(*service.RevenueServImpl)))
+
 var cmpServSet = wire.NewSet(service.CmpServInit, wire.Bind(new(service.CmpServ), new(*service.CmpServImpl)))
 
 var jobsServSet = wire.NewSet(service.JobsServInit, wire.Bind(new(service.JobsServ), new(*service.JobsServImpl)))
@@ -58,6 +63,8 @@ var jobsServSet = wire.NewSet(service.JobsServInit, wire.Bind(new(service.JobsSe
 var userServSet = wire.NewSet(service.UserServInit, wire.Bind(new(service.UserServ), new(*service.UserServImpl)))
 
 var repairServSet = wire.NewSet(service.RepairServInit, wire.Bind(new(service.RepairServ), new(*service.RepairServImpl)))
+
+var revenueCtrlSet = wire.NewSet(controller.RevenueCtrlInit, wire.Bind(new(controller.RevenueCtrl), new(*controller.RevenueCtrlImpl)))
 
 var userCtrlSet = wire.NewSet(controller.UserCtrlInit, wire.Bind(new(controller.UserCtrl), new(*controller.UserCtrlImpl)))
 

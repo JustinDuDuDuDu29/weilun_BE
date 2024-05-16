@@ -8,7 +8,7 @@ import (
 )
 
 type JobsServ interface {
-	GetClaimedJobByID(id int64) (db.Claimjobt, error)
+	GetClaimedJobByID(id int64) (db.GetClaimedJobByIDRow, error)
 	CreateJob(param db.CreateJobParams) (int64, error)
 	IncreaseRemaining(id int64) (int16, error)
 	DecreaseRemaining(id int64) (int16, error)
@@ -22,7 +22,7 @@ type JobsServ interface {
 	DeleteClaimedJob(param db.DeleteClaimedJobParams) (int16, error)
 	ApproveFinishedJob(param db.ApproveFinishedJobParams) error
 	SetJobNoMore(id int64) error
-	GetAllClaimedJobs() ([]db.Claimjobt, error)
+	GetAllClaimedJobs() ([]db.GetAllClaimedJobsRow, error)
 }
 
 type JobsServImpl struct {
@@ -108,12 +108,12 @@ func (s *JobsServImpl) DecreaseRemaining(id int64) (int16, error) {
 	return res, err
 }
 
-func (s *JobsServImpl) GetClaimedJobByID(id int64) (db.Claimjobt, error) {
+func (s *JobsServImpl) GetClaimedJobByID(id int64) (db.GetClaimedJobByIDRow, error) {
 	res, err := s.q.GetClaimedJobByID(context.Background(), id)
 	return res, err
 }
 
-func (s *JobsServImpl) GetAllClaimedJobs() ([]db.Claimjobt, error) {
+func (s *JobsServImpl) GetAllClaimedJobs() ([]db.GetAllClaimedJobsRow, error) {
 	res, err := s.q.GetAllClaimedJobs(context.Background())
 	return res, err
 }

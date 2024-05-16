@@ -21,6 +21,7 @@ type JobsCtrl interface {
 	GetAllJob(c *gin.Context)
 	DeleteJob(c *gin.Context)
 	UpdateJob(c *gin.Context)
+	GetClaimedJobByID(c *gin.Context)
 	ClaimJob(c *gin.Context)
 	FinishClaimJob(c *gin.Context)
 	CancelClaimJob(c *gin.Context)
@@ -33,10 +34,38 @@ type JobsCtrlImpl struct {
 	svc *service.AppService
 }
 
+func (u *JobsCtrlImpl) GetClaimedJobByID(c *gin.Context) {
+
+	if c.Param("id") == "" {
+		c.Status(http.StatusBadRequest)
+		c.Abort()
+		return
+	}
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		c.Abort()
+		return
+	}
+
+	res, err := u.svc.JobsServ.GetClaimedJobByID(int64(id))
+
+	if err != nil {
+		fmt.Println(err)
+		c.Status(http.StatusInternalServerError)
+		c.Abort()
+		return
+	}
+	c.JSON(http.StatusOK, res)
+
+}
+
 func (u *JobsCtrlImpl) GetAllClaimedJobs(c *gin.Context) {
 	res, err := u.svc.JobsServ.GetAllClaimedJobs()
 
 	if err != nil {
+		fmt.Println(err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
@@ -110,6 +139,7 @@ func (u *JobsCtrlImpl) GetAllJob(c *gin.Context) {
 		var CloseDateStart sql.NullTime
 		if reqBody.CloseDateStart != "" {
 			dt, err := time.Parse(time.DateOnly, reqBody.CloseDateStart)
+
 			if err != nil {
 				c.Status(http.StatusBadRequest)
 				c.Abort()
@@ -458,7 +488,6 @@ func (u *JobsCtrlImpl) FinishClaimJob(c *gin.Context) {
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
-	fmt.Print(reqBody.File)
 
 	err = c.SaveUploadedFile(reqBody.File, path)
 	if err != nil {
@@ -521,7 +550,7 @@ func (u *JobsCtrlImpl) ApproveClaimedJob(c *gin.Context) {
 		return
 	}
 
-	SandMsg(int(cJobInfo.Driverid), 300, "Job "+strconv.Itoa(id)+" is approved")
+	SandMsg(int(cJobInfo.Userid), 300, "Job "+strconv.Itoa(id)+" is approved")
 
 	c.AbortWithStatus(http.StatusOK)
 
@@ -556,7 +585,7 @@ func (u *JobsCtrlImpl) CancelClaimJob(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	if !(cJobRes.CreateDate.Add(time.Minute*10).After(time.Now()) && cJobRes.Driverid == int64(UserID)) && !(res.Role <= int16(100)) {
+	if !(cJobRes.CreateDate.Add(time.Minute*10).After(time.Now()) && cJobRes.Userid == int64(UserID)) && !(res.Role <= int16(100)) {
 		// reject has pass 5 min
 
 		c.Status(http.StatusConflict)

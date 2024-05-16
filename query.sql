@@ -256,10 +256,10 @@ INSERT INTO JobsT (
 ) RETURNING id;
 
 -- name: GetAllClaimedJobs :many
-SELECT * from ClaimJobT;
+SELECT ClaimJobT.id as id, JobsT.id as JobID, UserT.id as UserID, JobsT.From_Loc, JobsT.mid, JobsT.To_Loc, ClaimJobT.Create_Date, usert.name as userName, cmpt.name as cmpname, cmpT.id as cmpID, ClaimJobT.Approved_date as ApprovedDate, ClaimJobT.Finished_Date as FinishDate from ClaimJobT inner join JobsT on JobsT.id = ClaimJobT.JobId inner join UserT on UserT.id = ClaimJobT.Driverid inner join Cmpt on UserT.belongCMP = cmpt.id WHERE ClaimJobT.Deleted_date is  null;
 
 -- name: GetClaimedJobByID :one
-SELECT * from ClaimJobT where id = $1;
+SELECT ClaimJobT.id as id, JobsT.id as JobID, UserT.id as UserID, JobsT.From_Loc, finished_date, finishPic, JobsT.mid, JobsT.To_Loc, ClaimJobT.Create_Date, usert.name as userName, cmpt.name as cmpname, cmpT.id as cmpID, ClaimJobT.Approved_date as ApprovedDate, DriverT.percentage  as driverPercentage, ClaimJobT.percentage as percentage, price from ClaimJobT inner join JobsT on JobsT.id = ClaimJobT.JobId inner join UserT on UserT.id = ClaimJobT.Driverid inner join Cmpt on UserT.belongCMP = cmpt.id inner join DriverT on driverT.id = UserT.id WHERE ClaimJobT.id = $1;
 
 -- name: ClaimJob :one 
 INSERT into ClaimJobT (
@@ -298,9 +298,14 @@ Update ClaimJobT set Approved_By = $2, approved_date = NOW(), last_modified_date
 SELECT t2.id, t1.*  FROM ClaimJobT t2 inner join JobsT t1 on t1.id = t2.jobID where t2.driverID = $1 and (t2.deleted_date IS NULL and t2.finished_date IS NULL) order by t2.create_date LIMIT 1;
 
 -- name: GetDriverRevenue :many
-SELECT t1.percentage*t2.price as earn from ClaimJobT t1 inner join JobsT t2 on t1.jobID = t2.id where t1.driverID = $1 and (t1.finished_date IS NOT NULL 
-    and approved_date IS NOT NULL and deleted_date IS NOT NULL) and t1.finished_date 
-    between $2 and $3;
+SELECT coalesce(sum(t1.percentage*t2.price), 0) as earn
+, coalesce((select count(*) from ClaimJobT t1 where t1.driverID = $1 
+ and (t1.finished_date IS NOT NULL and approved_date IS NOT NULL and t1.deleted_date IS NULL) 
+and t1.finished_date between $2 and $3), 0) as count
+from ClaimJobT t1 inner join JobsT t2 on t1.jobID = t2.id
+where t1.driverID = $1 
+and (t1.finished_date IS NOT NULL and approved_date IS NOT NULL and t1.deleted_date IS NULL) 
+and t1.finished_date between $2 and $3;
 
 -- name: CreateNewRepair :one
 INSERT into repairT (type, driverID, repairInfo) values ($1, $2, $3) RETURNING id;

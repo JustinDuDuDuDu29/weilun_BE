@@ -3,9 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	db "main/sql"
-	// "github.com/jackc/pgx/v5"
 )
 
 type UserServ interface {
@@ -111,7 +109,6 @@ func (u *UserServImpl) RegisterDriver(queryParam db.CreateUserParams, percentage
 	id, err := qtx.CreateUser(context.Background(), queryParam)
 
 	if err != nil {
-		fmt.Print("HERE1")
 		tx.Rollback()
 		return -99, err
 	}

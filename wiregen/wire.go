@@ -20,6 +20,10 @@ var alertServSet = wire.NewSet(
 	wire.Bind(new(service.AlertServ), new(*service.AlertServImpl)),
 )
 
+var revenueServSet = wire.NewSet(
+	service.RevenueServInit,
+	wire.Bind(new(service.RevenueServ), new(*service.RevenueServImpl)),
+)
 var cmpServSet = wire.NewSet(
 	service.CmpServInit,
 	wire.Bind(new(service.CmpServ), new(*service.CmpServImpl)),
@@ -37,6 +41,11 @@ var userServSet = wire.NewSet(
 var repairServSet = wire.NewSet(
 	service.RepairServInit,
 	wire.Bind(new(service.RepairServ), new(*service.RepairServImpl)),
+)
+
+var revenueCtrlSet = wire.NewSet(
+	controller.RevenueCtrlInit,
+	wire.Bind(new(controller.RevenueCtrl), new(*controller.RevenueCtrlImpl)),
 )
 
 var userCtrlSet = wire.NewSet(
@@ -92,9 +101,11 @@ func Init(q *db.Queries, conn *sql.DB) *controller.AppControllerImpl {
 		jobsServSet,
 		repairCtrlSet,
 		repairServSet,
+		revenueServSet,
 		alertServSet,
 		alertCtrlSet,
 		socketCtrlSet,
+		revenueCtrlSet,
 	)
 
 	return nil
@@ -102,6 +113,7 @@ func Init(q *db.Queries, conn *sql.DB) *controller.AppControllerImpl {
 
 func MInit(q *db.Queries, conn *sql.DB) *middleware.AppMiddlewareImpl {
 	wire.Build(
+		revenueServSet,
 		userServSet,
 		cmpServSet,
 		service.AppServiceInit,

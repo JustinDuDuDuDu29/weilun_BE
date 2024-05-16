@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	db "main/sql"
 )
 
@@ -24,23 +23,16 @@ type AlertServImpl struct {
 func (s *AlertServImpl) HaveNewAlert(id int64) (bool, error) {
 	res, err := s.q.GetDriver(context.Background(), id)
 	if err != nil {
-		fmt.Print("1")
 		return false, err
 	}
 	cmpLastalert, err := s.q.GetAlertByCmp(context.Background(), res.Belongcmp)
 	if err != nil && err != sql.ErrNoRows {
-		fmt.Print("2")
 		return false, err
 	}
 
 	if res.Lastalert.Int64 < cmpLastalert[0].ID {
-		fmt.Print("3")
-
 		return true, nil
 	}
-	fmt.Println("4")
-	fmt.Println(res.Lastalert.Int64)
-	fmt.Println(cmpLastalert[0].ID)
 	return false, nil
 }
 

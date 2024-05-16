@@ -58,6 +58,7 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 
 		claimed := api.Group("/claimed")
 		claimed.GET("", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.GetAllClaimedJobs)
+		claimed.GET(":id", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetClaimedJobByID)
 		claimed.POST("/current", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetCurrentClaimedJob)
 		claimed.POST(":id", m.RoleMid.IsLoggedIn, c.JobsCtrl.ClaimJob)
 		claimed.POST("/finish/:id", m.RoleMid.IsLoggedIn, c.JobsCtrl.FinishClaimJob)
@@ -75,6 +76,9 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		alert.POST("", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.AlertCtrl.CreateAlert)
 		alert.PUT("", m.RoleMid.IsLoggedIn, c.AlertCtrl.CheckNewAlert)
 		alert.DELETE(":id", m.RoleMid.IsLoggedIn, c.AlertCtrl.DeleteAlert)
+
+		revenue := api.Group("/revenue")
+		revenue.GET("", m.RoleMid.IsLoggedIn, c.RevenueCtrl.RevenueDriver)
 	}
 	router.Run(":8080")
 }

@@ -460,31 +460,46 @@ func (q *Queries) GetAlertByCmp(ctx context.Context, belongcmp int64) ([]Alertt,
 }
 
 const getAllClaimedJobs = `-- name: GetAllClaimedJobs :many
-SELECT id, jobid, driverid, percentage, finished_date, finishpic, create_date, deleted_date, deleted_by, last_modified_date, approved_by, approved_date from ClaimJobT
+SELECT ClaimJobT.id as id, JobsT.id as JobID, UserT.id as UserID, JobsT.From_Loc, JobsT.mid, JobsT.To_Loc, ClaimJobT.Create_Date, usert.name as userName, cmpt.name as cmpname, cmpT.id as cmpID, ClaimJobT.Approved_date as ApprovedDate, ClaimJobT.Finished_Date as FinishDate from ClaimJobT inner join JobsT on JobsT.id = ClaimJobT.JobId inner join UserT on UserT.id = ClaimJobT.Driverid inner join Cmpt on UserT.belongCMP = cmpt.id WHERE ClaimJobT.Deleted_date is  null
 `
 
-func (q *Queries) GetAllClaimedJobs(ctx context.Context) ([]Claimjobt, error) {
+type GetAllClaimedJobsRow struct {
+	ID           int64
+	Jobid        int64
+	Userid       int64
+	FromLoc      string
+	Mid          sql.NullString
+	ToLoc        string
+	CreateDate   time.Time
+	Username     string
+	Cmpname      string
+	Cmpid        int64
+	Approveddate sql.NullTime
+	Finishdate   sql.NullTime
+}
+
+func (q *Queries) GetAllClaimedJobs(ctx context.Context) ([]GetAllClaimedJobsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getAllClaimedJobs)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Claimjobt
+	var items []GetAllClaimedJobsRow
 	for rows.Next() {
-		var i Claimjobt
+		var i GetAllClaimedJobsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Jobid,
-			&i.Driverid,
-			&i.Percentage,
-			&i.FinishedDate,
-			&i.Finishpic,
+			&i.Userid,
+			&i.FromLoc,
+			&i.Mid,
+			&i.ToLoc,
 			&i.CreateDate,
-			&i.DeletedDate,
-			&i.DeletedBy,
-			&i.LastModifiedDate,
-			&i.ApprovedBy,
-			&i.ApprovedDate,
+			&i.Username,
+			&i.Cmpname,
+			&i.Cmpid,
+			&i.Approveddate,
+			&i.Finishdate,
 		); err != nil {
 			return nil, err
 		}
@@ -800,25 +815,48 @@ func (q *Queries) GetAllJobsClient(ctx context.Context, arg GetAllJobsClientPara
 }
 
 const getClaimedJobByID = `-- name: GetClaimedJobByID :one
-SELECT id, jobid, driverid, percentage, finished_date, finishpic, create_date, deleted_date, deleted_by, last_modified_date, approved_by, approved_date from ClaimJobT where id = $1
+SELECT ClaimJobT.id as id, JobsT.id as JobID, UserT.id as UserID, JobsT.From_Loc, finished_date, finishPic, JobsT.mid, JobsT.To_Loc, ClaimJobT.Create_Date, usert.name as userName, cmpt.name as cmpname, cmpT.id as cmpID, ClaimJobT.Approved_date as ApprovedDate, DriverT.percentage  as driverPercentage, ClaimJobT.percentage as percentage, price from ClaimJobT inner join JobsT on JobsT.id = ClaimJobT.JobId inner join UserT on UserT.id = ClaimJobT.Driverid inner join Cmpt on UserT.belongCMP = cmpt.id inner join DriverT on driverT.id = UserT.id WHERE ClaimJobT.id = $1
 `
 
-func (q *Queries) GetClaimedJobByID(ctx context.Context, id int64) (Claimjobt, error) {
+type GetClaimedJobByIDRow struct {
+	ID               int64
+	Jobid            int64
+	Userid           int64
+	FromLoc          string
+	FinishedDate     sql.NullTime
+	Finishpic        sql.NullString
+	Mid              sql.NullString
+	ToLoc            string
+	CreateDate       time.Time
+	Username         string
+	Cmpname          string
+	Cmpid            int64
+	Approveddate     sql.NullTime
+	Driverpercentage int16
+	Percentage       sql.NullInt16
+	Price            int16
+}
+
+func (q *Queries) GetClaimedJobByID(ctx context.Context, id int64) (GetClaimedJobByIDRow, error) {
 	row := q.db.QueryRowContext(ctx, getClaimedJobByID, id)
-	var i Claimjobt
+	var i GetClaimedJobByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.Jobid,
-		&i.Driverid,
-		&i.Percentage,
+		&i.Userid,
+		&i.FromLoc,
 		&i.FinishedDate,
 		&i.Finishpic,
+		&i.Mid,
+		&i.ToLoc,
 		&i.CreateDate,
-		&i.DeletedDate,
-		&i.DeletedBy,
-		&i.LastModifiedDate,
-		&i.ApprovedBy,
-		&i.ApprovedDate,
+		&i.Username,
+		&i.Cmpname,
+		&i.Cmpid,
+		&i.Approveddate,
+		&i.Driverpercentage,
+		&i.Percentage,
+		&i.Price,
 	)
 	return i, err
 }
@@ -969,9 +1007,14 @@ func (q *Queries) GetDriver(ctx context.Context, id int64) (GetDriverRow, error)
 }
 
 const getDriverRevenue = `-- name: GetDriverRevenue :many
-SELECT t1.percentage*t2.price as earn from ClaimJobT t1 inner join JobsT t2 on t1.jobID = t2.id where t1.driverID = $1 and (t1.finished_date IS NOT NULL 
-    and approved_date IS NOT NULL and deleted_date IS NOT NULL) and t1.finished_date 
-    between $2 and $3
+SELECT coalesce(sum(t1.percentage*t2.price), 0) as earn
+, coalesce((select count(*) from ClaimJobT t1 where t1.driverID = $1 
+ and (t1.finished_date IS NOT NULL and approved_date IS NOT NULL and t1.deleted_date IS NULL) 
+and t1.finished_date between $2 and $3), 0) as count
+from ClaimJobT t1 inner join JobsT t2 on t1.jobID = t2.id
+where t1.driverID = $1 
+and (t1.finished_date IS NOT NULL and approved_date IS NOT NULL and t1.deleted_date IS NULL) 
+and t1.finished_date between $2 and $3
 `
 
 type GetDriverRevenueParams struct {
@@ -980,19 +1023,24 @@ type GetDriverRevenueParams struct {
 	FinishedDate_2 sql.NullTime
 }
 
-func (q *Queries) GetDriverRevenue(ctx context.Context, arg GetDriverRevenueParams) ([]int32, error) {
+type GetDriverRevenueRow struct {
+	Earn  interface{}
+	Count interface{}
+}
+
+func (q *Queries) GetDriverRevenue(ctx context.Context, arg GetDriverRevenueParams) ([]GetDriverRevenueRow, error) {
 	rows, err := q.db.QueryContext(ctx, getDriverRevenue, arg.Driverid, arg.FinishedDate, arg.FinishedDate_2)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []int32
+	var items []GetDriverRevenueRow
 	for rows.Next() {
-		var earn int32
-		if err := rows.Scan(&earn); err != nil {
+		var i GetDriverRevenueRow
+		if err := rows.Scan(&i.Earn, &i.Count); err != nil {
 			return nil, err
 		}
-		items = append(items, earn)
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
