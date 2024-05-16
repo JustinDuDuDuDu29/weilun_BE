@@ -23,11 +23,24 @@ type JobsServ interface {
 	ApproveFinishedJob(param db.ApproveFinishedJobParams) error
 	SetJobNoMore(id int64) error
 	GetAllClaimedJobs() ([]db.GetAllClaimedJobsRow, error)
+	GetClaimedJobByDriverID(id int64) ([]db.GetClaimedJobByDriverIDRow, error)
 }
 
 type JobsServImpl struct {
 	q    *db.Queries
 	conn *sql.DB
+}
+
+func (s *JobsServImpl) GetClaimedJobByDriverID(id int64) ([]db.GetClaimedJobByDriverIDRow, error) {
+	res, err := s.q.GetClaimedJobByDriverID(context.Background(), id)
+
+	if err == sql.ErrNoRows {
+
+		var r []db.GetClaimedJobByDriverIDRow
+		return r, nil
+	}
+
+	return res, err
 }
 
 func (s *JobsServImpl) CreateJob(param db.CreateJobParams) (int64, error) {

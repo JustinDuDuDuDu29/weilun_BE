@@ -28,12 +28,46 @@ type JobsCtrl interface {
 	GetAllClaimedJobs(c *gin.Context)
 	GetCurrentClaimedJob(c *gin.Context)
 	ApproveClaimedJob(c *gin.Context)
+	GetClaimedJobByDriverID(c *gin.Context)
 }
 
 type JobsCtrlImpl struct {
 	svc *service.AppService
 }
 
+func (u *JobsCtrlImpl) GetClaimedJobByDriverID(c *gin.Context) {
+	uid := c.MustGet("UserID")
+	role := c.MustGet("Role")
+	bcmp := c.MustGet("belongCmp")
+
+	qid := c.Query("id")
+	id, err := strconv.Atoi(qid)
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	info, err := u.svc.UserServ.GetDriverInfo(int64(id))
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	if (role == 300 && qid != uid) || (role == 200 && info.Belongcmp == bcmp) {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	res, err := u.svc.JobsServ.GetClaimedJobByDriverID(int64(id))
+	if err != nil {
+
+		fmt.Println(err)
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, res)
+}
 func (u *JobsCtrlImpl) GetClaimedJobByID(c *gin.Context) {
 
 	if c.Param("id") == "" {

@@ -814,6 +814,61 @@ func (q *Queries) GetAllJobsClient(ctx context.Context, arg GetAllJobsClientPara
 	return items, nil
 }
 
+const getClaimedJobByDriverID = `-- name: GetClaimedJobByDriverID :many
+SELECT ClaimJobT.id as id, JobsT.id as JobID, UserT.id as UserID, JobsT.From_Loc, JobsT.mid, JobsT.To_Loc, ClaimJobT.Create_Date, usert.name as userName, cmpt.name as cmpname, cmpT.id as cmpID, ClaimJobT.Approved_date as ApprovedDate, ClaimJobT.Finished_Date as FinishDate from ClaimJobT inner join JobsT on JobsT.id = ClaimJobT.JobId inner join UserT on UserT.id = ClaimJobT.Driverid inner join Cmpt on UserT.belongCMP = cmpt.id WHERE ClaimJobT.Deleted_date is  null and UserT.id = $1
+`
+
+type GetClaimedJobByDriverIDRow struct {
+	ID           int64
+	Jobid        int64
+	Userid       int64
+	FromLoc      string
+	Mid          sql.NullString
+	ToLoc        string
+	CreateDate   time.Time
+	Username     string
+	Cmpname      string
+	Cmpid        int64
+	Approveddate sql.NullTime
+	Finishdate   sql.NullTime
+}
+
+func (q *Queries) GetClaimedJobByDriverID(ctx context.Context, id int64) ([]GetClaimedJobByDriverIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, getClaimedJobByDriverID, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetClaimedJobByDriverIDRow
+	for rows.Next() {
+		var i GetClaimedJobByDriverIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Jobid,
+			&i.Userid,
+			&i.FromLoc,
+			&i.Mid,
+			&i.ToLoc,
+			&i.CreateDate,
+			&i.Username,
+			&i.Cmpname,
+			&i.Cmpid,
+			&i.Approveddate,
+			&i.Finishdate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getClaimedJobByID = `-- name: GetClaimedJobByID :one
 SELECT ClaimJobT.id as id, JobsT.id as JobID, UserT.id as UserID, JobsT.From_Loc, finished_date, finishPic, JobsT.mid, JobsT.To_Loc, ClaimJobT.Create_Date, usert.name as userName, cmpt.name as cmpname, cmpT.id as cmpID, ClaimJobT.Approved_date as ApprovedDate, DriverT.percentage  as driverPercentage, ClaimJobT.percentage as percentage, price from ClaimJobT inner join JobsT on JobsT.id = ClaimJobT.JobId inner join UserT on UserT.id = ClaimJobT.Driverid inner join Cmpt on UserT.belongCMP = cmpt.id inner join DriverT on driverT.id = UserT.id WHERE ClaimJobT.id = $1
 `
