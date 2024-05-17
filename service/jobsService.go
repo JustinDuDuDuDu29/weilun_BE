@@ -23,6 +23,7 @@ type JobsServ interface {
 	ApproveFinishedJob(param db.ApproveFinishedJobParams) error
 	SetJobNoMore(id int64) error
 	GetAllClaimedJobs() ([]db.GetAllClaimedJobsRow, error)
+	GetClaimedJobByCmp(id int64) ([]db.GetClaimedJobByCmpRow, error)
 	GetClaimedJobByDriverID(id int64) ([]db.GetClaimedJobByDriverIDRow, error)
 }
 
@@ -31,6 +32,18 @@ type JobsServImpl struct {
 	conn *sql.DB
 }
 
+func (s *JobsServImpl) GetClaimedJobByCmp(id int64) ([]db.GetClaimedJobByCmpRow, error) {
+	res, err := s.q.GetClaimedJobByCmp(context.Background(), id)
+	// res, err := s.q.GetClaimedJobByCmp(context.Background(), id)
+
+	if err == sql.ErrNoRows {
+
+		var res []db.GetClaimedJobByCmpRow
+		return res, nil
+	}
+
+	return res, err
+}
 func (s *JobsServImpl) GetClaimedJobByDriverID(id int64) ([]db.GetClaimedJobByDriverIDRow, error) {
 	res, err := s.q.GetClaimedJobByDriverID(context.Background(), id)
 

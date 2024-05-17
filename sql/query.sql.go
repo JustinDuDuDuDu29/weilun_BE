@@ -814,6 +814,61 @@ func (q *Queries) GetAllJobsClient(ctx context.Context, arg GetAllJobsClientPara
 	return items, nil
 }
 
+const getClaimedJobByCmp = `-- name: GetClaimedJobByCmp :many
+SELECT ClaimJobT.id as id, JobsT.id as JobID, UserT.id as UserID, JobsT.From_Loc, JobsT.mid, JobsT.To_Loc, ClaimJobT.Create_Date, usert.name as userName, cmpt.name as cmpname, cmpT.id as cmpID, ClaimJobT.Approved_date as ApprovedDate, ClaimJobT.Finished_Date as FinishDate from ClaimJobT inner join JobsT on JobsT.id = ClaimJobT.JobId inner join UserT on UserT.id = ClaimJobT.Driverid inner join Cmpt on UserT.belongCMP = cmpt.id WHERE ClaimJobT.Deleted_date is  null and UserT.belongCMP = $1
+`
+
+type GetClaimedJobByCmpRow struct {
+	ID           int64
+	Jobid        int64
+	Userid       int64
+	FromLoc      string
+	Mid          sql.NullString
+	ToLoc        string
+	CreateDate   time.Time
+	Username     string
+	Cmpname      string
+	Cmpid        int64
+	Approveddate sql.NullTime
+	Finishdate   sql.NullTime
+}
+
+func (q *Queries) GetClaimedJobByCmp(ctx context.Context, belongcmp int64) ([]GetClaimedJobByCmpRow, error) {
+	rows, err := q.db.QueryContext(ctx, getClaimedJobByCmp, belongcmp)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetClaimedJobByCmpRow
+	for rows.Next() {
+		var i GetClaimedJobByCmpRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Jobid,
+			&i.Userid,
+			&i.FromLoc,
+			&i.Mid,
+			&i.ToLoc,
+			&i.CreateDate,
+			&i.Username,
+			&i.Cmpname,
+			&i.Cmpid,
+			&i.Approveddate,
+			&i.Finishdate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getClaimedJobByDriverID = `-- name: GetClaimedJobByDriverID :many
 SELECT ClaimJobT.id as id, JobsT.id as JobID, UserT.id as UserID, JobsT.From_Loc, JobsT.mid, JobsT.To_Loc, ClaimJobT.Create_Date, usert.name as userName, cmpt.name as cmpname, cmpT.id as cmpID, ClaimJobT.Approved_date as ApprovedDate, ClaimJobT.Finished_Date as FinishDate from ClaimJobT inner join JobsT on JobsT.id = ClaimJobT.JobId inner join UserT on UserT.id = ClaimJobT.Driverid inner join Cmpt on UserT.belongCMP = cmpt.id WHERE ClaimJobT.Deleted_date is  null and UserT.id = $1
 `
@@ -1092,6 +1147,54 @@ func (q *Queries) GetDriverRevenue(ctx context.Context, arg GetDriverRevenuePara
 	var items []GetDriverRevenueRow
 	for rows.Next() {
 		var i GetDriverRevenueRow
+		if err := rows.Scan(&i.Earn, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getDriverRevenueByCmp = `-- name: GetDriverRevenueByCmp :many
+SELECT coalesce(sum(t1.percentage*t2.price), 0) as earn
+, coalesce((select count(*) from ClaimJobT t1 
+inner join UserT t3 on t1.driverID = t3.id
+where t3.belongCMP= $1 
+and (t1.finished_date IS NOT NULL and approved_date IS NOT NULL and t1.deleted_date IS NULL) 
+and t1.finished_date between $2 and $3), 0) as count
+from ClaimJobT t1 inner join JobsT t2 on t1.jobID = t2.id
+inner join UserT t3 on t1.driverID = t3.id
+where t3.belongCMP= $1 
+and (t1.finished_date IS NOT NULL and approved_date IS NOT NULL and t1.deleted_date IS NULL) 
+and t1.finished_date between $2 and $3
+`
+
+type GetDriverRevenueByCmpParams struct {
+	Belongcmp      int64
+	FinishedDate   sql.NullTime
+	FinishedDate_2 sql.NullTime
+}
+
+type GetDriverRevenueByCmpRow struct {
+	Earn  interface{}
+	Count interface{}
+}
+
+func (q *Queries) GetDriverRevenueByCmp(ctx context.Context, arg GetDriverRevenueByCmpParams) ([]GetDriverRevenueByCmpRow, error) {
+	rows, err := q.db.QueryContext(ctx, getDriverRevenueByCmp, arg.Belongcmp, arg.FinishedDate, arg.FinishedDate_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetDriverRevenueByCmpRow
+	for rows.Next() {
+		var i GetDriverRevenueByCmpRow
 		if err := rows.Scan(&i.Earn, &i.Count); err != nil {
 			return nil, err
 		}

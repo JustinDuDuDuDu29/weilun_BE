@@ -41,32 +41,62 @@ func (u *JobsCtrlImpl) GetClaimedJobByDriverID(c *gin.Context) {
 	bcmp := c.MustGet("belongCmp")
 
 	qid := c.Query("id")
-	id, err := strconv.Atoi(qid)
-	if err != nil {
-		c.AbortWithStatus(http.StatusInternalServerError)
+	qcmp := c.Query("cmp")
+
+	if qcmp != "" {
+		cmp, err := strconv.Atoi(qcmp)
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		if role.(int16) >= 300 || (role == 200 && bcmp != cmp) {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		res, err := u.svc.JobsServ.GetClaimedJobByCmp(int64(cmp))
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		fmt.Println(res)
+		c.JSON(http.StatusOK, res)
 		return
+
 	}
 
-	info, err := u.svc.UserServ.GetDriverInfo(int64(id))
-	if err != nil {
-		c.AbortWithStatus(http.StatusInternalServerError)
+	if qid != "" {
+		id, err := strconv.Atoi(qid)
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		info, err := u.svc.UserServ.GetDriverInfo(int64(id))
+		if err != nil {
+			fmt.Println("it is: ", err)
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		if (role == 300 && qid != uid) || (role == 200 && info.Belongcmp == bcmp) {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		res, err := u.svc.JobsServ.GetClaimedJobByDriverID(int64(id))
+		if err != nil {
+
+			fmt.Println(err)
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		c.JSON(http.StatusOK, res)
 		return
 	}
-
-	if (role == 300 && qid != uid) || (role == 200 && info.Belongcmp == bcmp) {
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-
-	res, err := u.svc.JobsServ.GetClaimedJobByDriverID(int64(id))
-	if err != nil {
-
-		fmt.Println(err)
-		c.AbortWithStatus(http.StatusInternalServerError)
-		return
-	}
-
-	c.JSON(http.StatusOK, res)
 }
 func (u *JobsCtrlImpl) GetClaimedJobByID(c *gin.Context) {
 
