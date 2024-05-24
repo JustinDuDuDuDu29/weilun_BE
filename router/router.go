@@ -39,6 +39,8 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		user.POST("", m.RoleMid.IsLoggedIn, c.UserCtrl.RegisterUser)
 		user.POST(":id", m.RoleMid.IsLoggedIn, c.UserCtrl.RegisterUser)
 		user.POST("/pwd", m.RoleMid.IsLoggedIn, c.UserCtrl.UpdatePassword)
+		user.POST("/pwdreset", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.UserCtrl.UpdatePassword)
+		user.POST("/approve/:id", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.UserCtrl.ApproveUser)
 		user.POST("/UpdateDriverPic", m.RoleMid.IsLoggedIn, c.UserCtrl.UpdateDriverPic)
 		user.PUT("", m.RoleMid.IsLoggedIn, c.UserCtrl.RegisterUser)
 		user.DELETE("", m.RoleMid.IsLoggedIn, c.UserCtrl.DeleteUser)
@@ -63,7 +65,7 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		claimed.POST("/current", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetCurrentClaimedJob)
 		claimed.POST(":id", m.RoleMid.IsLoggedIn, c.JobsCtrl.ClaimJob)
 		claimed.POST("/finish/:id", m.RoleMid.IsLoggedIn, c.JobsCtrl.FinishClaimJob)
-		claimed.POST("/approve/:id", m.RoleMid.IsLoggedIn, c.JobsCtrl.ApproveClaimedJob)
+		claimed.POST("/approve/:id", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.ApproveClaimedJob)
 		claimed.DELETE(":id", m.RoleMid.IsLoggedIn, c.JobsCtrl.CancelClaimJob)
 
 		repair := api.Group("/repair")

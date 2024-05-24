@@ -2,6 +2,7 @@ package controller
 
 import (
 	"database/sql"
+	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -47,11 +48,11 @@ func (u *UserCtrlImpl) Me(c *gin.Context) {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"res": res})
+		c.JSON(http.StatusOK, res)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"res": res})
+	c.JSON(http.StatusOK, res)
 }
 func (u *UserCtrlImpl) ApproveUser(c *gin.Context) {
 	sid := c.Param("id")
@@ -71,6 +72,7 @@ func (u *UserCtrlImpl) ApproveUser(c *gin.Context) {
 	err = u.svc.UserServ.ApproveDriver(int64(id))
 
 	if err != nil {
+		fmt.Println(err)
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -174,6 +176,50 @@ func (u *UserCtrlImpl) UpdateDriverPic(c *gin.Context) {
 	c.AbortWithStatus(http.StatusOK)
 }
 
+func (u *UserCtrlImpl) ResetPassword(c *gin.Context) {
+	cuid := c.MustGet("UserID").(int)
+	role := c.MustGet("Role").(int16)
+
+	var reqBody apptypes.UpdatePasswordBodyT
+	if err := c.BindJSON(&reqBody); err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	if role != 100 && cuid != reqBody.Id {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	if role != 100 {
+		user, err := u.svc.UserServ.GetUserById(int64(reqBody.Id))
+		res, err := u.svc.UserServ.HaveUser(user.Phonenum)
+		if err = bcrypt.CompareHashAndPassword([]byte(res.Pwd), []byte(reqBody.OldPwd)); err != nil {
+			c.Status(http.StatusNotAcceptable)
+			c.Abort()
+			return
+		}
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(reqBody.Pwd), bcrypt.MinCost)
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	param := db.UpdateUserPasswordParams{
+		ID:  int64(cuid),
+		Pwd: string(hash),
+	}
+	err = u.svc.UserServ.UpdatePassword(param)
+
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	c.AbortWithStatus(http.StatusOK)
+}
+
 func (u *UserCtrlImpl) UpdatePassword(c *gin.Context) {
 	cuid := c.MustGet("UserID").(int)
 	role := c.MustGet("Role").(int16)
@@ -183,6 +229,8 @@ func (u *UserCtrlImpl) UpdatePassword(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
+	fmt.Println(reqBody.Pwd)
+	fmt.Println(reqBody.OldPwd)
 	if role != 100 && cuid != reqBody.Id {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
@@ -232,16 +280,8 @@ func (u *UserCtrlImpl) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	// cuid := c.MustGet("UserID").(int)
-	// role := c.MustGet("Role").(int)
-	// bcmp := c.MustGet("belongCmp").(int)
-
-	res, err := u.svc.UserServ.GetUserById(int64(id))
-	if err != nil {
-		c.AbortWithStatus(http.StatusBadRequest)
-		return
-	}
 	var reqBody apptypes.RegisterDriverBodyT
+
 	if err := c.BindJSON(&reqBody); err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
@@ -256,17 +296,27 @@ func (u *UserCtrlImpl) UpdateUser(c *gin.Context) {
 			ID:        int64(id),
 			Phonenum:  reqBody.PhoneNum,
 			Name:      reqBody.Name,
-			Belongcmp: res.Belongcmp,
+			Belongcmp: int64(reqBody.BelongCmp),
 			Role:      int16(role),
 		}
-		u.svc.UserServ.UpdateUser(param)
+		err = u.svc.UserServ.UpdateUser(param)
+	} else if reqBody.Role == "superAdmin" {
+
+		role = 100
+		param = db.UpdateUserParams{
+			ID:        int64(id),
+			Phonenum:  reqBody.PhoneNum,
+			Name:      reqBody.Name,
+			Belongcmp: int64(reqBody.BelongCmp),
+			Role:      int16(role),
+		}
 	} else {
 		role = 300
 		param = db.UpdateUserParams{
 			ID:        int64(id),
 			Phonenum:  reqBody.PhoneNum,
 			Name:      reqBody.Name,
-			Belongcmp: res.Belongcmp,
+			Belongcmp: int64(reqBody.BelongCmp),
 			Role:      int16(role),
 		}
 		driverParam := db.UpdateDriverParams{
@@ -274,9 +324,15 @@ func (u *UserCtrlImpl) UpdateUser(c *gin.Context) {
 			Percentage: int16(reqBody.DriverInfo.Percentage),
 		}
 
-		u.svc.UserServ.UpdateDriver(driverParam, param)
+		err = u.svc.UserServ.UpdateDriver(driverParam, param)
 
 	}
+
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	c.AbortWithStatus(http.StatusOK)
 }
 
 func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
@@ -389,7 +445,7 @@ func (u *UserCtrlImpl) GetUserList(c *gin.Context) {
 	if c.Query("Name") == "" {
 		Name.Valid = false
 	} else {
-		Name.Scan(c.Query("Name"))
+		Name.Scan("%" + c.Query("Name") + "%")
 
 	}
 
@@ -398,6 +454,13 @@ func (u *UserCtrlImpl) GetUserList(c *gin.Context) {
 		BelongCmp.Valid = false
 	} else {
 		BelongCmp.Scan(c.Query("BelongCmp"))
+	}
+
+	var BelongCmpName sql.NullString
+	if c.Query("BelongCmpName") == "" {
+		BelongCmpName.Valid = false
+	} else {
+		BelongCmpName.Scan("%" + c.Query("BelongCmpName") + "%")
 	}
 
 	var CreateDateStart sql.NullTime
@@ -447,6 +510,7 @@ func (u *UserCtrlImpl) GetUserList(c *gin.Context) {
 		PhoneNum:              PhoneNum,
 		Name:                  Name,
 		Belongcmp:             BelongCmp,
+		BelongcmpName:         BelongCmpName,
 		CreateDateStart:       CreateDateStart,
 		CreateDateEnd:         CreateDateEnd,
 		DeletedDateStart:      DeletedDateStart,
@@ -478,7 +542,7 @@ func (u *UserCtrlImpl) GetUserById(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"res": res})
+	c.JSON(http.StatusOK, res)
 }
 
 func UserCtrlInit(svc *service.AppService) *UserCtrlImpl {

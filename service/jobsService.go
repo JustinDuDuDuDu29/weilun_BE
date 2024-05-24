@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	db "main/sql"
 )
 
@@ -146,6 +147,7 @@ func (s *JobsServImpl) GetAllClaimedJobs() ([]db.GetAllClaimedJobsRow, error) {
 
 func (s *JobsServImpl) FinishClaimedJob(param db.FinishClaimedJobParams) error {
 	err := s.q.FinishClaimedJob(context.Background(), param)
+	fmt.Println("it is: ", err)
 	return err
 }
 

@@ -8,9 +8,10 @@ DriverT.id = $1 LIMIT 1;
 
 -- name: GetUserByID :one
 SELECT
-UserT.id as ID, cmpt.name as Cmpname, usert.phoneNum as phoneNum, usert.name as Username, usert.belongCMP, usert.role, usert.initPwdChanged, UserT.Deleted_Date as Deleted_Date 
+UserT.id as ID, cmpt.name as Cmpname, usert.phoneNum as phoneNum, usert.name as Username, usert.belongCMP, usert.role, usert.initPwdChanged, UserT.Deleted_Date as Deleted_Date, insurances, registration, driverLicense, TruckLicense, nationalidnumber, percentage
 from UserT 
 inner join cmpt on UserT.belongcmp = cmpt.id 
+left join DriverT on driverT.id= usert.id 
 where UserT.id=$1 LIMIT 1;
 
 -- name: GetUserSeed :one
@@ -19,20 +20,32 @@ inner join cmpt on UserT.belongcmp = cmpt.id
 where UserT.id=$1 LIMIT 1;
 
 -- name: GetUserList :many
-SELECT UserT.id as ID, phoneNum, UserT.name as Username, cmpt.name as Cmpname , role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
-from UserT 
-inner join cmpt on UserT.belongcmp = cmpt.id 
+SELECT json_build_object('cmpid', cmpt.id, 'Cmpname', cmpt.name, 'list'
+    , 
+	json_agg(json_build_object('id',UT.id, 
+	'phoneNum', UT.phonenum,
+	'Role', UT.Role,
+	'Username', UT.name,
+	'deleted_date',UT.deleted_date,
+	'last_modified_date', UT.last_modified_date
+	))
+    )
+
+from UserT UT
+right join cmpt on UT.belongcmp = cmpt.id
 where 
-(UserT.id = sqlc.narg('id') OR sqlc.narg('id') IS NULL)AND
+(UT.id = sqlc.narg('id') OR sqlc.narg('id') IS NULL)AND
 (phoneNum = sqlc.narg('phoneNum')::Text OR sqlc.narg('phoneNum')::Text IS NULL)AND
-(UserT.name = sqlc.narg('name') OR sqlc.narg('name') IS NULL)AND
+(UT.name like sqlc.narg('name') OR sqlc.narg('name') IS NULL)AND
 (belongcmp = sqlc.narg('belongcmp') OR sqlc.narg('belongcmp') IS NULL)AND
-((UserT.create_date > sqlc.narg('create_date_start') OR sqlc.narg('create_date_start') IS NULL)
- AND (UserT.create_date < sqlc.narg('create_date_end') OR sqlc.narg('create_date_end') IS NULL)) AND
-((UserT.deleted_date > sqlc.narg('deleted_date_start') OR sqlc.narg('deleted_date_start') IS NULL)
- AND (UserT.deleted_date < sqlc.narg('deleted_date_end') OR sqlc.narg('deleted_date_end') IS NULL)) AND
-((UserT.last_modified_date > sqlc.narg('last_modified_date_start') OR sqlc.narg('last_modified_date_start') IS NULL) 
-AND (UserT.last_modified_date < sqlc.narg('last_modified_date_end') OR sqlc.narg('last_modified_date_end') IS NULL));
+(cmpt.Name like sqlc.narg('belongcmpName') OR sqlc.narg('belongcmpName') IS NULL)AND
+((UT.create_date > sqlc.narg('create_date_start') OR sqlc.narg('create_date_start') IS NULL)
+ AND (UT.create_date < sqlc.narg('create_date_end') OR sqlc.narg('create_date_end') IS NULL)) AND
+((UT.deleted_date > sqlc.narg('deleted_date_start') OR sqlc.narg('deleted_date_start') IS NULL)
+ AND (UT.deleted_date < sqlc.narg('deleted_date_end') OR sqlc.narg('deleted_date_end') IS NULL)) AND
+((UT.last_modified_date > sqlc.narg('last_modified_date_start') OR sqlc.narg('last_modified_date_start') IS NULL) 
+AND (UT.last_modified_date < sqlc.narg('last_modified_date_end') OR sqlc.narg('last_modified_date_end') IS NULL))
+group by cmpt.id;
 
 -- name: CreateAdmin :one
 INSERT INTO UserT(
@@ -69,7 +82,7 @@ WHERE id = $1;
 -- name: UpdateDriver :exec
 UPDATE DriverT set 
   percentage = COALESCE($2, percentage),
-  nationalidnumber = COALESCE($2, nationalidnumber)
+  nationalidnumber = COALESCE($3, nationalidnumber)
 WHERE id = $1;
 
 -- name: UpdateUserPassword :exec
@@ -99,9 +112,8 @@ WHERE DriverT.id = $1;
 
 -- name: ApproveDriver :exec
 UPDATE DriverT set 
-  UserT.last_modified_date = NOW(),
   approved_date =  NOW()
-WHERE DriverT.id = $1;
+where id = $1;
 
 
 -- name: DeleteUser :exec
@@ -294,15 +306,15 @@ Update JobsT set remaining = remaining + 1, last_modified_date = NOW() where id 
 Update ClaimJobT Set
     finishPic =$3,
     finished_date = NOW(),
-    percentage = (SELECT percentage from driverT where driverT.id = (SELECT driverID from ClaimJobT where ClaimJobT.id = $1)),
+    -- percentage = (SELECT percentage from driverT where driverT.id = (SELECT driverID from ClaimJobT where ClaimJobT.id = $1)),
     last_modified_date = NOW()
-WHERE id = $1 and ClaimJobT.Driverid = $2;
+WHERE id = $1 and ClaimJobT.Driverid = $2 ;
 
 -- name: ApproveFinishedJob :exec
 Update ClaimJobT set Approved_By = $2, approved_date = NOW(), last_modified_date = NOW() where id = $1;
 
 -- name: GetCurrentClaimedJob :one
-SELECT t2.id, t1.*  FROM ClaimJobT t2 inner join JobsT t1 on t1.id = t2.jobID where t2.driverID = $1 and (t2.deleted_date IS NULL and t2.finished_date IS NULL) order by t2.create_date LIMIT 1;
+SELECT t2.id as claimID,t2.create_date as claimDate, t1.from_loc, t1.mid, t1.to_loc, t1.price, t1.source, t1.memo, t1.id  FROM ClaimJobT t2 inner join JobsT t1 on t1.id = t2.jobID where t2.driverID = $1 and (t2.deleted_date IS NULL and t2.finished_date IS NULL) order by t2.create_date LIMIT 1;
 
 -- name: GetDriverRevenueByCmp :many
 SELECT coalesce(sum(t1.percentage*t2.price), 0) as earn

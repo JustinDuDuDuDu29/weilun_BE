@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"errors"
+	"fmt"
 	"main/service"
 	"net/http"
 	"os"
@@ -56,7 +57,6 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 			return
 
 		default:
-
 			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
@@ -69,6 +69,7 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 
 		if err != nil {
 
+			fmt.Println(err)
 			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
@@ -77,6 +78,7 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 		id, err := strconv.Atoi(res[0])
 		if err != nil {
 
+			fmt.Println(err)
 			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
@@ -85,6 +87,7 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 		info, err := m.svc.UserServ.GetSeed(int64(id))
 		if err != nil {
 
+			fmt.Println(err)
 			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
@@ -93,6 +96,7 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 		issuer, err := claims.GetIssuer()
 		if err != nil {
 
+			fmt.Println(err)
 			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
@@ -103,8 +107,12 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 			return
 		}
 		userInfo, err := m.svc.UserServ.GetUserById(int64(id))
+		fmt.Println(userInfo)
+		fmt.Println(err)
+
 		if err != nil {
 
+			fmt.Println(err)
 			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
@@ -116,7 +124,7 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 		return
 
 	} else {
-
+		fmt.Println(err)
 		c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 		c.Abort()
 		return

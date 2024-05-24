@@ -23,11 +23,9 @@ type RevenueCtrlImpl struct {
 
 func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 
-	// cuid := c.MustGet("UserID").(int)
-
-	// uid := c.MustGet("UserID")
-	// role := c.MustGet("Role").(int16)
-	// bcmp := c.MustGet("belongCmp")
+	uid := c.MustGet("UserID")
+	role := c.MustGet("Role").(int16)
+	bcmp := c.MustGet("belongCmp")
 
 	qid := c.Query("id")
 	qcmp := c.Query("cmp")
@@ -37,6 +35,16 @@ func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 		id, err := strconv.Atoi(qid)
 		if err != nil {
 			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+		info, err := a.svc.UserServ.GetUserById(int64(id))
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		if (role == 300 && id != uid) || (role == 200 && info.Belongcmp != bcmp) {
+			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
@@ -129,6 +137,11 @@ func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 			return
 		}
 
+		if role == 200 && bcmp != id || role >= 300 {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
 		tDate := time.Now()
 		y, m, _ := tDate.Date()
 		today, err := time.Parse(time.DateOnly, strings.Split(tDate.String(), " ")[0])
@@ -211,6 +224,9 @@ func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 
 		c.JSON(http.StatusOK, resp2)
 	}
+
+	c.AbortWithStatus(http.StatusBadRequest)
+	return
 }
 
 func RevenueCtrlInit(svc *service.AppService) *RevenueCtrlImpl {

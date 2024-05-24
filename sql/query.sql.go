@@ -14,9 +14,8 @@ import (
 
 const approveDriver = `-- name: ApproveDriver :exec
 UPDATE DriverT set 
-  UserT.last_modified_date = NOW(),
   approved_date =  NOW()
-WHERE DriverT.id = $1
+where id = $1
 `
 
 func (q *Queries) ApproveDriver(ctx context.Context, id int64) error {
@@ -330,7 +329,7 @@ const finishClaimedJob = `-- name: FinishClaimedJob :exec
 Update ClaimJobT Set
     finishPic =$3,
     finished_date = NOW(),
-    percentage = (SELECT percentage from driverT where driverT.id = (SELECT driverID from ClaimJobT where ClaimJobT.id = $1)),
+    -- percentage = (SELECT percentage from driverT where driverT.id = (SELECT driverID from ClaimJobT where ClaimJobT.id = $1)),
     last_modified_date = NOW()
 WHERE id = $1 and ClaimJobT.Driverid = $2
 `
@@ -1022,48 +1021,34 @@ func (q *Queries) GetCmp(ctx context.Context, id int64) (GetCmpRow, error) {
 }
 
 const getCurrentClaimedJob = `-- name: GetCurrentClaimedJob :one
-SELECT t2.id, t1.id, t1.from_loc, t1.mid, t1.to_loc, t1.price, t1.estimated, t1.remaining, t1.belongcmp, t1.source, t1.jobdate, t1.memo, t1.close_date, t1.create_date, t1.deleted_date, t1.last_modified_date  FROM ClaimJobT t2 inner join JobsT t1 on t1.id = t2.jobID where t2.driverID = $1 and (t2.deleted_date IS NULL and t2.finished_date IS NULL) order by t2.create_date LIMIT 1
+SELECT t2.id as claimID,t2.create_date as claimDate, t1.from_loc, t1.mid, t1.to_loc, t1.price, t1.source, t1.memo, t1.id  FROM ClaimJobT t2 inner join JobsT t1 on t1.id = t2.jobID where t2.driverID = $1 and (t2.deleted_date IS NULL and t2.finished_date IS NULL) order by t2.create_date LIMIT 1
 `
 
 type GetCurrentClaimedJobRow struct {
-	ID               int64
-	ID_2             int64
-	FromLoc          string
-	Mid              sql.NullString
-	ToLoc            string
-	Price            int16
-	Estimated        int16
-	Remaining        int16
-	Belongcmp        int64
-	Source           string
-	Jobdate          time.Time
-	Memo             sql.NullString
-	CloseDate        sql.NullTime
-	CreateDate       time.Time
-	DeletedDate      sql.NullTime
-	LastModifiedDate time.Time
+	Claimid   int64
+	Claimdate time.Time
+	FromLoc   string
+	Mid       sql.NullString
+	ToLoc     string
+	Price     int16
+	Source    string
+	Memo      sql.NullString
+	ID        int64
 }
 
 func (q *Queries) GetCurrentClaimedJob(ctx context.Context, driverid int64) (GetCurrentClaimedJobRow, error) {
 	row := q.db.QueryRowContext(ctx, getCurrentClaimedJob, driverid)
 	var i GetCurrentClaimedJobRow
 	err := row.Scan(
-		&i.ID,
-		&i.ID_2,
+		&i.Claimid,
+		&i.Claimdate,
 		&i.FromLoc,
 		&i.Mid,
 		&i.ToLoc,
 		&i.Price,
-		&i.Estimated,
-		&i.Remaining,
-		&i.Belongcmp,
 		&i.Source,
-		&i.Jobdate,
 		&i.Memo,
-		&i.CloseDate,
-		&i.CreateDate,
-		&i.DeletedDate,
-		&i.LastModifiedDate,
+		&i.ID,
 	)
 	return i, err
 }
@@ -1370,21 +1355,28 @@ func (q *Queries) GetUser(ctx context.Context, phonenum interface{}) (GetUserRow
 
 const getUserByID = `-- name: GetUserByID :one
 SELECT
-UserT.id as ID, cmpt.name as Cmpname, usert.phoneNum as phoneNum, usert.name as Username, usert.belongCMP, usert.role, usert.initPwdChanged, UserT.Deleted_Date as Deleted_Date 
+UserT.id as ID, cmpt.name as Cmpname, usert.phoneNum as phoneNum, usert.name as Username, usert.belongCMP, usert.role, usert.initPwdChanged, UserT.Deleted_Date as Deleted_Date, insurances, registration, driverLicense, TruckLicense, nationalidnumber, percentage
 from UserT 
 inner join cmpt on UserT.belongcmp = cmpt.id 
+left join DriverT on driverT.id= usert.id 
 where UserT.id=$1 LIMIT 1
 `
 
 type GetUserByIDRow struct {
-	ID             int64
-	Cmpname        string
-	Phonenum       interface{}
-	Username       string
-	Belongcmp      int64
-	Role           int16
-	Initpwdchanged bool
-	DeletedDate    sql.NullTime
+	ID               int64
+	Cmpname          string
+	Phonenum         interface{}
+	Username         string
+	Belongcmp        int64
+	Role             int16
+	Initpwdchanged   bool
+	DeletedDate      sql.NullTime
+	Insurances       sql.NullString
+	Registration     sql.NullString
+	Driverlicense    sql.NullString
+	Trucklicense     sql.NullString
+	Nationalidnumber interface{}
+	Percentage       sql.NullInt16
 }
 
 func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, error) {
@@ -1399,25 +1391,43 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, er
 		&i.Role,
 		&i.Initpwdchanged,
 		&i.DeletedDate,
+		&i.Insurances,
+		&i.Registration,
+		&i.Driverlicense,
+		&i.Trucklicense,
+		&i.Nationalidnumber,
+		&i.Percentage,
 	)
 	return i, err
 }
 
 const getUserList = `-- name: GetUserList :many
-SELECT UserT.id as ID, phoneNum, UserT.name as Username, cmpt.name as Cmpname , role, UserT.create_date, UserT.deleted_date, UserT.last_modified_date 
-from UserT 
-inner join cmpt on UserT.belongcmp = cmpt.id 
+SELECT json_build_object('cmpid', cmpt.id, 'Cmpname', cmpt.name, 'list'
+    , 
+	json_agg(json_build_object('id',UT.id, 
+	'phoneNum', UT.phonenum,
+	'Role', UT.Role,
+	'Username', UT.name,
+	'deleted_date',UT.deleted_date,
+	'last_modified_date', UT.last_modified_date
+	))
+    )
+
+from UserT UT
+right join cmpt on UT.belongcmp = cmpt.id
 where 
-(UserT.id = $1 OR $1 IS NULL)AND
+(UT.id = $1 OR $1 IS NULL)AND
 (phoneNum = $2::Text OR $2::Text IS NULL)AND
-(UserT.name = $3 OR $3 IS NULL)AND
+(UT.name like $3 OR $3 IS NULL)AND
 (belongcmp = $4 OR $4 IS NULL)AND
-((UserT.create_date > $5 OR $5 IS NULL)
- AND (UserT.create_date < $6 OR $6 IS NULL)) AND
-((UserT.deleted_date > $7 OR $7 IS NULL)
- AND (UserT.deleted_date < $8 OR $8 IS NULL)) AND
-((UserT.last_modified_date > $9 OR $9 IS NULL) 
-AND (UserT.last_modified_date < $10 OR $10 IS NULL))
+(cmpt.Name like $5 OR $5 IS NULL)AND
+((UT.create_date > $6 OR $6 IS NULL)
+ AND (UT.create_date < $7 OR $7 IS NULL)) AND
+((UT.deleted_date > $8 OR $8 IS NULL)
+ AND (UT.deleted_date < $9 OR $9 IS NULL)) AND
+((UT.last_modified_date > $10 OR $10 IS NULL) 
+AND (UT.last_modified_date < $11 OR $11 IS NULL))
+group by cmpt.id
 `
 
 type GetUserListParams struct {
@@ -1425,6 +1435,7 @@ type GetUserListParams struct {
 	PhoneNum              sql.NullString
 	Name                  sql.NullString
 	Belongcmp             sql.NullInt64
+	BelongcmpName         sql.NullString
 	CreateDateStart       sql.NullTime
 	CreateDateEnd         sql.NullTime
 	DeletedDateStart      sql.NullTime
@@ -1433,23 +1444,13 @@ type GetUserListParams struct {
 	LastModifiedDateEnd   sql.NullTime
 }
 
-type GetUserListRow struct {
-	ID               int64
-	Phonenum         interface{}
-	Username         string
-	Cmpname          string
-	Role             int16
-	CreateDate       time.Time
-	DeletedDate      sql.NullTime
-	LastModifiedDate time.Time
-}
-
-func (q *Queries) GetUserList(ctx context.Context, arg GetUserListParams) ([]GetUserListRow, error) {
+func (q *Queries) GetUserList(ctx context.Context, arg GetUserListParams) ([]json.RawMessage, error) {
 	rows, err := q.db.QueryContext(ctx, getUserList,
 		arg.ID,
 		arg.PhoneNum,
 		arg.Name,
 		arg.Belongcmp,
+		arg.BelongcmpName,
 		arg.CreateDateStart,
 		arg.CreateDateEnd,
 		arg.DeletedDateStart,
@@ -1461,22 +1462,13 @@ func (q *Queries) GetUserList(ctx context.Context, arg GetUserListParams) ([]Get
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetUserListRow
+	var items []json.RawMessage
 	for rows.Next() {
-		var i GetUserListRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Phonenum,
-			&i.Username,
-			&i.Cmpname,
-			&i.Role,
-			&i.CreateDate,
-			&i.DeletedDate,
-			&i.LastModifiedDate,
-		); err != nil {
+		var json_build_object json.RawMessage
+		if err := rows.Scan(&json_build_object); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, json_build_object)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -1589,17 +1581,18 @@ func (q *Queries) UpdateCmp(ctx context.Context, arg UpdateCmpParams) error {
 const updateDriver = `-- name: UpdateDriver :exec
 UPDATE DriverT set 
   percentage = COALESCE($2, percentage),
-  nationalidnumber = COALESCE($2, nationalidnumber)
+  nationalidnumber = COALESCE($3, nationalidnumber)
 WHERE id = $1
 `
 
 type UpdateDriverParams struct {
-	ID         int64
-	Percentage int16
+	ID               int64
+	Percentage       int16
+	Nationalidnumber interface{}
 }
 
 func (q *Queries) UpdateDriver(ctx context.Context, arg UpdateDriverParams) error {
-	_, err := q.db.ExecContext(ctx, updateDriver, arg.ID, arg.Percentage)
+	_, err := q.db.ExecContext(ctx, updateDriver, arg.ID, arg.Percentage, arg.Nationalidnumber)
 	return err
 }
 

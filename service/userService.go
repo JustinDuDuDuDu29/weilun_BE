@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	db "main/sql"
 )
 
@@ -12,7 +13,7 @@ type UserServ interface {
 	RegisterCmpAdmin(queryParam db.CreateUserParams) (int64, error)
 	RegisterDriver(queryParam db.CreateUserParams, percentage int, nationalIdNumber string) (int64, error)
 	DeleteUser(queryParam int64) error
-	GetUserList(queryParam db.GetUserListParams) ([]db.GetUserListRow, error)
+	GetUserList(queryParam db.GetUserListParams) ([]json.RawMessage, error)
 	UpdateUser(param db.UpdateUserParams) error
 	UpdateDriver(param db.UpdateDriverParams, userParam db.UpdateUserParams) error
 	ApproveDriver(id int64) error
@@ -56,30 +57,51 @@ func (u *UserServImpl) UpdateDriverPic(param db.UpdateDriverPicParams) error {
 func (u *UserServImpl) UpdateDriver(param db.UpdateDriverParams, userParam db.UpdateUserParams) error {
 	tx, err := u.conn.BeginTx(context.Background(), nil)
 
+	defer func() {
+		if err == nil {
+			err = tx.Commit()
+		}
+		tx.Rollback()
+	}()
+
 	if err != nil {
 		return err
 	}
 
 	qtx := u.q.WithTx(tx)
-	err = qtx.UpdateDriver(context.Background(), param)
+
+	curInfo, err := qtx.GetUserByID(context.Background(), userParam.ID)
+
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 	err = qtx.UpdateUser(context.Background(), userParam)
 
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 
-	err = tx.Commit()
+	if curInfo.Role != 300 {
+		var cdi = db.CreateDriverInfoParams{
+			Nationalidnumber: param.Nationalidnumber,
+			Percentage:       param.Percentage,
+			ID:               param.ID,
+		}
+		_, err = qtx.CreateDriverInfo(context.Background(), cdi)
+
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	err = qtx.UpdateDriver(context.Background(), param)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 
 	return nil
+
 }
 
 func (u *UserServImpl) UpdateUser(param db.UpdateUserParams) error {
@@ -87,7 +109,7 @@ func (u *UserServImpl) UpdateUser(param db.UpdateUserParams) error {
 	return err
 }
 
-func (u *UserServImpl) GetUserList(queryParam db.GetUserListParams) ([]db.GetUserListRow, error) {
+func (u *UserServImpl) GetUserList(queryParam db.GetUserListParams) ([]json.RawMessage, error) {
 	res, err := u.q.GetUserList(context.Background(), queryParam)
 	return res, err
 }

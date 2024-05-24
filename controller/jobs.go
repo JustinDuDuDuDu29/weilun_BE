@@ -503,7 +503,6 @@ func (u *JobsCtrlImpl) ClaimJob(c *gin.Context) {
 	if err != nil {
 		fmt.Print(err)
 		if err.Error() == "already have ongoing job" {
-			fmt.Print("already have ongoing job")
 			res, err := u.svc.JobsServ.GetClaimedJobByID(res)
 			if err != nil {
 				c.Status(http.StatusInternalServerError)
@@ -567,7 +566,7 @@ func (u *JobsCtrlImpl) FinishClaimJob(c *gin.Context) {
 		Driverid:  int64(UserID),
 		Finishpic: Fp,
 	}
-
+	fmt.Println(param)
 	err = u.svc.JobsServ.FinishClaimedJob(param)
 	if err != nil {
 		os.Remove(path)
