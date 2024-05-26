@@ -536,6 +536,17 @@ func (u *JobsCtrlImpl) FinishClaimJob(c *gin.Context) {
 	}
 
 	UserID := c.MustGet("UserID").(int)
+	Role := c.MustGet("Role")
+	cres, err := u.svc.JobsServ.GetClaimedJobByID(int64(id))
+
+	if err != nil {
+
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	if Role != 100 && UserID != int(cres.Userid) {
+		c.AbortWithStatus(http.StatusBadRequest)
+	}
 
 	var reqBody apptypes.FinishClaimJobBodyT
 	if err := c.Bind(&reqBody); err != nil {
@@ -581,6 +592,13 @@ func (u *JobsCtrlImpl) FinishClaimJob(c *gin.Context) {
 }
 
 func (u *JobsCtrlImpl) ApproveClaimedJob(c *gin.Context) {
+
+	var reqBody apptypes.ApproveJob
+	if err := c.Bind(&reqBody); err != nil {
+		fmt.Print("NOT OK")
+		c.Abort()
+		return
+	}
 	UserID := c.MustGet("UserID").(int)
 	if c.Param("id") == "" {
 		c.AbortWithStatus(http.StatusBadRequest)
@@ -593,12 +611,16 @@ func (u *JobsCtrlImpl) ApproveClaimedJob(c *gin.Context) {
 		return
 	}
 
+	var Memo sql.NullString
+	Memo.Scan(reqBody.Memo)
+
 	var ApprovedBy sql.NullInt64
 	ApprovedBy.Scan(UserID)
 
 	param := db.ApproveFinishedJobParams{
 		ID:         int64(id),
 		ApprovedBy: ApprovedBy,
+		Memo:       Memo,
 	}
 	err = u.svc.JobsServ.ApproveFinishedJob(param)
 

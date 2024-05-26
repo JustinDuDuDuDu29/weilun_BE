@@ -11,16 +11,192 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/xuri/excelize/v2"
 )
 
 type RevenueCtrl interface {
 	RevenueDriver(c *gin.Context)
+	RevenueExcel(c *gin.Context)
 }
 
 type RevenueCtrlImpl struct {
 	svc *service.AppService
 }
 
+func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
+
+	year, err := strconv.Atoi(c.Query("year"))
+
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	month, err := strconv.Atoi(c.Query("month"))
+
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	tDate := time.Now()
+
+	var AppFrom sql.NullTime
+	var AppEnd sql.NullTime
+	fm, err := time.Parse(time.DateOnly, strings.Split(time.Date(year, time.Month(month), 1, 0, 0, 0, 0, tDate.Location()).String(), " ")[0])
+
+	AppFrom.Scan(fm)
+
+	me, err := time.Parse(time.DateOnly, strings.Split(time.Date(year, time.Month(month)+1, -1, 0, 0, 0, 0, tDate.Location()).String(), " ")[0])
+	AppEnd.Scan(me)
+
+	param := db.GetRevenueExcelParams{
+		ApprovedDate:   AppFrom,
+		ApprovedDate_2: AppEnd,
+	}
+
+	res, err := a.svc.RevenueServ.GetExcel(param)
+
+	if err != nil {
+		fmt.Println(err)
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	f := excelize.NewFile()
+	defer func() {
+		if err := f.Close(); err != nil {
+			fmt.Println(err)
+
+			c.AbortWithStatus(http.StatusBadRequest)
+		}
+	}()
+
+	// for idx, row := range [][]interface{}{
+	// 	{nil, "Apple", "Orange", "Pear"}, {"Small", 2, 3, 3},
+	// 	{"Normal", 5, 2, 4}, {"Large", 6, 7, 8},
+	// } {
+	for idx, row := range [][]interface{}{
+		{"日期", "車號", "駕駛", "發貨地", "中轉", "卸貨地", "趟次", "運費", "應收款", "甲方", "司機運費", "油資", "備註", "請款送單日"},
+	} {
+		cell, err := excelize.CoordinatesToCellName(1, idx+1)
+		if err != nil {
+			fmt.Println(err)
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		f.SetSheetRow("Sheet1", cell, &row)
+	}
+	for idx, row := range res {
+		cell, err := excelize.CoordinatesToCellName(1, idx+2)
+		if err != nil {
+			fmt.Println(err)
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		year := strconv.Itoa((row.Approveddate.Year()) - 1911)
+		month := strconv.Itoa(int(row.Approveddate.Month()))
+		day := strconv.Itoa(row.Approveddate.Day())
+
+		f.SetCellValue("Sheet1", cell, (year + month + day))
+		cell, err = excelize.CoordinatesToCellName(2, idx+2)
+		if err != nil {
+			fmt.Println(err)
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		f.SetCellValue("Sheet1", cell, row.Platenum.String)
+
+		// cell, err = excelize.CoordinatesToCellName(3, idx+2)
+		// if err != nil {
+		// 	fmt.Println(err)
+		// 	return
+		// }
+		// f.SetCellValue("Sheet1", cell, row.Name.String)
+
+		cell, err = excelize.CoordinatesToCellName(3, idx+2)
+		if err != nil {
+			fmt.Println(err)
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		f.SetCellValue("Sheet1", cell, row.Username.String)
+
+		cell, err = excelize.CoordinatesToCellName(4, idx+2)
+		if err != nil {
+			fmt.Println(err)
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		f.SetCellValue("Sheet1", cell, row.Fromloc)
+
+		cell, err = excelize.CoordinatesToCellName(5, idx+2)
+		if err != nil {
+			fmt.Println(err)
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		f.SetCellValue("Sheet1", cell, row.Mid.String)
+
+		cell, err = excelize.CoordinatesToCellName(6, idx+2)
+		if err != nil {
+			fmt.Println(err)
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		f.SetCellValue("Sheet1", cell, row.Toloc)
+
+		cell, err = excelize.CoordinatesToCellName(7, idx+2)
+		if err != nil {
+			fmt.Println(err)
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		f.SetCellValue("Sheet1", cell, row.Count)
+
+		cell, err = excelize.CoordinatesToCellName(8, idx+2)
+		if err != nil {
+			fmt.Println(err)
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		f.SetCellValue("Sheet1", cell, row.Price)
+
+		cell, err = excelize.CoordinatesToCellName(9, idx+2)
+		if err != nil {
+			fmt.Println(err)
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		f.SetCellValue("Sheet1", cell, row.Totalprice)
+
+		cell, err = excelize.CoordinatesToCellName(10, idx+2)
+		if err != nil {
+			fmt.Println(err)
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		f.SetCellValue("Sheet1", cell, row.Source)
+
+		cell, err = excelize.CoordinatesToCellName(11, idx+2)
+		if err != nil {
+			fmt.Println(err)
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		f.SetCellValue("Sheet1", cell, row.Togive)
+	}
+	targetPath := time.DateOnly + ".xlsx"
+	if err := f.SaveAs("./excel/" + targetPath); err != nil {
+		fmt.Println(err)
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	c.Header("Content-Description", "File Transfer")
+	c.Header("Content-Transfer-Encoding", "binary")
+	c.Header("Content-Disposition", "attachment; filename="+targetPath)
+	c.Header("Content-Type", "application/octet-stream")
+	c.File("./excel/" + targetPath)
+
+}
 func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 
 	uid := c.MustGet("UserID")

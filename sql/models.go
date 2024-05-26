@@ -26,6 +26,7 @@ type Claimjobt struct {
 	Percentage       sql.NullInt16
 	FinishedDate     sql.NullTime
 	Finishpic        sql.NullString
+	Memo             sql.NullString
 	CreateDate       time.Time
 	DeletedDate      sql.NullTime
 	DeletedBy        sql.NullInt64
@@ -53,6 +54,7 @@ type Cmpt struct {
 
 type Drivert struct {
 	ID               int64
+	Platenum         string
 	Insurances       sql.NullString
 	Registration     sql.NullString
 	Driverlicense    sql.NullString

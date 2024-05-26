@@ -7,6 +7,7 @@ CREATE TABLE ClaimJobT(
     percentage smallint,
     finished_date Timestamp,
     finishPic varchar,
+    memo  varchar,
     create_date Timestamp NOT NULL DEFAULT NOW(),
     deleted_date Timestamp,
     deleted_by BigInt references UserT(id),

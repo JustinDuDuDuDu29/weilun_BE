@@ -42,7 +42,7 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		user.POST("/pwdreset", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.UserCtrl.UpdatePassword)
 		user.POST("/approve/:id", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.UserCtrl.ApproveUser)
 		user.POST("/UpdateDriverPic", m.RoleMid.IsLoggedIn, c.UserCtrl.UpdateDriverPic)
-		user.PUT("", m.RoleMid.IsLoggedIn, c.UserCtrl.RegisterUser)
+		user.PUT(":id", m.RoleMid.IsLoggedIn, c.UserCtrl.UpdateUser)
 		user.DELETE("", m.RoleMid.IsLoggedIn, c.UserCtrl.DeleteUser)
 
 		cmp := api.Group("/cmp")
@@ -82,6 +82,8 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 
 		revenue := api.Group("/revenue")
 		revenue.GET("", m.RoleMid.IsLoggedIn, c.RevenueCtrl.RevenueDriver)
+		revenue.GET("/excel", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.RevenueCtrl.RevenueExcel)
+
 	}
 	router.Run(":8080")
 }

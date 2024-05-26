@@ -64,8 +64,8 @@ INSERT INTO UserT(
 RETURNING id;
 
 -- name: CreateDriverInfo :one
-insert into driverT (id, percentage, nationalidnumber) 
-    values ($1, $2, $3)
+insert into driverT (id, percentage, nationalidnumber, plateNum) 
+    values ($1, $2, $3, $4)
 RETURNING id;
 
 -- name: UserHasModified :exec
@@ -82,7 +82,8 @@ WHERE id = $1;
 -- name: UpdateDriver :exec
 UPDATE DriverT set 
   percentage = COALESCE($2, percentage),
-  nationalidnumber = COALESCE($3, nationalidnumber)
+  nationalidnumber = COALESCE($3, nationalidnumber),
+  plateNum = COALESCE($4, plateNum)
 WHERE id = $1;
 
 -- name: UpdateUserPassword :exec
@@ -306,15 +307,32 @@ Update JobsT set remaining = remaining + 1, last_modified_date = NOW() where id 
 Update ClaimJobT Set
     finishPic =$3,
     finished_date = NOW(),
-    -- percentage = (SELECT percentage from driverT where driverT.id = (SELECT driverID from ClaimJobT where ClaimJobT.id = $1)),
+    percentage = (SELECT percentage from driverT where driverT.id = (SELECT driverID from ClaimJobT where ClaimJobT.id = $1)),
     last_modified_date = NOW()
 WHERE id = $1 and ClaimJobT.Driverid = $2 ;
 
 -- name: ApproveFinishedJob :exec
-Update ClaimJobT set Approved_By = $2, approved_date = NOW(), last_modified_date = NOW() where id = $1;
+Update ClaimJobT set memo =$3, Approved_By = $2, approved_date = NOW(), last_modified_date = NOW() where id = $1;
 
 -- name: GetCurrentClaimedJob :one
 SELECT t2.id as claimID,t2.create_date as claimDate, t1.from_loc, t1.mid, t1.to_loc, t1.price, t1.source, t1.memo, t1.id  FROM ClaimJobT t2 inner join JobsT t1 on t1.id = t2.jobID where t2.driverID = $1 and (t2.deleted_date IS NULL and t2.finished_date IS NULL) order by t2.create_date LIMIT 1;
+
+
+-- name: GetRevenueExcel :many
+SELECT usert.id, DriverT.plateNum as plateNum, UserT.Name as Username,
+	jobst.from_loc as FromLoc, jobst.mid as mid, jobst.to_loc as ToLoc, count(*), 
+	jobst.price, jobst.price*count(*) as totalPrice,
+    jobst.source,
+	cmpt.name, ClaimJobt.Percentage*jobst.price*count(*) as togive,
+    date(ClaimJobt.approved_date) as ApprovedDate
+    ,ClaimJobt.Memo 
+	from JobsT
+left join ClaimJobT on ClaimJobT.JobID = JobsT.id
+left join UserT on UserT.id = ClaimJobT.Driverid
+left join cmpt on cmpt.id = usert.belongcmp
+left join driverT on UserT.id = driverT.id
+where (Claimjobt.deleted_date is null) and (ClaimJobT.Approved_Date is not null) and (ClaimJobT.Approved_date between $1 and $2) 
+group by usert.id, jobid,DriverT.plateNum,  UserT.Name, jobst.from_loc, jobst.mid, jobst.to_loc, jobst.price,cmpt.name, ClaimJobT.percentage, jobst.source, date(Claimjobt.approved_date), ClaimJobt.Memo;
 
 -- name: GetDriverRevenueByCmp :many
 SELECT coalesce(sum(t1.percentage*t2.price), 0) as earn

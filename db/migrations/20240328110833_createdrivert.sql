@@ -7,6 +7,7 @@ CHECK (
 
 CREATE TABLE DriverT(
     id bigint PRIMARY KEY references UserT(id),
+    plateNum varchar NOT NULL unique ,
     -- BLABLABLA
     insurances varchar,
     registration varchar,
@@ -17,6 +18,21 @@ CREATE TABLE DriverT(
     lastAlert bigint references alertT(id),
     approved_date Timestamp
   );
+CREATE OR REPLACE FUNCTION test()
+    RETURNS trigger AS
+$$
+BEGIN
+    Update usert set last_modified_date = NOW() where id = OLD.ID;
+ RETURN NEW;
+END;
+
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER updateDM 
+AFTER UPDATE ON drivert 
+FOR EACH ROW
+ WHEN (pg_trigger_depth() < 1)  -- !
+EXECUTE PROCEDURE test();
 -- +goose StatementEnd
 
 -- +goose Down

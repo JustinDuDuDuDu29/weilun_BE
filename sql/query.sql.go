@@ -24,16 +24,17 @@ func (q *Queries) ApproveDriver(ctx context.Context, id int64) error {
 }
 
 const approveFinishedJob = `-- name: ApproveFinishedJob :exec
-Update ClaimJobT set Approved_By = $2, approved_date = NOW(), last_modified_date = NOW() where id = $1
+Update ClaimJobT set memo =$3, Approved_By = $2, approved_date = NOW(), last_modified_date = NOW() where id = $1
 `
 
 type ApproveFinishedJobParams struct {
 	ID         int64
 	ApprovedBy sql.NullInt64
+	Memo       sql.NullString
 }
 
 func (q *Queries) ApproveFinishedJob(ctx context.Context, arg ApproveFinishedJobParams) error {
-	_, err := q.db.ExecContext(ctx, approveFinishedJob, arg.ID, arg.ApprovedBy)
+	_, err := q.db.ExecContext(ctx, approveFinishedJob, arg.ID, arg.ApprovedBy, arg.Memo)
 	return err
 }
 
@@ -115,8 +116,8 @@ func (q *Queries) CreateAlert(ctx context.Context, arg CreateAlertParams) (int64
 }
 
 const createDriverInfo = `-- name: CreateDriverInfo :one
-insert into driverT (id, percentage, nationalidnumber) 
-    values ($1, $2, $3)
+insert into driverT (id, percentage, nationalidnumber, plateNum) 
+    values ($1, $2, $3, $4)
 RETURNING id
 `
 
@@ -124,10 +125,16 @@ type CreateDriverInfoParams struct {
 	ID               int64
 	Percentage       int16
 	Nationalidnumber interface{}
+	Platenum         string
 }
 
 func (q *Queries) CreateDriverInfo(ctx context.Context, arg CreateDriverInfoParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, createDriverInfo, arg.ID, arg.Percentage, arg.Nationalidnumber)
+	row := q.db.QueryRowContext(ctx, createDriverInfo,
+		arg.ID,
+		arg.Percentage,
+		arg.Nationalidnumber,
+		arg.Platenum,
+	)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
@@ -329,7 +336,7 @@ const finishClaimedJob = `-- name: FinishClaimedJob :exec
 Update ClaimJobT Set
     finishPic =$3,
     finished_date = NOW(),
-    -- percentage = (SELECT percentage from driverT where driverT.id = (SELECT driverID from ClaimJobT where ClaimJobT.id = $1)),
+    percentage = (SELECT percentage from driverT where driverT.id = (SELECT driverID from ClaimJobT where ClaimJobT.id = $1)),
     last_modified_date = NOW()
 WHERE id = $1 and ClaimJobT.Driverid = $2
 `
@@ -1329,6 +1336,83 @@ func (q *Queries) GetRepairById(ctx context.Context, id int64) (Repairt, error) 
 	return i, err
 }
 
+const getRevenueExcel = `-- name: GetRevenueExcel :many
+SELECT usert.id, DriverT.plateNum as plateNum, UserT.Name as Username,
+	jobst.from_loc as FromLoc, jobst.mid as mid, jobst.to_loc as ToLoc, count(*), 
+	jobst.price, jobst.price*count(*) as totalPrice,
+    jobst.source,
+	cmpt.name, ClaimJobt.Percentage*jobst.price*count(*) as togive,
+    date(ClaimJobt.approved_date) as ApprovedDate
+    ,ClaimJobt.Memo 
+	from JobsT
+left join ClaimJobT on ClaimJobT.JobID = JobsT.id
+left join UserT on UserT.id = ClaimJobT.Driverid
+left join cmpt on cmpt.id = usert.belongcmp
+left join driverT on UserT.id = driverT.id
+where (Claimjobt.deleted_date is null) and (ClaimJobT.Approved_Date is not null) and (ClaimJobT.Approved_date between $1 and $2) 
+group by usert.id, jobid,DriverT.plateNum,  UserT.Name, jobst.from_loc, jobst.mid, jobst.to_loc, jobst.price,cmpt.name, ClaimJobT.percentage, jobst.source, date(Claimjobt.approved_date), ClaimJobt.Memo
+`
+
+type GetRevenueExcelParams struct {
+	ApprovedDate   sql.NullTime
+	ApprovedDate_2 sql.NullTime
+}
+
+type GetRevenueExcelRow struct {
+	ID           sql.NullInt64
+	Platenum     sql.NullString
+	Username     sql.NullString
+	Fromloc      string
+	Mid          sql.NullString
+	Toloc        string
+	Count        int64
+	Price        int16
+	Totalprice   int32
+	Source       string
+	Name         sql.NullString
+	Togive       int32
+	Approveddate time.Time
+	Memo         sql.NullString
+}
+
+func (q *Queries) GetRevenueExcel(ctx context.Context, arg GetRevenueExcelParams) ([]GetRevenueExcelRow, error) {
+	rows, err := q.db.QueryContext(ctx, getRevenueExcel, arg.ApprovedDate, arg.ApprovedDate_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetRevenueExcelRow
+	for rows.Next() {
+		var i GetRevenueExcelRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Platenum,
+			&i.Username,
+			&i.Fromloc,
+			&i.Mid,
+			&i.Toloc,
+			&i.Count,
+			&i.Price,
+			&i.Totalprice,
+			&i.Source,
+			&i.Name,
+			&i.Togive,
+			&i.Approveddate,
+			&i.Memo,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUser = `-- name: GetUser :one
 SELECT id, role, deleted_date,pwd FROM  UserT
 WHERE phoneNum=$1  LIMIT 1
@@ -1581,7 +1665,8 @@ func (q *Queries) UpdateCmp(ctx context.Context, arg UpdateCmpParams) error {
 const updateDriver = `-- name: UpdateDriver :exec
 UPDATE DriverT set 
   percentage = COALESCE($2, percentage),
-  nationalidnumber = COALESCE($3, nationalidnumber)
+  nationalidnumber = COALESCE($3, nationalidnumber),
+  plateNum = COALESCE($4, plateNum)
 WHERE id = $1
 `
 
@@ -1589,10 +1674,16 @@ type UpdateDriverParams struct {
 	ID               int64
 	Percentage       int16
 	Nationalidnumber interface{}
+	Platenum         string
 }
 
 func (q *Queries) UpdateDriver(ctx context.Context, arg UpdateDriverParams) error {
-	_, err := q.db.ExecContext(ctx, updateDriver, arg.ID, arg.Percentage, arg.Nationalidnumber)
+	_, err := q.db.ExecContext(ctx, updateDriver,
+		arg.ID,
+		arg.Percentage,
+		arg.Nationalidnumber,
+		arg.Platenum,
+	)
 	return err
 }
 

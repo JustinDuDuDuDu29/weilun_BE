@@ -11,6 +11,9 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
+type ApproveJob struct {
+	Memo string `json:"memo"`
+}
 type GetJobsClientBodyT struct {
 	ID      int    `json:"id"`
 	FromLoc string `json:"fromLoc"`
@@ -88,6 +91,7 @@ type CreateJobBodyT struct {
 }
 
 type DriverInfo struct {
+	PlateNum         string `json:"plateNum" binding:"required"`
 	Percentage       int    `json:"percentage" binding:"required"`
 	NationalIdNumber string `json:"nationalIdNumber" binding:"required"`
 }

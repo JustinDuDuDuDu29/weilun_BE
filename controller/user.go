@@ -320,8 +320,10 @@ func (u *UserCtrlImpl) UpdateUser(c *gin.Context) {
 			Role:      int16(role),
 		}
 		driverParam := db.UpdateDriverParams{
-			ID:         int64(id),
-			Percentage: int16(reqBody.DriverInfo.Percentage),
+			ID:               int64(id),
+			Percentage:       int16(reqBody.DriverInfo.Percentage),
+			Platenum:         reqBody.DriverInfo.PlateNum,
+			Nationalidnumber: reqBody.DriverInfo.NationalIdNumber,
 		}
 
 		err = u.svc.UserServ.UpdateDriver(driverParam, param)
@@ -389,7 +391,7 @@ func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
 			Role:      300,
 		}
 
-		newid, err = u.svc.UserServ.RegisterDriver(param, reqBody.DriverInfo.Percentage, reqBody.DriverInfo.NationalIdNumber)
+		newid, err = u.svc.UserServ.RegisterDriver(param, reqBody.DriverInfo.Percentage, reqBody.DriverInfo.NationalIdNumber, reqBody.DriverInfo.PlateNum)
 		if err != nil {
 			c.Status(http.StatusConflict)
 			c.Abort()
