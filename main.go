@@ -1,14 +1,19 @@
 package main
 
 import (
+	"fmt"
 	"main/router"
 	"main/utils"
 	"main/wiregen"
+	"os"
 
 	"github.com/joho/godotenv"
 )
 
 func main() {
+
+	fmt.Println("Starting version: ", os.Getenv("version"))
+
 	godotenv.Load()
 	q, conn := utils.InitDatabase()
 
