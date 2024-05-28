@@ -11,16 +11,16 @@ import (
 type JobsServ interface {
 	GetClaimedJobByID(id int64) (db.GetClaimedJobByIDRow, error)
 	CreateJob(param db.CreateJobParams) (int64, error)
-	IncreaseRemaining(id int64) (int16, error)
-	DecreaseRemaining(id int64) (int16, error)
+	IncreaseRemaining(id int64) (int32, error)
+	DecreaseRemaining(id int64) (int32, error)
 	FinishClaimedJob(param db.FinishClaimedJobParams) error
-	ClaimJob(param db.ClaimJobParams) (int64, error, int16)
+	ClaimJob(param db.ClaimJobParams) (int64, error, int32)
 	GetAllJobs(param db.GetAllJobsAdminParams) ([]db.GetAllJobsAdminRow, error)
 	GetAllJobsClient(param db.GetAllJobsClientParams) ([]db.GetAllJobsClientRow, error)
 	DeleteJob(id int64) error
 	UpdateJob(param db.UpdateJobParams) (int64, error)
 	GetCurrentClaimedJob(id int64) (db.GetCurrentClaimedJobRow, error)
-	DeleteClaimedJob(param db.DeleteClaimedJobParams) (int16, error)
+	DeleteClaimedJob(param db.DeleteClaimedJobParams) (int32, error)
 	ApproveFinishedJob(param db.ApproveFinishedJobParams) error
 	SetJobNoMore(id int64) error
 	GetAllClaimedJobs() ([]db.GetAllClaimedJobsRow, error)
@@ -72,7 +72,7 @@ func (s *JobsServImpl) ApproveFinishedJob(param db.ApproveFinishedJobParams) err
 	return err
 }
 
-func (s *JobsServImpl) DeleteClaimedJob(param db.DeleteClaimedJobParams) (int16, error) {
+func (s *JobsServImpl) DeleteClaimedJob(param db.DeleteClaimedJobParams) (int32, error) {
 
 	tx, err := s.conn.BeginTx(context.Background(), nil)
 
@@ -99,7 +99,7 @@ func (s *JobsServImpl) DeleteClaimedJob(param db.DeleteClaimedJobParams) (int16,
 		tx.Rollback()
 		return -99, err
 	}
-	var remain int16
+	var remain int32
 
 	if !(jres.CloseDate.Valid) {
 		remain, err = qtx.IncreaseRemaining(context.Background(), res.Jobid)
@@ -124,13 +124,13 @@ func (s *JobsServImpl) GetCurrentClaimedJob(id int64) (db.GetCurrentClaimedJobRo
 	return res, err
 }
 
-func (s *JobsServImpl) IncreaseRemaining(id int64) (int16, error) {
+func (s *JobsServImpl) IncreaseRemaining(id int64) (int32, error) {
 	res, err := s.q.IncreaseRemaining(context.Background(), id)
 
 	return res, err
 }
 
-func (s *JobsServImpl) DecreaseRemaining(id int64) (int16, error) {
+func (s *JobsServImpl) DecreaseRemaining(id int64) (int32, error) {
 	res, err := s.q.DecreaseRemaining(context.Background(), id)
 	return res, err
 }
@@ -151,7 +151,7 @@ func (s *JobsServImpl) FinishClaimedJob(param db.FinishClaimedJobParams) error {
 	return err
 }
 
-func (s *JobsServImpl) ClaimJob(param db.ClaimJobParams) (int64, error, int16) {
+func (s *JobsServImpl) ClaimJob(param db.ClaimJobParams) (int64, error, int32) {
 	tx, err := s.conn.BeginTx(context.Background(), nil)
 
 	if err != nil {

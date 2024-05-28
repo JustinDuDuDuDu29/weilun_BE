@@ -123,7 +123,7 @@ RETURNING id
 
 type CreateDriverInfoParams struct {
 	ID               int64
-	Percentage       int16
+	Percentage       int32
 	Nationalidnumber interface{}
 	Platenum         string
 }
@@ -172,8 +172,8 @@ type CreateJobParams struct {
 	FromLoc   string
 	Mid       sql.NullString
 	ToLoc     string
-	Price     int16
-	Estimated int16
+	Price     int32
+	Estimated int32
 	Belongcmp int64
 	Source    string
 	Jobdate   time.Time
@@ -250,9 +250,9 @@ const decreaseRemaining = `-- name: DecreaseRemaining :one
 Update JobsT set remaining = remaining - 1, last_modified_date = NOW() where id = $1 RETURNING remaining
 `
 
-func (q *Queries) DecreaseRemaining(ctx context.Context, id int64) (int16, error) {
+func (q *Queries) DecreaseRemaining(ctx context.Context, id int64) (int32, error) {
 	row := q.db.QueryRowContext(ctx, decreaseRemaining, id)
-	var remaining int16
+	var remaining int32
 	err := row.Scan(&remaining)
 	return remaining, err
 }
@@ -581,7 +581,7 @@ type GetAllJobsAdminParams struct {
 	Mid                   sql.NullString
 	ToLoc                 sql.NullString
 	Belongcmp             sql.NullInt64
-	Remaining             sql.NullInt16
+	Remaining             sql.NullInt32
 	CloseDateStart        sql.NullTime
 	CloseDateEnd          sql.NullTime
 	CreateDateStart       sql.NullTime
@@ -597,9 +597,9 @@ type GetAllJobsAdminRow struct {
 	FromLoc            string
 	Mid                sql.NullString
 	ToLoc              string
-	Price              int16
-	Estimated          int16
-	Remaining          int16
+	Price              int32
+	Estimated          int32
+	Remaining          int32
 	Belongcmp          int64
 	Source             string
 	Jobdate            time.Time
@@ -768,8 +768,8 @@ type GetAllJobsClientRow struct {
 	FromLoc     string
 	Mid         sql.NullString
 	ToLoc       string
-	Price       int16
-	Remaining   int16
+	Price       int32
+	Remaining   int32
 	Belongcmp   int64
 	Source      string
 	Jobdate     time.Time
@@ -948,9 +948,9 @@ type GetClaimedJobByIDRow struct {
 	Cmpname          string
 	Cmpid            int64
 	Approveddate     sql.NullTime
-	Driverpercentage int16
-	Percentage       sql.NullInt16
-	Price            int16
+	Driverpercentage int32
+	Percentage       sql.NullInt32
+	Price            int32
 }
 
 func (q *Queries) GetClaimedJobByID(ctx context.Context, id int64) (GetClaimedJobByIDRow, error) {
@@ -1037,7 +1037,7 @@ type GetCurrentClaimedJobRow struct {
 	FromLoc   string
 	Mid       sql.NullString
 	ToLoc     string
-	Price     int16
+	Price     int32
 	Source    string
 	Memo      sql.NullString
 	ID        int64
@@ -1072,7 +1072,7 @@ type GetDriverRow struct {
 	Driverlicense    sql.NullString
 	Trucklicense     sql.NullString
 	Nationalidnumber interface{}
-	Percentage       int16
+	Percentage       int32
 	Cmpname          string
 	Phonenum         interface{}
 	Username         string
@@ -1341,7 +1341,7 @@ SELECT usert.id, DriverT.plateNum as plateNum, UserT.Name as Username,
 	jobst.from_loc as FromLoc, jobst.mid as mid, jobst.to_loc as ToLoc, count(*), 
 	jobst.price, jobst.price*count(*) as totalPrice,
     jobst.source,
-	cmpt.name, ClaimJobt.Percentage*jobst.price*count(*) as togive,
+	cmpt.name, (ClaimJobt.Percentage/100)*jobst.price*count(*) as togive,
     date(ClaimJobt.approved_date) as ApprovedDate
     ,ClaimJobt.Memo 
 	from JobsT
@@ -1366,7 +1366,7 @@ type GetRevenueExcelRow struct {
 	Mid          sql.NullString
 	Toloc        string
 	Count        int64
-	Price        int16
+	Price        int32
 	Totalprice   int32
 	Source       string
 	Name         sql.NullString
@@ -1460,7 +1460,7 @@ type GetUserByIDRow struct {
 	Driverlicense    sql.NullString
 	Trucklicense     sql.NullString
 	Nationalidnumber interface{}
-	Percentage       sql.NullInt16
+	Percentage       sql.NullInt32
 	Platenum         sql.NullString
 }
 
@@ -1582,9 +1582,9 @@ const increaseRemaining = `-- name: IncreaseRemaining :one
 Update JobsT set remaining = remaining + 1, last_modified_date = NOW() where id = $1 RETURNING remaining
 `
 
-func (q *Queries) IncreaseRemaining(ctx context.Context, id int64) (int16, error) {
+func (q *Queries) IncreaseRemaining(ctx context.Context, id int64) (int32, error) {
 	row := q.db.QueryRowContext(ctx, increaseRemaining, id)
-	var remaining int16
+	var remaining int32
 	err := row.Scan(&remaining)
 	return remaining, err
 }
@@ -1674,7 +1674,7 @@ WHERE id = $1
 
 type UpdateDriverParams struct {
 	ID               int64
-	Percentage       int16
+	Percentage       int32
 	Nationalidnumber interface{}
 	Platenum         string
 }
@@ -1739,8 +1739,8 @@ type UpdateJobParams struct {
 	FromLoc   string
 	Mid       sql.NullString
 	ToLoc     string
-	Price     int16
-	Remaining int16
+	Price     int32
+	Remaining int32
 	Belongcmp int64
 	Source    string
 	Jobdate   time.Time

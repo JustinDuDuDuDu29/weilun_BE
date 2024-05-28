@@ -195,7 +195,7 @@ func (u *JobsCtrlImpl) GetAllJob(c *gin.Context) {
 			Belongcmp.Scan(reqBody.Belongcmp)
 		}
 
-		var Remaining sql.NullInt16
+		var Remaining sql.NullInt32
 		if reqBody.Remaining != 0 {
 			Remaining.Scan(reqBody.Remaining)
 		}
@@ -752,8 +752,8 @@ func (u *JobsCtrlImpl) CreateJob(c *gin.Context) {
 		FromLoc:   reqBody.FromLoc,
 		Mid:       Mid,
 		ToLoc:     reqBody.ToLoc,
-		Price:     int16(reqBody.Price),
-		Estimated: int16(reqBody.Estimated),
+		Price:     int32(reqBody.Price),
+		Estimated: int32(reqBody.Estimated),
 		Belongcmp: int64(reqBody.Belongcmp),
 		Source:    reqBody.Source,
 		Jobdate:   Jobdate,
@@ -859,13 +859,13 @@ func (u *JobsCtrlImpl) UpdateJob(c *gin.Context) {
 		FromLoc:   reqBody.FromLoc,
 		Mid:       Mid,
 		ToLoc:     reqBody.ToLoc,
-		Price:     int16(reqBody.Price),
+		Price:     int32(reqBody.Price),
 		Belongcmp: int64(reqBody.Belongcmp),
 		Source:    reqBody.Source,
 		Jobdate:   Jobdate,
 		Memo:      Memo,
 		CloseDate: CloseDate,
-		Remaining: int16(reqBody.Remaining),
+		Remaining: int32(reqBody.Remaining),
 	}
 	res, err := u.svc.JobsServ.UpdateJob(param)
 

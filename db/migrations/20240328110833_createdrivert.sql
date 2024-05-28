@@ -14,7 +14,7 @@ CREATE TABLE DriverT(
     driverLicense varchar,
     truckLicense varchar,
     nationalIDNumber nationalIDNumberType NOT NULL Unique,
-    percentage smallint NOT NULL DEFAULT 20, 
+    percentage integer NOT NULL DEFAULT 20, 
     lastAlert bigint references alertT(id),
     approved_date Timestamp
   );

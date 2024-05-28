@@ -23,7 +23,7 @@ type Claimjobt struct {
 	ID               int64
 	Jobid            int64
 	Driverid         int64
-	Percentage       sql.NullInt16
+	Percentage       sql.NullInt32
 	FinishedDate     sql.NullTime
 	Finishpic        sql.NullString
 	Memo             sql.NullString
@@ -60,7 +60,7 @@ type Drivert struct {
 	Driverlicense    sql.NullString
 	Trucklicense     sql.NullString
 	Nationalidnumber interface{}
-	Percentage       int16
+	Percentage       int32
 	Lastalert        sql.NullInt64
 	ApprovedDate     sql.NullTime
 }
@@ -70,9 +70,9 @@ type Jobst struct {
 	FromLoc          string
 	Mid              sql.NullString
 	ToLoc            string
-	Price            int16
-	Estimated        int16
-	Remaining        int16
+	Price            int32
+	Estimated        int32
+	Remaining        int32
 	Belongcmp        int64
 	Source           string
 	Jobdate          time.Time

@@ -6,9 +6,9 @@ CREATE TABLE JobsT(
     mid varchar(40),
     to_loc varchar(40) NOT NULL,
     
-    price  smallint NOT NULL,
-    estimated smallint NOT NULL,
-    remaining smallint NOT NULL check(remaining>=0),
+    price  integer NOT NULL,
+    estimated integer NOT NULL,
+    remaining integer NOT NULL check(remaining>=0),
 
     belongCMP BigInt references CMPT(id) NOT NULL,
     source varchar(40) NOT NULL,

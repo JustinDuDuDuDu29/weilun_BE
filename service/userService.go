@@ -136,7 +136,7 @@ func (u *UserServImpl) RegisterDriver(queryParam db.CreateUserParams, percentage
 	}
 	driverParam := db.CreateDriverInfoParams{
 		ID:               id,
-		Percentage:       int16(percentage),
+		Percentage:       int32(percentage),
 		Nationalidnumber: nationalIdNumber,
 		Platenum:         plateNum,
 	}

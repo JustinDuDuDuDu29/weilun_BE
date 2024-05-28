@@ -323,7 +323,7 @@ SELECT usert.id, DriverT.plateNum as plateNum, UserT.Name as Username,
 	jobst.from_loc as FromLoc, jobst.mid as mid, jobst.to_loc as ToLoc, count(*), 
 	jobst.price, jobst.price*count(*) as totalPrice,
     jobst.source,
-	cmpt.name, ClaimJobt.Percentage*jobst.price*count(*) as togive,
+	cmpt.name, (ClaimJobt.Percentage/100)*jobst.price*count(*) as togive,
     date(ClaimJobt.approved_date) as ApprovedDate
     ,ClaimJobt.Memo 
 	from JobsT

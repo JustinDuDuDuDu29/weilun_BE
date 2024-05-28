@@ -326,7 +326,7 @@ func (u *UserCtrlImpl) UpdateUser(c *gin.Context) {
 		}
 		driverParam := db.UpdateDriverParams{
 			ID:               int64(id),
-			Percentage:       int16(reqBody.DriverInfo.Percentage),
+			Percentage:       int32(reqBody.DriverInfo.Percentage),
 			Platenum:         reqBody.DriverInfo.PlateNum,
 			Nationalidnumber: reqBody.DriverInfo.NationalIdNumber,
 		}
