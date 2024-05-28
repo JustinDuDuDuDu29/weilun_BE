@@ -1439,7 +1439,7 @@ func (q *Queries) GetUser(ctx context.Context, phonenum interface{}) (GetUserRow
 
 const getUserByID = `-- name: GetUserByID :one
 SELECT
-UserT.id as ID, cmpt.name as Cmpname, usert.phoneNum as phoneNum, usert.name as Username, usert.belongCMP, usert.role, usert.initPwdChanged, UserT.Deleted_Date as Deleted_Date, insurances, registration, driverLicense, TruckLicense, nationalidnumber, percentage
+UserT.id as ID, cmpt.name as Cmpname, usert.phoneNum as phoneNum, usert.name as Username, usert.belongCMP, usert.role, usert.initPwdChanged, UserT.Deleted_Date as Deleted_Date, insurances, registration, driverLicense, TruckLicense, nationalidnumber, percentage, plateNum
 from UserT 
 inner join cmpt on UserT.belongcmp = cmpt.id 
 left join DriverT on driverT.id= usert.id 
@@ -1461,6 +1461,7 @@ type GetUserByIDRow struct {
 	Trucklicense     sql.NullString
 	Nationalidnumber interface{}
 	Percentage       sql.NullInt16
+	Platenum         sql.NullString
 }
 
 func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, error) {
@@ -1481,6 +1482,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, er
 		&i.Trucklicense,
 		&i.Nationalidnumber,
 		&i.Percentage,
+		&i.Platenum,
 	)
 	return i, err
 }
