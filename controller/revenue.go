@@ -257,9 +257,9 @@ func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 		FD2.Scan(fom)
 
 		param := db.GetDriverRevenueParams{
-			Driverid:       int64(id),
-			FinishedDate:   FD2,
-			FinishedDate_2: FinishedDate,
+			Driverid: int64(id),
+			Date:     FD2,
+			Date_2:   FinishedDate,
 		}
 		res, err := a.svc.RevenueServ.GetRevenue(param)
 
@@ -277,9 +277,9 @@ func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 		FinishedDate.Scan(lme)
 
 		param = db.GetDriverRevenueParams{
-			Driverid:       int64(id),
-			FinishedDate:   FD2,
-			FinishedDate_2: FinishedDate,
+			Driverid: int64(id),
+			Date:     FD2,
+			Date_2:   FinishedDate,
 		}
 		resp1, err := a.svc.RevenueServ.GetRevenue(param)
 
@@ -297,9 +297,9 @@ func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 		FinishedDate.Scan(l2me)
 
 		param = db.GetDriverRevenueParams{
-			Driverid:       int64(id),
-			FinishedDate:   FD2,
-			FinishedDate_2: FinishedDate,
+			Driverid: int64(id),
+			Date:     FD2,
+			Date_2:   FinishedDate,
 		}
 		resp2, err := a.svc.RevenueServ.GetRevenue(param)
 
