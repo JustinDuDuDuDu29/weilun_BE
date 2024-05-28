@@ -42,21 +42,31 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 	var AppFrom sql.NullTime
 	var AppEnd sql.NullTime
 	fm, err := time.Parse(time.DateOnly, strings.Split(time.Date(year, time.Month(month), 1, 0, 0, 0, 0, tDate.Location()).String(), " ")[0])
-
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
 	AppFrom.Scan(fm)
 
 	me, err := time.Parse(time.DateOnly, strings.Split(time.Date(year, time.Month(month)+1, -1, 0, 0, 0, 0, tDate.Location()).String(), " ")[0])
+	if err != nil {
+		fmt.Println(err)
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
 	AppEnd.Scan(me)
 
 	param := db.GetRevenueExcelParams{
 		ApprovedDate:   AppFrom,
 		ApprovedDate_2: AppEnd,
 	}
+	fmt.Println("AP1: ", AppFrom)
+	fmt.Println("AP2: ", AppEnd)
 
 	res, err := a.svc.RevenueServ.GetExcel(param)
 
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("err: ", err)
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
