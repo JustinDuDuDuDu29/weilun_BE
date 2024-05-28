@@ -235,7 +235,6 @@ func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 		}
 
 		tDate := time.Now()
-		fmt.Println("Today: ", tDate)
 		y, m, _ := tDate.Date()
 		today, err := time.Parse(time.DateOnly, strings.Split(tDate.String(), " ")[0])
 		if err != nil {

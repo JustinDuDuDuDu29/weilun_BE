@@ -1112,17 +1112,17 @@ const getDriverRevenue = `-- name: GetDriverRevenue :many
 SELECT coalesce(sum(t1.percentage*t2.price), 0) as earn
 , coalesce((select count(*) from ClaimJobT t1 where t1.driverID = $1 
  and (t1.finished_date IS NOT NULL and approved_date IS NOT NULL and t1.deleted_date IS NULL) 
-and t1.finished_date between $2 and $3), 0) as count
+and date(t1.finished_date) >= date($2) and date(t1.finished_date) <= date($3)), 0) as count
 from ClaimJobT t1 inner join JobsT t2 on t1.jobID = t2.id
 where t1.driverID = $1 
 and (t1.finished_date IS NOT NULL and approved_date IS NOT NULL and t1.deleted_date IS NULL) 
-and t1.finished_date between $2 and $3
+and date(t1.finished_date) >= date($2) and date(t1.finished_date) <= date($3)
 `
 
 type GetDriverRevenueParams struct {
-	Driverid       int64
-	FinishedDate   sql.NullTime
-	FinishedDate_2 sql.NullTime
+	Driverid int64
+	Date     interface{}
+	Date_2   interface{}
 }
 
 type GetDriverRevenueRow struct {
@@ -1131,7 +1131,7 @@ type GetDriverRevenueRow struct {
 }
 
 func (q *Queries) GetDriverRevenue(ctx context.Context, arg GetDriverRevenueParams) ([]GetDriverRevenueRow, error) {
-	rows, err := q.db.QueryContext(ctx, getDriverRevenue, arg.Driverid, arg.FinishedDate, arg.FinishedDate_2)
+	rows, err := q.db.QueryContext(ctx, getDriverRevenue, arg.Driverid, arg.Date, arg.Date_2)
 	if err != nil {
 		return nil, err
 	}
