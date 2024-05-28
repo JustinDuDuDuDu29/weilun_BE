@@ -7,6 +7,7 @@ import (
 	db "main/sql"
 	"strconv"
 	"time"
+    "fmt"
 
 	"net/http"
 	"os"
@@ -38,12 +39,15 @@ func (a *AuthCtrlImpl) Login(c *gin.Context) {
 	res, err := a.svc.UserServ.HaveUser(reqBody.Phonenum)
 
 	if err != nil {
+		fmt.Println("hu ", err)
 		c.Status(http.StatusNotFound)
 		c.Abort()
 		return
 	}
 
 	if err = bcrypt.CompareHashAndPassword([]byte(res.Pwd), []byte(reqBody.Pwd)); err != nil {
+
+		fmt.Println("wp ", err)
 		c.Status(http.StatusNotFound)
 		c.Abort()
 		return

@@ -8,7 +8,7 @@ DriverT.id = $1 LIMIT 1;
 
 -- name: GetUserByID :one
 SELECT
-UserT.id as ID, cmpt.name as Cmpname, usert.phoneNum as phoneNum, usert.name as Username, usert.belongCMP, usert.role, usert.initPwdChanged, UserT.Deleted_Date as Deleted_Date, insurances, registration, driverLicense, TruckLicense, nationalidnumber, percentage
+UserT.id as ID, cmpt.name as Cmpname, usert.phoneNum as phoneNum, usert.name as Username, usert.belongCMP, usert.role, usert.initPwdChanged, UserT.Deleted_Date as Deleted_Date, insurances, registration, driverLicense, TruckLicense, nationalidnumber, percentage, plateNum
 from UserT 
 inner join cmpt on UserT.belongcmp = cmpt.id 
 left join DriverT on driverT.id= usert.id 

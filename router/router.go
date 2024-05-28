@@ -27,7 +27,7 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		auth.POST("", c.AuthCtrl.Login)
 
 		io := api.Group("/io")
-		io.GET("", c.SocketCtrl.TestSocket)
+		io.GET("/", c.SocketCtrl.TestSocket)
 
 		static := api.Group("/static", m.RoleMid.IsLoggedIn)
 		static.StaticFS("/img", http.Dir("./img"))
