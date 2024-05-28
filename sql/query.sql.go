@@ -1159,18 +1159,18 @@ SELECT coalesce(sum(t1.percentage*t2.price), 0) as earn
 inner join UserT t3 on t1.driverID = t3.id
 where t3.belongCMP= $1 
 and (t1.finished_date IS NOT NULL and approved_date IS NOT NULL and t1.deleted_date IS NULL) 
-and t1.finished_date between $2 and $3), 0) as count
+and  date(t1.finished_date) >= date($2) and date(t1.finished_date) <= date($3)), 0) as count
 from ClaimJobT t1 inner join JobsT t2 on t1.jobID = t2.id
 inner join UserT t3 on t1.driverID = t3.id
 where t3.belongCMP= $1 
 and (t1.finished_date IS NOT NULL and approved_date IS NOT NULL and t1.deleted_date IS NULL) 
-and t1.finished_date between $2 and $3
+and date(t1.finished_date) >= date($2) and date(t1.finished_date) <= date($3)
 `
 
 type GetDriverRevenueByCmpParams struct {
-	Belongcmp      int64
-	FinishedDate   sql.NullTime
-	FinishedDate_2 sql.NullTime
+	Belongcmp int64
+	Date      interface{}
+	Date_2    interface{}
 }
 
 type GetDriverRevenueByCmpRow struct {
@@ -1179,7 +1179,7 @@ type GetDriverRevenueByCmpRow struct {
 }
 
 func (q *Queries) GetDriverRevenueByCmp(ctx context.Context, arg GetDriverRevenueByCmpParams) ([]GetDriverRevenueByCmpRow, error) {
-	rows, err := q.db.QueryContext(ctx, getDriverRevenueByCmp, arg.Belongcmp, arg.FinishedDate, arg.FinishedDate_2)
+	rows, err := q.db.QueryContext(ctx, getDriverRevenueByCmp, arg.Belongcmp, arg.Date, arg.Date_2)
 	if err != nil {
 		return nil, err
 	}

@@ -351,9 +351,9 @@ func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 		FD2.Scan(fom)
 
 		param := db.GetDriverRevenueByCmpParams{
-			Belongcmp:      int64(id),
-			FinishedDate:   FD2,
-			FinishedDate_2: FinishedDate,
+			Belongcmp: int64(id),
+			Date:      FD2,
+			Date_2:    FinishedDate,
 		}
 		res, err := a.svc.RevenueServ.GetRevenueByCmp(param)
 
@@ -372,9 +372,9 @@ func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 
 		param = db.GetDriverRevenueByCmpParams{
 
-			Belongcmp:      int64(id),
-			FinishedDate:   FD2,
-			FinishedDate_2: FinishedDate,
+			Belongcmp: int64(id),
+			Date:      FD2,
+			Date_2:    FinishedDate,
 		}
 		resp1, err := a.svc.RevenueServ.GetRevenueByCmp(param)
 
@@ -393,9 +393,9 @@ func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 
 		param = db.GetDriverRevenueByCmpParams{
 
-			Belongcmp:      int64(id),
-			FinishedDate:   FD2,
-			FinishedDate_2: FinishedDate,
+			Belongcmp: int64(id),
+			Date:      FD2,
+			Date_2:    FinishedDate,
 		}
 		resp2, err := a.svc.RevenueServ.GetRevenueByCmp(param)
 
