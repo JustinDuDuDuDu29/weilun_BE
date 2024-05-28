@@ -39,7 +39,7 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		user.POST("", m.RoleMid.IsLoggedIn, c.UserCtrl.RegisterUser)
 		user.POST(":id", m.RoleMid.IsLoggedIn, c.UserCtrl.RegisterUser)
 		user.POST("/pwd", m.RoleMid.IsLoggedIn, c.UserCtrl.UpdatePassword)
-		user.POST("/pwdreset", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.UserCtrl.UpdatePassword)
+		user.POST("/pwdreset", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.UserCtrl.ResetPassword)
 		user.POST("/approve/:id", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.UserCtrl.ApproveUser)
 		user.POST("/UpdateDriverPic", m.RoleMid.IsLoggedIn, c.UserCtrl.UpdateDriverPic)
 		user.PUT(":id", m.RoleMid.IsLoggedIn, c.UserCtrl.UpdateUser)

@@ -24,6 +24,7 @@ type UserCtrl interface {
 	UpdateDriverPic(c *gin.Context)
 	ApproveUser(c *gin.Context)
 	Me(c *gin.Context)
+	ResetPassword(c *gin.Context)
 }
 
 type UserCtrlImpl struct {
@@ -177,37 +178,34 @@ func (u *UserCtrlImpl) UpdateDriverPic(c *gin.Context) {
 }
 
 func (u *UserCtrlImpl) ResetPassword(c *gin.Context) {
-	cuid := c.MustGet("UserID").(int)
 	role := c.MustGet("Role").(int16)
 
-	var reqBody apptypes.UpdatePasswordBodyT
+	var reqBody apptypes.ResetPasswordBodyT
 	if err := c.BindJSON(&reqBody); err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-	if role != 100 && cuid != reqBody.Id {
+	if role != 100 {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 
-	if role != 100 {
-		user, err := u.svc.UserServ.GetUserById(int64(reqBody.Id))
-		res, err := u.svc.UserServ.HaveUser(user.Phonenum)
-		if err = bcrypt.CompareHashAndPassword([]byte(res.Pwd), []byte(reqBody.OldPwd)); err != nil {
-			c.Status(http.StatusNotAcceptable)
-			c.Abort()
-			return
-		}
+	user, err := u.svc.UserServ.GetUserById(int64(reqBody.Id))
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(reqBody.Pwd), bcrypt.MinCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(user.Phonenum.(string)), bcrypt.MinCost)
 	if err != nil {
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
+	fmt.Println("hh : ", string(hash))
+
 	param := db.UpdateUserPasswordParams{
-		ID:  int64(cuid),
+		ID:  int64(reqBody.Id),
 		Pwd: string(hash),
 	}
 	err = u.svc.UserServ.UpdatePassword(param)
@@ -222,7 +220,7 @@ func (u *UserCtrlImpl) ResetPassword(c *gin.Context) {
 
 func (u *UserCtrlImpl) UpdatePassword(c *gin.Context) {
 	cuid := c.MustGet("UserID").(int)
-	role := c.MustGet("Role").(int16)
+	// role := c.MustGet("Role").(int16)
 
 	var reqBody apptypes.UpdatePasswordBodyT
 	if err := c.BindJSON(&reqBody); err != nil {
@@ -231,19 +229,25 @@ func (u *UserCtrlImpl) UpdatePassword(c *gin.Context) {
 	}
 	fmt.Println(reqBody.Pwd)
 	fmt.Println(reqBody.OldPwd)
-	if role != 100 && cuid != reqBody.Id {
+	if cuid != reqBody.Id {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 
-	if role != 100 {
-		user, err := u.svc.UserServ.GetUserById(int64(reqBody.Id))
-		res, err := u.svc.UserServ.HaveUser(user.Phonenum)
-		if err = bcrypt.CompareHashAndPassword([]byte(res.Pwd), []byte(reqBody.OldPwd)); err != nil {
-			c.Status(http.StatusNotAcceptable)
-			c.Abort()
-			return
-		}
+	user, err := u.svc.UserServ.GetUserById(int64(reqBody.Id))
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	res, err := u.svc.UserServ.HaveUser(user.Phonenum)
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	if err = bcrypt.CompareHashAndPassword([]byte(res.Pwd), []byte(reqBody.OldPwd)); err != nil {
+		c.Status(http.StatusNotAcceptable)
+		c.Abort()
+		return
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(reqBody.Pwd), bcrypt.MinCost)
@@ -256,6 +260,7 @@ func (u *UserCtrlImpl) UpdatePassword(c *gin.Context) {
 		ID:  int64(cuid),
 		Pwd: string(hash),
 	}
+
 	err = u.svc.UserServ.UpdatePassword(param)
 
 	if err != nil {

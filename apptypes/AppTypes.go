@@ -53,6 +53,9 @@ type UpdatePasswordBodyT struct {
 	Pwd    string `json:"pwd" binding:"required"`
 	OldPwd string `json:"oldPwd"`
 }
+type ResetPasswordBodyT struct {
+	Id int `json:"id" binding:"required"`
+}
 
 type UpdateJobBodyT struct {
 	FromLoc   string `json:"fromLoc" binding:"required"`
