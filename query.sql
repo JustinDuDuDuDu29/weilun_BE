@@ -8,7 +8,7 @@ DriverT.id = $1 LIMIT 1;
 
 -- name: GetUserByID :one
 SELECT
-UserT.id as ID, cmpt.name as Cmpname, usert.phoneNum as phoneNum, usert.name as Username, usert.belongCMP, usert.role, usert.initPwdChanged, UserT.Deleted_Date as Deleted_Date, insurances, registration, driverLicense, TruckLicense, nationalidnumber, percentage, plateNum
+UserT.id as ID, cmpt.name as Cmpname, usert.phoneNum as phoneNum, usert.name as Username, usert.belongCMP, usert.role, usert.initPwdChanged, UserT.Deleted_Date as Deleted_Date, insurances, registration, driverLicense, TruckLicense, nationalidnumber, percentage, plateNum, Approved_date
 from UserT 
 inner join cmpt on UserT.belongcmp = cmpt.id 
 left join DriverT on driverT.id= usert.id 
@@ -426,3 +426,13 @@ where belongCMP = $1 order by id desc;
 
 -- name: GetRepairById :one
 SELECT * from repairT where id = $1;
+
+
+-- name: UploadRepairPic :exec
+insert into RepairPicT (repair_id, pic) values ($1, $2);
+
+-- name: ApproveRepairPic :exec
+Update RepairPicT Set
+Approved_Date = NOW(),
+last_modified_date = NOW()
+where repair_id = $1;

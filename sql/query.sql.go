@@ -47,6 +47,18 @@ func (q *Queries) ApproveRepair(ctx context.Context, id int64) error {
 	return err
 }
 
+const approveRepairPic = `-- name: ApproveRepairPic :exec
+Update RepairPicT Set
+Approved_Date = NOW(),
+last_modified_date = NOW()
+where repair_id = $1
+`
+
+func (q *Queries) ApproveRepairPic(ctx context.Context, repairID int64) error {
+	_, err := q.db.ExecContext(ctx, approveRepairPic, repairID)
+	return err
+}
+
 const claimJob = `-- name: ClaimJob :one
 INSERT into ClaimJobT (
     jobID,
@@ -1439,7 +1451,7 @@ func (q *Queries) GetUser(ctx context.Context, phonenum interface{}) (GetUserRow
 
 const getUserByID = `-- name: GetUserByID :one
 SELECT
-UserT.id as ID, cmpt.name as Cmpname, usert.phoneNum as phoneNum, usert.name as Username, usert.belongCMP, usert.role, usert.initPwdChanged, UserT.Deleted_Date as Deleted_Date, insurances, registration, driverLicense, TruckLicense, nationalidnumber, percentage, plateNum
+UserT.id as ID, cmpt.name as Cmpname, usert.phoneNum as phoneNum, usert.name as Username, usert.belongCMP, usert.role, usert.initPwdChanged, UserT.Deleted_Date as Deleted_Date, insurances, registration, driverLicense, TruckLicense, nationalidnumber, percentage, plateNum, Approved_date
 from UserT 
 inner join cmpt on UserT.belongcmp = cmpt.id 
 left join DriverT on driverT.id= usert.id 
@@ -1462,6 +1474,7 @@ type GetUserByIDRow struct {
 	Nationalidnumber interface{}
 	Percentage       sql.NullInt32
 	Platenum         sql.NullString
+	ApprovedDate     sql.NullTime
 }
 
 func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, error) {
@@ -1483,6 +1496,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, er
 		&i.Nationalidnumber,
 		&i.Percentage,
 		&i.Platenum,
+		&i.ApprovedDate,
 	)
 	return i, err
 }
@@ -1828,6 +1842,20 @@ type UpdateUserPasswordParams struct {
 
 func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
 	_, err := q.db.ExecContext(ctx, updateUserPassword, arg.ID, arg.Pwd)
+	return err
+}
+
+const uploadRepairPic = `-- name: UploadRepairPic :exec
+insert into RepairPicT (repair_id, pic) values ($1, $2)
+`
+
+type UploadRepairPicParams struct {
+	RepairID int64
+	Pic      sql.NullString
+}
+
+func (q *Queries) UploadRepairPic(ctx context.Context, arg UploadRepairPicParams) error {
+	_, err := q.db.ExecContext(ctx, uploadRepairPic, arg.RepairID, arg.Pic)
 	return err
 }
 
