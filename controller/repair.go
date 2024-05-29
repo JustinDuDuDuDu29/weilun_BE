@@ -235,6 +235,7 @@ func (r *RepairCtrlImpl) CreateNewRepair(c *gin.Context) {
 	res, err := r.svc.RepairServ.NewRepair(param)
 
 	if err != nil {
+		fmt.Println("err: ", err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
