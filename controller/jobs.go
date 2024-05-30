@@ -290,14 +290,14 @@ func (u *JobsCtrlImpl) GetAllJob(c *gin.Context) {
 		}
 
 		param := db.GetAllJobsAdminParams{
-			ID:                    ID,
-			FromLoc:               FromLoc,
-			Mid:                   Mid,
-			ToLoc:                 ToLoc,
-			Belongcmp:             Belongcmp,
-			Remaining:             Remaining,
-			CloseDateStart:        CloseDateStart,
-			CloseDateEnd:          CloseDateEnd,
+			ID:        ID,
+			FromLoc:   FromLoc,
+			Mid:       Mid,
+			ToLoc:     ToLoc,
+			Belongcmp: Belongcmp,
+			Remaining: Remaining,
+			// CloseDateStart:        CloseDateStart,
+			// CloseDateEnd:          CloseDateEnd,
 			CreateDateStart:       CreateDateStart,
 			CreateDateEnd:         CreateDateEnd,
 			DeletedDateStart:      DeletedDateStart,
@@ -731,12 +731,12 @@ func (u *JobsCtrlImpl) CreateJob(c *gin.Context) {
 		Memo.Scan(reqBody.Memo)
 	}
 
-	Jobdate, err := time.Parse(time.DateOnly, reqBody.Jobdate)
-	if err != nil {
-		c.Status(http.StatusBadRequest)
-		c.Abort()
-		return
-	}
+	// Jobdate, err := time.Parse(time.DateOnly, reqBody.Jobdate)
+	// if err != nil {
+	// 	c.Status(http.StatusBadRequest)
+	// 	c.Abort()
+	// 	return
+	// }
 
 	var CloseDate sql.NullTime
 	if reqBody.CloseDate == "" {
@@ -756,9 +756,9 @@ func (u *JobsCtrlImpl) CreateJob(c *gin.Context) {
 		Estimated: int32(reqBody.Estimated),
 		Belongcmp: int64(reqBody.Belongcmp),
 		Source:    reqBody.Source,
-		Jobdate:   Jobdate,
-		Memo:      Memo,
-		CloseDate: CloseDate,
+		// Jobdate:   Jobdate,
+		Memo: Memo,
+		// CloseDate: CloseDate,
 	}
 	res, err := u.svc.JobsServ.CreateJob(param)
 
@@ -825,13 +825,13 @@ func (u *JobsCtrlImpl) UpdateJob(c *gin.Context) {
 		Memo.Valid = false
 	}
 
-	Jobdate, err := time.Parse(time.DateOnly, strings.Split(reqBody.Jobdate, "T")[0])
-	if err != nil {
-		fmt.Print(err)
-		c.Status(http.StatusBadRequest)
-		c.Abort()
-		return
-	}
+	// Jobdate, err := time.Parse(time.DateOnly, strings.Split(reqBody.Jobdate, "T")[0])
+	// if err != nil {
+	// 	fmt.Print(err)
+	// 	c.Status(http.StatusBadRequest)
+	// 	c.Abort()
+	// 	return
+	// }
 
 	var CloseDate sql.NullTime
 	if reqBody.CloseDate != "" {
@@ -862,9 +862,9 @@ func (u *JobsCtrlImpl) UpdateJob(c *gin.Context) {
 		Price:     int32(reqBody.Price),
 		Belongcmp: int64(reqBody.Belongcmp),
 		Source:    reqBody.Source,
-		Jobdate:   Jobdate,
-		Memo:      Memo,
-		CloseDate: CloseDate,
+		// Jobdate:   Jobdate,
+		Memo: Memo,
+		// CloseDate: CloseDate,
 		Remaining: int32(reqBody.Remaining),
 	}
 	res, err := u.svc.JobsServ.UpdateJob(param)

@@ -94,19 +94,18 @@ func (s *JobsServImpl) DeleteClaimedJob(param db.DeleteClaimedJobParams) (int32,
 		return -99, err
 	}
 
-	jres, err := qtx.GetJobById(context.Background(), res.Jobid)
+	// jres, err := qtx.GetJobById(context.Background(), res.Jobid)
+	// if err != nil {
+	// 	tx.Rollback()
+	// 	return -99, err
+	// }
+	var remain int32
+
+	// if !(jres.CloseDate.Valid) {
+	remain, err = qtx.IncreaseRemaining(context.Background(), res.Jobid)
 	if err != nil {
 		tx.Rollback()
 		return -99, err
-	}
-	var remain int32
-
-	if !(jres.CloseDate.Valid) {
-		remain, err = qtx.IncreaseRemaining(context.Background(), res.Jobid)
-		if err != nil {
-			tx.Rollback()
-			return -99, err
-		}
 	}
 
 	err = tx.Commit()
