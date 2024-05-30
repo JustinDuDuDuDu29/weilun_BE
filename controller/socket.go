@@ -66,14 +66,14 @@ func SandByCmp(reciver int, msgType int, msg string) {
 func SandMsg(reciver int, msgType int, msg string) {
 
 	if conn, ok := clients[reciver]; ok {
-
+		fmt.Println("sending ", conn)
 		msg := socketMsgT{
 			Type: msgType,
 			Msg:  msg,
 		}
 
 		if err := conn.wsc.WriteJSON(msg); err != nil {
-			fmt.Println(err)
+			fmt.Println("err is ", err)
 			return
 		}
 	}
