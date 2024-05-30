@@ -591,8 +591,7 @@ where t3.belongCMP = $1
   and date(t1.finished_date) >= date($2)
   and date(t1.finished_date) <= date($3);
 -- name: GetDriverRevenue :many
-SELECT coalesce(sum(t1.percentage), 0) as earn,
-  coalesce(
+SELECT coalesce(
     (
       select count(*)
       from ClaimJobT t1

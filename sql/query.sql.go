@@ -1306,8 +1306,7 @@ func (q *Queries) GetDriver(ctx context.Context, id int64) (GetDriverRow, error)
 }
 
 const getDriverRevenue = `-- name: GetDriverRevenue :many
-SELECT coalesce(sum(t1.percentage), 0) as earn,
-  coalesce(
+SELECT coalesce(
     (
       select count(*)
       from ClaimJobT t1
@@ -1340,24 +1339,19 @@ type GetDriverRevenueParams struct {
 	Date_2   interface{}
 }
 
-type GetDriverRevenueRow struct {
-	Earn  interface{}
-	Count interface{}
-}
-
-func (q *Queries) GetDriverRevenue(ctx context.Context, arg GetDriverRevenueParams) ([]GetDriverRevenueRow, error) {
+func (q *Queries) GetDriverRevenue(ctx context.Context, arg GetDriverRevenueParams) ([]interface{}, error) {
 	rows, err := q.db.QueryContext(ctx, getDriverRevenue, arg.Driverid, arg.Date, arg.Date_2)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetDriverRevenueRow
+	var items []interface{}
 	for rows.Next() {
-		var i GetDriverRevenueRow
-		if err := rows.Scan(&i.Earn, &i.Count); err != nil {
+		var count interface{}
+		if err := rows.Scan(&count); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, count)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
