@@ -164,7 +164,7 @@ func (s *SocketCtrlImpl) TestSocket(c *gin.Context) {
 		fmt.Println("closing ", conn)
 
 		conn.Close()
-		delete(clients, c.MustGet("UserID").(int))
+		// delete(clients, c.MustGet("UserID").(int))
 	}()
 	// defer delete(clients, c.MustGet("UserID").(int))
 	for {
