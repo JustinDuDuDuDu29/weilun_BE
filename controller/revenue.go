@@ -2,7 +2,9 @@ package controller
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"main/apptypes"
 	"main/service"
 	db "main/sql"
 	"net/http"
@@ -80,119 +82,173 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 		}
 	}()
 
-	// for idx, row := range [][]interface{}{
-	// 	{nil, "Apple", "Orange", "Pear"}, {"Small", 2, 3, 3},
-	// 	{"Normal", 5, 2, 4}, {"Large", 6, 7, 8},
-	// } {
-	for idx, row := range [][]interface{}{
-		{"日期", "車號", "駕駛", "發貨地", "中轉", "卸貨地", "趟次", "運費", "應收款", "甲方", "司機運費", "油資", "備註", "請款送單日"},
-	} {
-		cell, err := excelize.CoordinatesToCellName(1, idx+1)
-		if err != nil {
-			fmt.Println(err)
-			c.AbortWithStatus(http.StatusBadRequest)
-			return
-		}
-		f.SetSheetRow("Sheet1", cell, &row)
-	}
-	for idx, row := range res {
-		cell, err := excelize.CoordinatesToCellName(1, idx+2)
-		if err != nil {
-			fmt.Println(err)
-			c.AbortWithStatus(http.StatusBadRequest)
-			return
-		}
-		year := strconv.Itoa((row.Approveddate.Year()) - 1911)
-		month := strconv.Itoa(int(row.Approveddate.Month()))
-		day := strconv.Itoa(row.Approveddate.Day())
+	for idx, userRecord := range res {
+		var record apptypes.Excel
+		json.Unmarshal(userRecord, &record)
+		for _, row := range [][]interface{}{
+			{"日期", "車號", "駕駛", "發貨地", "中轉", "卸貨地", "趟次", "運費", "應收款", "甲方", "司機運費", "油資", "備註", "業主"},
+		} {
+			cell, err := excelize.CoordinatesToCellName(1, idx+1)
+			if err != nil {
+				fmt.Println(err)
+				c.AbortWithStatus(http.StatusBadRequest)
+				return
+			}
 
-		f.SetCellValue("Sheet1", cell, (year + month + day))
-		cell, err = excelize.CoordinatesToCellName(2, idx+2)
-		if err != nil {
-			fmt.Println(err)
-			c.AbortWithStatus(http.StatusBadRequest)
-			return
-		}
-		f.SetCellValue("Sheet1", cell, row.Platenum.String)
+			date, err := time.Parse(time.DateOnly, record.List[0].Date)
+			if err != nil {
+				fmt.Println(err)
+				c.AbortWithStatus(http.StatusBadRequest)
+				return
+			}
 
-		// cell, err = excelize.CoordinatesToCellName(3, idx+2)
-		// if err != nil {
-		// 	fmt.Println(err)
-		// 	return
-		// }
-		// f.SetCellValue("Sheet1", cell, row.Name.String)
-
-		cell, err = excelize.CoordinatesToCellName(3, idx+2)
-		if err != nil {
-			fmt.Println(err)
-			c.AbortWithStatus(http.StatusBadRequest)
-			return
+			f.SetSheetRow(record.Username+date.Month().String()+"月報表", cell, &row)
 		}
-		f.SetCellValue("Sheet1", cell, row.Username.String)
 
-		cell, err = excelize.CoordinatesToCellName(4, idx+2)
-		if err != nil {
-			fmt.Println(err)
-			c.AbortWithStatus(http.StatusBadRequest)
-			return
-		}
-		f.SetCellValue("Sheet1", cell, row.Fromloc)
+		for _, ls := range record.List {
+			date, err := time.Parse(time.DateOnly, ls.Date)
+			if err != nil {
+				fmt.Println(err)
+				c.AbortWithStatus(http.StatusBadRequest)
+				return
+			}
 
-		cell, err = excelize.CoordinatesToCellName(5, idx+2)
-		if err != nil {
-			fmt.Println(err)
-			c.AbortWithStatus(http.StatusBadRequest)
-			return
-		}
-		f.SetCellValue("Sheet1", cell, row.Mid.String)
+			year := strconv.Itoa((date.Year()) - 1911)
+			month := strconv.Itoa(int(date.Month()))
+			day := strconv.Itoa(date.Day())
 
-		cell, err = excelize.CoordinatesToCellName(6, idx+2)
-		if err != nil {
-			fmt.Println(err)
-			c.AbortWithStatus(http.StatusBadRequest)
-			return
-		}
-		f.SetCellValue("Sheet1", cell, row.Toloc)
+			for idx, row := range ls.Data {
+				// month
+				cell, err := excelize.CoordinatesToCellName(1, idx+2)
+				if err != nil {
+					fmt.Println(err)
+					c.AbortWithStatus(http.StatusBadRequest)
+					return
+				}
 
-		cell, err = excelize.CoordinatesToCellName(7, idx+2)
-		if err != nil {
-			fmt.Println(err)
-			c.AbortWithStatus(http.StatusBadRequest)
-			return
-		}
-		f.SetCellValue("Sheet1", cell, row.Count)
+				// platenum
+				f.SetCellValue("Sheet1", cell, (year + month + day))
+				cell, err = excelize.CoordinatesToCellName(2, idx+2)
+				if err != nil {
+					fmt.Println(err)
+					c.AbortWithStatus(http.StatusBadRequest)
+					return
+				}
+				f.SetCellValue("Sheet1", cell, row.Platenum)
 
-		cell, err = excelize.CoordinatesToCellName(8, idx+2)
-		if err != nil {
-			fmt.Println(err)
-			c.AbortWithStatus(http.StatusBadRequest)
-			return
-		}
-		f.SetCellValue("Sheet1", cell, row.Price)
+				// 駕駛
+				cell, err = excelize.CoordinatesToCellName(3, idx+2)
+				if err != nil {
+					fmt.Println(err)
+					c.AbortWithStatus(http.StatusBadRequest)
+					return
+				}
+				f.SetCellValue("Sheet1", cell, record.Username)
 
-		cell, err = excelize.CoordinatesToCellName(9, idx+2)
-		if err != nil {
-			fmt.Println(err)
-			c.AbortWithStatus(http.StatusBadRequest)
-			return
-		}
-		f.SetCellValue("Sheet1", cell, row.Totalprice)
+				// 發貨地
+				cell, err = excelize.CoordinatesToCellName(4, idx+2)
+				if err != nil {
+					fmt.Println(err)
+					c.AbortWithStatus(http.StatusBadRequest)
+					return
+				}
+				f.SetCellValue("Sheet1", cell, row.FromLoc)
 
-		cell, err = excelize.CoordinatesToCellName(10, idx+2)
-		if err != nil {
-			fmt.Println(err)
-			c.AbortWithStatus(http.StatusBadRequest)
-			return
-		}
-		f.SetCellValue("Sheet1", cell, row.Source)
+				// 中轉
+				cell, err = excelize.CoordinatesToCellName(5, idx+2)
+				if err != nil {
+					fmt.Println(err)
+					c.AbortWithStatus(http.StatusBadRequest)
+					return
+				}
+				f.SetCellValue("Sheet1", cell, row.Mid)
 
-		cell, err = excelize.CoordinatesToCellName(11, idx+2)
-		if err != nil {
-			fmt.Println(err)
-			c.AbortWithStatus(http.StatusBadRequest)
-			return
+				// 卸貨地
+				cell, err = excelize.CoordinatesToCellName(6, idx+2)
+				if err != nil {
+					fmt.Println(err)
+					c.AbortWithStatus(http.StatusBadRequest)
+					return
+				}
+				f.SetCellValue("Sheet1", cell, row.Toloc)
+
+				// 趟次
+				cell, err = excelize.CoordinatesToCellName(7, idx+2)
+				if err != nil {
+					fmt.Println(err)
+					c.AbortWithStatus(http.StatusBadRequest)
+					return
+				}
+				f.SetCellValue("Sheet1", cell, row.Count)
+
+				// 運費
+				cell, err = excelize.CoordinatesToCellName(8, idx+2)
+				if err != nil {
+					fmt.Println(err)
+					c.AbortWithStatus(http.StatusBadRequest)
+					return
+				}
+				f.SetCellValue("Sheet1", cell, row.Jp)
+
+				// 應收款
+				cell, err = excelize.CoordinatesToCellName(9, idx+2)
+				if err != nil {
+					fmt.Println(err)
+					c.AbortWithStatus(http.StatusBadRequest)
+					return
+				}
+				f.SetCellValue("Sheet1", cell, row.Total)
+
+				// 甲方
+				cell, err = excelize.CoordinatesToCellName(10, idx+2)
+				if err != nil {
+					fmt.Println(err)
+					c.AbortWithStatus(http.StatusBadRequest)
+					return
+				}
+				f.SetCellValue("Sheet1", cell, row.CmpName)
+
+				// 司機運費
+				cell, err = excelize.CoordinatesToCellName(11, idx+2)
+				if err != nil {
+					fmt.Println(err)
+					c.AbortWithStatus(http.StatusBadRequest)
+					return
+				}
+				f.SetCellValue("Sheet1", cell, "")
+
+				// 油資
+				cell, err = excelize.CoordinatesToCellName(12, idx+2)
+				if err != nil {
+					fmt.Println(err)
+					c.AbortWithStatus(http.StatusBadRequest)
+					return
+				}
+				if idx == len(ls.Data)-1 {
+					f.SetCellValue("Sheet1", cell, ls.Gas)
+				} else {
+					f.SetCellValue("Sheet1", cell, "")
+				}
+
+				// 備註
+				cell, err = excelize.CoordinatesToCellName(11, idx+2)
+				if err != nil {
+					fmt.Println(err)
+					c.AbortWithStatus(http.StatusBadRequest)
+					return
+				}
+				f.SetCellValue("Sheet1", cell, "")
+
+				// 業主
+				cell, err = excelize.CoordinatesToCellName(11, idx+2)
+				if err != nil {
+					fmt.Println(err)
+					c.AbortWithStatus(http.StatusBadRequest)
+					return
+				}
+				f.SetCellValue("Sheet1", cell, row.Ss)
+			}
 		}
-		f.SetCellValue("Sheet1", cell, "")
 	}
 	targetPath := time.DateOnly + ".xlsx"
 	if err := f.SaveAs("./excel/" + targetPath); err != nil {

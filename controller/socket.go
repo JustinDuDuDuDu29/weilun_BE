@@ -75,7 +75,6 @@ func SandMsg(reciver int, msgType int, msg string) {
 
 		if err := conn.wsc.WriteJSON(msg); err != nil {
 			fmt.Println("err is ", err)
-			return
 		}
 	}
 }

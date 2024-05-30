@@ -11,6 +11,26 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
+type Excel struct {
+	Uid      int    `json:"uid"`
+	Username string `json:"username"`
+	List     []struct {
+		Gas  int `json:"gas"`
+		Data []struct {
+			Jp       int    `json:"jp"`
+			Ss       string `json:"ss"`
+			Mid      string `json:"mid"`
+			Count    int    `json:"count"`
+			Toloc    string `json:"toloc"`
+			Total    int    `json:"total"`
+			CmpName  string `json:"cmpName"`
+			FromLoc  string `json:"fromLoc"`
+			Platenum string `json:"platenum"`
+		}
+		Date string `json:"date"`
+	} `json:"list"`
+}
+
 type ApproveJob struct {
 	Memo string `json:"memo"`
 }

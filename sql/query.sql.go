@@ -13,8 +13,8 @@ import (
 )
 
 const approveDriver = `-- name: ApproveDriver :exec
-UPDATE DriverT set 
-  approved_date =  NOW()
+UPDATE DriverT
+set approved_date = NOW()
 where id = $1
 `
 
@@ -24,7 +24,12 @@ func (q *Queries) ApproveDriver(ctx context.Context, id int64) error {
 }
 
 const approveFinishedJob = `-- name: ApproveFinishedJob :exec
-Update ClaimJobT set memo =$3, Approved_By = $2, approved_date = NOW(), last_modified_date = NOW() where id = $1
+Update ClaimJobT
+set memo = $3,
+  Approved_By = $2,
+  approved_date = NOW(),
+  last_modified_date = NOW()
+where id = $1
 `
 
 type ApproveFinishedJobParams struct {
@@ -39,7 +44,10 @@ func (q *Queries) ApproveFinishedJob(ctx context.Context, arg ApproveFinishedJob
 }
 
 const approveRepair = `-- name: ApproveRepair :exec
-Update repairT set approved_date = NOW(), last_modified_date = NOW() where id =$1
+Update repairT
+set approved_date = NOW(),
+  last_modified_date = NOW()
+where id = $1
 `
 
 func (q *Queries) ApproveRepair(ctx context.Context, id int64) error {
@@ -48,9 +56,9 @@ func (q *Queries) ApproveRepair(ctx context.Context, id int64) error {
 }
 
 const approveRepairPic = `-- name: ApproveRepairPic :exec
-Update RepairPicT Set
-Approved_Date = NOW(),
-last_modified_date = NOW()
+Update RepairPicT
+Set Approved_Date = NOW(),
+  last_modified_date = NOW()
 where repair_id = $1
 `
 
@@ -60,13 +68,9 @@ func (q *Queries) ApproveRepairPic(ctx context.Context, repairID int64) error {
 }
 
 const claimJob = `-- name: ClaimJob :one
-INSERT into ClaimJobT (
-    jobID,
-    driverID
-) values (
-    $1,
-    $2
-) RETURNING id
+INSERT into ClaimJobT (jobID, driverID)
+values ($1, $2)
+RETURNING id
 `
 
 type ClaimJobParams struct {
@@ -82,11 +86,8 @@ func (q *Queries) ClaimJob(ctx context.Context, arg ClaimJobParams) (int64, erro
 }
 
 const createAdmin = `-- name: CreateAdmin :one
-INSERT INTO UserT(
-    pwd, name, role, belongcmp, phoneNum
-) VALUES (
-  $1, $2, $3, $4, $5
-)
+INSERT INTO UserT(pwd, name, role, belongcmp, phoneNum)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING id
 `
 
@@ -112,7 +113,9 @@ func (q *Queries) CreateAdmin(ctx context.Context, arg CreateAdminParams) (int64
 }
 
 const createAlert = `-- name: CreateAlert :one
-INSERT INTO AlertT (alert, belongCMP) values ($1, $2) RETURNING id
+INSERT INTO AlertT (alert, belongCMP)
+values ($1, $2)
+RETURNING id
 `
 
 type CreateAlertParams struct {
@@ -128,8 +131,8 @@ func (q *Queries) CreateAlert(ctx context.Context, arg CreateAlertParams) (int64
 }
 
 const createDriverInfo = `-- name: CreateDriverInfo :one
-insert into driverT (id,nationalidnumber, plateNum) 
-    values ($1, $2, $3)
+insert into driverT (id, nationalidnumber, plateNum)
+values ($1, $2, $3)
 RETURNING id
 `
 
@@ -157,9 +160,9 @@ INSERT INTO JobsT (
     belongCMP,
     source,
     -- jobDate,
-    memo
-    -- close_date
-) values (
+    memo -- close_date
+  )
+values (
     $1,
     $2,
     $3,
@@ -168,10 +171,10 @@ INSERT INTO JobsT (
     $5,
     $6,
     $7,
-    $8
-    -- $9
+    $8 -- $9
     -- $10
-) RETURNING id
+  )
+RETURNING id
 `
 
 type CreateJobParams struct {
@@ -202,7 +205,9 @@ func (q *Queries) CreateJob(ctx context.Context, arg CreateJobParams) (int64, er
 }
 
 const createNewRepair = `-- name: CreateNewRepair :one
-INSERT into repairT (type, driverID, repairInfo) values ($1, $2, $3) RETURNING id
+INSERT into repairT (type, driverID, repairInfo)
+values ($1, $2, $3)
+RETURNING id
 `
 
 type CreateNewRepairParams struct {
@@ -219,11 +224,8 @@ func (q *Queries) CreateNewRepair(ctx context.Context, arg CreateNewRepairParams
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO UserT(
-    pwd, name, role, belongcmp, phoneNum
-) VALUES (
-  $1, $2, $3, $4, $5
-)
+INSERT INTO UserT(pwd, name, role, belongcmp, phoneNum)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING id
 `
 
@@ -249,7 +251,11 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, 
 }
 
 const decreaseRemaining = `-- name: DecreaseRemaining :one
-Update JobsT set remaining = remaining - 1, last_modified_date = NOW() where id = $1 RETURNING remaining
+Update JobsT
+set remaining = remaining - 1,
+  last_modified_date = NOW()
+where id = $1
+RETURNING remaining
 `
 
 func (q *Queries) DecreaseRemaining(ctx context.Context, id int64) (int32, error) {
@@ -260,9 +266,9 @@ func (q *Queries) DecreaseRemaining(ctx context.Context, id int64) (int32, error
 }
 
 const deleteAlert = `-- name: DeleteAlert :exec
-Update AlertT Set
-deleted_date = NOW(),
-last_modified_date = NOW()
+Update AlertT
+Set deleted_date = NOW(),
+  last_modified_date = NOW()
 where id = $1
 `
 
@@ -272,11 +278,11 @@ func (q *Queries) DeleteAlert(ctx context.Context, id int64) error {
 }
 
 const deleteClaimedJob = `-- name: DeleteClaimedJob :exec
-Update ClaimJobT Set
-    deleted_by = $2,
-    deleted_date = NOW(),
-    last_modified_date = NOW()
-    where id = $1
+Update ClaimJobT
+Set deleted_by = $2,
+  deleted_date = NOW(),
+  last_modified_date = NOW()
+where id = $1
 `
 
 type DeleteClaimedJobParams struct {
@@ -291,7 +297,7 @@ func (q *Queries) DeleteClaimedJob(ctx context.Context, arg DeleteClaimedJobPara
 
 const deleteCmp = `-- name: DeleteCmp :exec
 UPDATE cmpt
-  set deleted_date= NOW(),
+set deleted_date = NOW(),
   last_modified_date = NOW()
 WHERE id = $1
 `
@@ -302,8 +308,8 @@ func (q *Queries) DeleteCmp(ctx context.Context, id int64) error {
 }
 
 const deleteJob = `-- name: DeleteJob :exec
-UPDATE JobsT 
-  set deleted_date = NOW(),
+UPDATE JobsT
+set deleted_date = NOW(),
   last_modified_date = NOW()
 WHERE id = $1
 `
@@ -314,7 +320,10 @@ func (q *Queries) DeleteJob(ctx context.Context, id int64) error {
 }
 
 const deleteRepair = `-- name: DeleteRepair :exec
-Update repairT set deleted_date = NOW(), last_modified_date = NOW() where id =$1
+Update repairT
+set deleted_date = NOW(),
+  last_modified_date = NOW()
+where id = $1
 `
 
 func (q *Queries) DeleteRepair(ctx context.Context, id int64) error {
@@ -324,7 +333,7 @@ func (q *Queries) DeleteRepair(ctx context.Context, id int64) error {
 
 const deleteUser = `-- name: DeleteUser :exec
 UPDATE UserT
-  set deleted_date= NOW(),
+set deleted_date = NOW(),
   last_modified_date = NOW()
 WHERE id = $1
 `
@@ -335,12 +344,13 @@ func (q *Queries) DeleteUser(ctx context.Context, id int64) error {
 }
 
 const finishClaimedJob = `-- name: FinishClaimedJob :exec
-Update ClaimJobT Set
-    finishPic =$3,
-    finished_date = NOW(),
-    -- percentage = (SELECT percentage from driverT where driverT.id = (SELECT driverID from ClaimJobT where ClaimJobT.id = $1)),
-    last_modified_date = NOW()
-WHERE id = $1 and ClaimJobT.Driverid = $2
+Update ClaimJobT
+Set finishPic = $3,
+  finished_date = NOW(),
+  -- percentage = (SELECT percentage from driverT where driverT.id = (SELECT driverID from ClaimJobT where ClaimJobT.id = $1)),
+  last_modified_date = NOW()
+WHERE id = $1
+  and ClaimJobT.Driverid = $2
 `
 
 type FinishClaimedJobParams struct {
@@ -355,18 +365,56 @@ func (q *Queries) FinishClaimedJob(ctx context.Context, arg FinishClaimedJobPara
 }
 
 const getAlert = `-- name: GetAlert :many
-SELECT alertT.id as ID, cmpt.name as cmpName, alertT.belongCMP as cmpID, alertT.alert as alert, alertT.create_date as Createdate, alertT.Deleted_Date as Deletedate from alertT
-inner join cmpt on alertT.Belongcmp = cmpt.id
-where 
-(alertT.id = $1 OR $1 IS NULL)AND
-(belongCMP = $2 OR $2 IS NULL)AND
-(alert like $3 OR $3 IS NULL)AND
-((alertT.create_date > $4 OR $4 IS NULL)
- AND (alertT.create_date < $5 OR $5 IS NULL)) AND
-((alertT.deleted_date > $6 OR $6 IS NULL)
- AND (alertT.deleted_date < $7 OR $7 IS NULL)) AND
-((alertT.last_modified_date > $8 OR $8 IS NULL) 
-AND (alertT.last_modified_date < $9 OR $9 IS NULL))
+SELECT alertT.id as ID,
+  cmpt.name as cmpName,
+  alertT.belongCMP as cmpID,
+  alertT.alert as alert,
+  alertT.create_date as Createdate,
+  alertT.Deleted_Date as Deletedate
+from alertT
+  inner join cmpt on alertT.Belongcmp = cmpt.id
+where (
+    alertT.id = $1
+    OR $1 IS NULL
+  )
+  AND (
+    belongCMP = $2
+    OR $2 IS NULL
+  )
+  AND (
+    alert like $3
+    OR $3 IS NULL
+  )
+  AND (
+    (
+      alertT.create_date > $4
+      OR $4 IS NULL
+    )
+    AND (
+      alertT.create_date < $5
+      OR $5 IS NULL
+    )
+  )
+  AND (
+    (
+      alertT.deleted_date > $6
+      OR $6 IS NULL
+    )
+    AND (
+      alertT.deleted_date < $7
+      OR $7 IS NULL
+    )
+  )
+  AND (
+    (
+      alertT.last_modified_date > $8
+      OR $8 IS NULL
+    )
+    AND (
+      alertT.last_modified_date < $9
+      OR $9 IS NULL
+    )
+  )
 order by alertT.id desc
 `
 
@@ -434,7 +482,8 @@ func (q *Queries) GetAlert(ctx context.Context, arg GetAlertParams) ([]GetAlertR
 const getAlertByCmp = `-- name: GetAlertByCmp :many
 SELECT id, alert, belongcmp, create_date, deleted_date, last_modified_date
 from alertT
-where belongCMP = $1 order by id desc
+where belongCMP = $1
+order by id desc
 `
 
 func (q *Queries) GetAlertByCmp(ctx context.Context, belongcmp int64) ([]Alertt, error) {
@@ -468,7 +517,23 @@ func (q *Queries) GetAlertByCmp(ctx context.Context, belongcmp int64) ([]Alertt,
 }
 
 const getAllClaimedJobs = `-- name: GetAllClaimedJobs :many
-SELECT ClaimJobT.id as id, JobsT.id as JobID, UserT.id as UserID, JobsT.From_Loc, JobsT.mid, JobsT.To_Loc, ClaimJobT.Create_Date, usert.name as userName, cmpt.name as cmpname, cmpT.id as cmpID, ClaimJobT.Approved_date as ApprovedDate, ClaimJobT.Finished_Date as FinishDate from ClaimJobT inner join JobsT on JobsT.id = ClaimJobT.JobId inner join UserT on UserT.id = ClaimJobT.Driverid inner join Cmpt on UserT.belongCMP = cmpt.id WHERE ClaimJobT.Deleted_date is  null
+SELECT ClaimJobT.id as id,
+  JobsT.id as JobID,
+  UserT.id as UserID,
+  JobsT.From_Loc,
+  JobsT.mid,
+  JobsT.To_Loc,
+  ClaimJobT.Create_Date,
+  usert.name as userName,
+  cmpt.name as cmpname,
+  cmpT.id as cmpID,
+  ClaimJobT.Approved_date as ApprovedDate,
+  ClaimJobT.Finished_Date as FinishDate
+from ClaimJobT
+  inner join JobsT on JobsT.id = ClaimJobT.JobId
+  inner join UserT on UserT.id = ClaimJobT.Driverid
+  inner join Cmpt on UserT.belongCMP = cmpt.id
+WHERE ClaimJobT.Deleted_date is null
 `
 
 type GetAllClaimedJobsRow struct {
@@ -523,7 +588,8 @@ func (q *Queries) GetAllClaimedJobs(ctx context.Context) ([]GetAllClaimedJobsRow
 }
 
 const getAllCmp = `-- name: GetAllCmp :many
-SELECT id, name, create_date, deleted_date, last_modified_date from cmpt
+SELECT id, name, create_date, deleted_date, last_modified_date
+from cmpt
 `
 
 func (q *Queries) GetAllCmp(ctx context.Context) ([]Cmpt, error) {
@@ -556,23 +622,65 @@ func (q *Queries) GetAllCmp(ctx context.Context) ([]Cmpt, error) {
 }
 
 const getAllJobsAdmin = `-- name: GetAllJobsAdmin :many
-
-SELECT  jobst.id, from_loc, mid, to_loc, price, estimated, remaining, belongcmp, source, memo, jobst.create_date, jobst.deleted_date, jobst.last_modified_date, cmpt.id, name, cmpt.create_date, cmpt.deleted_date, cmpt.last_modified_date
+SELECT jobst.id, from_loc, mid, to_loc, price, estimated, remaining, belongcmp, source, memo, jobst.create_date, jobst.deleted_date, jobst.last_modified_date, cmpt.id, name, cmpt.create_date, cmpt.deleted_date, cmpt.last_modified_date
 from JobsT
-inner join cmpt on JobsT.belongcmp = cmpt.id 
-where 
-(JobsT.id = $1 OR $1 IS NULL)AND
-(JobsT.From_Loc= $2 OR $2 IS NULL)AND
-(JobsT.Mid= $3 OR $3 IS NULL)AND
-(JobsT.To_Loc= $4 OR $4 IS NULL)AND
-(belongcmp = $5 OR $5 IS NULL)AND
-(remaining <> $6 OR $6 IS NULL)AND
-((JobsT.create_date > $7 OR $7 IS NULL)
- AND (JobsT.create_date < $8 OR $8 IS NULL)) AND
-((JobsT.deleted_date > $9 OR $9 IS NULL)
- AND (JobsT.deleted_date < $10 OR $10 IS NULL)) AND
-((JobsT.last_modified_date > $11 OR $11 IS NULL) 
-AND (JobsT.last_modified_date < $12 OR $12 IS NULL))
+  inner join cmpt on JobsT.belongcmp = cmpt.id
+where (
+    JobsT.id = $1
+    OR $1 IS NULL
+  )
+  AND (
+    JobsT.From_Loc = $2
+    OR $2 IS NULL
+  )
+  AND (
+    JobsT.Mid = $3
+    OR $3 IS NULL
+  )
+  AND (
+    JobsT.To_Loc = $4
+    OR $4 IS NULL
+  )
+  AND (
+    belongcmp = $5
+    OR $5 IS NULL
+  )
+  AND (
+    remaining <> $6
+    OR $6 IS NULL
+  )
+  AND -- ((JobsT.close_date> sqlc.narg('close_date_start') OR sqlc.narg('close_date_start') IS NULL)
+  --  AND (JobsT.create_date < sqlc.narg('close_date_end') OR sqlc.narg('close_date_end') IS NULL)) AND
+  (
+    (
+      JobsT.create_date > $7
+      OR $7 IS NULL
+    )
+    AND (
+      JobsT.create_date < $8
+      OR $8 IS NULL
+    )
+  )
+  AND (
+    (
+      JobsT.deleted_date > $9
+      OR $9 IS NULL
+    )
+    AND (
+      JobsT.deleted_date < $10
+      OR $10 IS NULL
+    )
+  )
+  AND (
+    (
+      JobsT.last_modified_date > $11
+      OR $11 IS NULL
+    )
+    AND (
+      JobsT.last_modified_date < $12
+      OR $12 IS NULL
+    )
+  )
 `
 
 type GetAllJobsAdminParams struct {
@@ -622,9 +730,6 @@ type GetAllJobsAdminRow struct {
 //
 // ((JobsT.last_modified_date > sqlc.narg('last_modified_date_start') OR sqlc.narg('last_modified_date_start') IS NULL)
 // AND (JobsT.last_modified_date < sqlc.narg('last_modified_date_end') OR sqlc.narg('last_modified_date_end') IS NULL));
-// ((JobsT.close_date> sqlc.narg('close_date_start') OR sqlc.narg('close_date_start') IS NULL)
-//
-//	AND (JobsT.create_date < sqlc.narg('close_date_end') OR sqlc.narg('close_date_end') IS NULL)) AND
 func (q *Queries) GetAllJobsAdmin(ctx context.Context, arg GetAllJobsAdminParams) ([]GetAllJobsAdminRow, error) {
 	rows, err := q.db.QueryContext(ctx, getAllJobsAdmin,
 		arg.ID,
@@ -681,7 +786,9 @@ func (q *Queries) GetAllJobsAdmin(ctx context.Context, arg GetAllJobsAdminParams
 }
 
 const getAllJobsByCmp = `-- name: GetAllJobsByCmp :many
-SELECT id, from_loc, mid, to_loc, price, estimated, remaining, belongcmp, source, memo, create_date, deleted_date, last_modified_date from JobsT where belongcmp = $1
+SELECT id, from_loc, mid, to_loc, price, estimated, remaining, belongcmp, source, memo, create_date, deleted_date, last_modified_date
+from JobsT
+where belongcmp = $1
 `
 
 func (q *Queries) GetAllJobsByCmp(ctx context.Context, belongcmp int64) ([]Jobst, error) {
@@ -722,28 +829,42 @@ func (q *Queries) GetAllJobsByCmp(ctx context.Context, belongcmp int64) ([]Jobst
 }
 
 const getAllJobsClient = `-- name: GetAllJobsClient :many
-SELECT  
-    JobsT.ID,
-    JobsT.From_Loc,
-    JobsT.Mid,
-    JobsT.To_Loc,
-    JobsT.Price,
-    JobsT.Remaining,
-    JobsT.Belongcmp,
-    JobsT.Source,
-    JobsT.Memo,
-    -- JobsT.Close_Date,
-    JobsT.deleted_date
+SELECT JobsT.ID,
+  JobsT.From_Loc,
+  JobsT.Mid,
+  JobsT.To_Loc,
+  JobsT.Price,
+  JobsT.Remaining,
+  JobsT.Belongcmp,
+  JobsT.Source,
+  JobsT.Memo,
+  -- JobsT.Close_Date,
+  JobsT.deleted_date
 from JobsT
-inner join cmpt on JobsT.belongcmp = cmpt.id 
-where 
-(JobsT.id = $1 OR $1 IS NULL)AND
-(JobsT.From_Loc= $2 OR $2 IS NULL)AND
-(JobsT.Mid= $3 OR $3 IS NULL)AND
-(JobsT.To_Loc= $4 OR $4 IS NULL)AND
-(belongcmp = $5 OR $5 IS NULL)AND
-(remaining <> 0)AND
-(JobsT.deleted_date is NULL)
+  inner join cmpt on JobsT.belongcmp = cmpt.id
+where (
+    JobsT.id = $1
+    OR $1 IS NULL
+  )
+  AND (
+    JobsT.From_Loc = $2
+    OR $2 IS NULL
+  )
+  AND (
+    JobsT.Mid = $3
+    OR $3 IS NULL
+  )
+  AND (
+    JobsT.To_Loc = $4
+    OR $4 IS NULL
+  )
+  AND (
+    belongcmp = $5
+    OR $5 IS NULL
+  )
+  AND (remaining <> 0)
+  AND -- (JobsT.close_date is NULL)AND
+  (JobsT.deleted_date is NULL)
 `
 
 type GetAllJobsClientParams struct {
@@ -767,7 +888,6 @@ type GetAllJobsClientRow struct {
 	DeletedDate sql.NullTime
 }
 
-// (JobsT.close_date is NULL)AND
 func (q *Queries) GetAllJobsClient(ctx context.Context, arg GetAllJobsClientParams) ([]GetAllJobsClientRow, error) {
 	rows, err := q.db.QueryContext(ctx, getAllJobsClient,
 		arg.ID,
@@ -809,7 +929,24 @@ func (q *Queries) GetAllJobsClient(ctx context.Context, arg GetAllJobsClientPara
 }
 
 const getClaimedJobByCmp = `-- name: GetClaimedJobByCmp :many
-SELECT ClaimJobT.id as id, JobsT.id as JobID, UserT.id as UserID, JobsT.From_Loc, JobsT.mid, JobsT.To_Loc, ClaimJobT.Create_Date, usert.name as userName, cmpt.name as cmpname, cmpT.id as cmpID, ClaimJobT.Approved_date as ApprovedDate, ClaimJobT.Finished_Date as FinishDate from ClaimJobT inner join JobsT on JobsT.id = ClaimJobT.JobId inner join UserT on UserT.id = ClaimJobT.Driverid inner join Cmpt on UserT.belongCMP = cmpt.id WHERE ClaimJobT.Deleted_date is  null and UserT.belongCMP = $1
+SELECT ClaimJobT.id as id,
+  JobsT.id as JobID,
+  UserT.id as UserID,
+  JobsT.From_Loc,
+  JobsT.mid,
+  JobsT.To_Loc,
+  ClaimJobT.Create_Date,
+  usert.name as userName,
+  cmpt.name as cmpname,
+  cmpT.id as cmpID,
+  ClaimJobT.Approved_date as ApprovedDate,
+  ClaimJobT.Finished_Date as FinishDate
+from ClaimJobT
+  inner join JobsT on JobsT.id = ClaimJobT.JobId
+  inner join UserT on UserT.id = ClaimJobT.Driverid
+  inner join Cmpt on UserT.belongCMP = cmpt.id
+WHERE ClaimJobT.Deleted_date is null
+  and UserT.belongCMP = $1
 `
 
 type GetClaimedJobByCmpRow struct {
@@ -864,7 +1001,24 @@ func (q *Queries) GetClaimedJobByCmp(ctx context.Context, belongcmp int64) ([]Ge
 }
 
 const getClaimedJobByDriverID = `-- name: GetClaimedJobByDriverID :many
-SELECT ClaimJobT.id as id, JobsT.id as JobID, UserT.id as UserID, JobsT.From_Loc, JobsT.mid, JobsT.To_Loc, ClaimJobT.Create_Date, usert.name as userName, cmpt.name as cmpname, cmpT.id as cmpID, ClaimJobT.Approved_date as ApprovedDate, ClaimJobT.Finished_Date as FinishDate from ClaimJobT inner join JobsT on JobsT.id = ClaimJobT.JobId inner join UserT on UserT.id = ClaimJobT.Driverid inner join Cmpt on UserT.belongCMP = cmpt.id WHERE ClaimJobT.Deleted_date is  null and UserT.id = $1
+SELECT ClaimJobT.id as id,
+  JobsT.id as JobID,
+  UserT.id as UserID,
+  JobsT.From_Loc,
+  JobsT.mid,
+  JobsT.To_Loc,
+  ClaimJobT.Create_Date,
+  usert.name as userName,
+  cmpt.name as cmpname,
+  cmpT.id as cmpID,
+  ClaimJobT.Approved_date as ApprovedDate,
+  ClaimJobT.Finished_Date as FinishDate
+from ClaimJobT
+  inner join JobsT on JobsT.id = ClaimJobT.JobId
+  inner join UserT on UserT.id = ClaimJobT.Driverid
+  inner join Cmpt on UserT.belongCMP = cmpt.id
+WHERE ClaimJobT.Deleted_date is null
+  and UserT.id = $1
 `
 
 type GetClaimedJobByDriverIDRow struct {
@@ -919,8 +1073,28 @@ func (q *Queries) GetClaimedJobByDriverID(ctx context.Context, id int64) ([]GetC
 }
 
 const getClaimedJobByID = `-- name: GetClaimedJobByID :one
-SELECT ClaimJobT.id as id, JobsT.id as JobID, UserT.id as UserID, JobsT.From_Loc, finished_date, finishPic, JobsT.mid, JobsT.To_Loc, ClaimJobT.Create_Date, usert.name as userName, cmpt.name as cmpname, cmpT.id as cmpID, ClaimJobT.Approved_date as ApprovedDate,
-price from ClaimJobT inner join JobsT on JobsT.id = ClaimJobT.JobId inner join UserT on UserT.id = ClaimJobT.Driverid inner join Cmpt on UserT.belongCMP = cmpt.id inner join DriverT on driverT.id = UserT.id WHERE ClaimJobT.id = $1
+SELECT ClaimJobT.id as id,
+  JobsT.id as JobID,
+  UserT.id as UserID,
+  JobsT.From_Loc,
+  finished_date,
+  finishPic,
+  JobsT.mid,
+  JobsT.To_Loc,
+  ClaimJobT.Create_Date,
+  usert.name as userName,
+  cmpt.name as cmpname,
+  cmpT.id as cmpID,
+  ClaimJobT.Approved_date as ApprovedDate,
+  --  DriverT.percentage  as driverPercentage,
+  -- ClaimJobT.percentage as percentage, 
+  price
+from ClaimJobT
+  inner join JobsT on JobsT.id = ClaimJobT.JobId
+  inner join UserT on UserT.id = ClaimJobT.Driverid
+  inner join Cmpt on UserT.belongCMP = cmpt.id
+  inner join DriverT on driverT.id = UserT.id
+WHERE ClaimJobT.id = $1
 `
 
 type GetClaimedJobByIDRow struct {
@@ -940,9 +1114,6 @@ type GetClaimedJobByIDRow struct {
 	Price        int32
 }
 
-//	DriverT.percentage  as driverPercentage,
-//
-// ClaimJobT.percentage as percentage,
 func (q *Queries) GetClaimedJobByID(ctx context.Context, id int64) (GetClaimedJobByIDRow, error) {
 	row := q.db.QueryRowContext(ctx, getClaimedJobByID, id)
 	var i GetClaimedJobByIDRow
@@ -966,9 +1137,13 @@ func (q *Queries) GetClaimedJobByID(ctx context.Context, id int64) (GetClaimedJo
 }
 
 const getCmp = `-- name: GetCmp :one
-SELECT cmpt.id, cmpt.name, cmpt.create_date, cmpt.deleted_date, cmpt.last_modified_date, usert.id, phonenum, pwd, usert.name, belongcmp, seed, role, initpwdchanged, usert.create_date, usert.deleted_date, usert.last_modified_date FROM cmpt
-inner join usert
-on cmpt.id = usert.belongcmp AND (usert.role=200 OR usert.role=100)
+SELECT cmpt.id, cmpt.name, cmpt.create_date, cmpt.deleted_date, cmpt.last_modified_date, usert.id, phonenum, pwd, usert.name, belongcmp, seed, role, initpwdchanged, usert.create_date, usert.deleted_date, usert.last_modified_date
+FROM cmpt
+  inner join usert on cmpt.id = usert.belongcmp
+  AND (
+    usert.role = 200
+    OR usert.role = 100
+  )
 where cmpt.id = $1
 `
 
@@ -1016,7 +1191,24 @@ func (q *Queries) GetCmp(ctx context.Context, id int64) (GetCmpRow, error) {
 }
 
 const getCurrentClaimedJob = `-- name: GetCurrentClaimedJob :one
-SELECT t2.id as claimID,t2.create_date as claimDate, t1.from_loc, t1.mid, t1.to_loc, t1.price, t1.source, t1.memo, t1.id  FROM ClaimJobT t2 inner join JobsT t1 on t1.id = t2.jobID where t2.driverID = $1 and (t2.deleted_date IS NULL and t2.finished_date IS NULL) order by t2.create_date LIMIT 1
+SELECT t2.id as claimID,
+  t2.create_date as claimDate,
+  t1.from_loc,
+  t1.mid,
+  t1.to_loc,
+  t1.price,
+  t1.source,
+  t1.memo,
+  t1.id
+FROM ClaimJobT t2
+  inner join JobsT t1 on t1.id = t2.jobID
+where t2.driverID = $1
+  and (
+    t2.deleted_date IS NULL
+    and t2.finished_date IS NULL
+  )
+order by t2.create_date
+LIMIT 1
 `
 
 type GetCurrentClaimedJobRow struct {
@@ -1049,9 +1241,27 @@ func (q *Queries) GetCurrentClaimedJob(ctx context.Context, driverid int64) (Get
 }
 
 const getDriver = `-- name: GetDriver :one
-SELECT UserT.id as ID, insurances, registration, driverLicense, TruckLicense, nationalidnumber, 
- cmpt.name as cmpName, usert.phoneNum, usert.name as userName, usert.belongCMP, usert.role, usert.initPwdChanged, DriverT.lastAlert, DriverT.Approved_date, UserT.Deleted_Date as Deleted_Date FROM  DriverT inner join usert on DriverT.id = UserT.id inner join cmpt on usert.belongCMP = cmpt.id where
-DriverT.id = $1 LIMIT 1
+SELECT UserT.id as ID,
+  insurances,
+  registration,
+  driverLicense,
+  TruckLicense,
+  nationalidnumber,
+  -- percentage,
+  cmpt.name as cmpName,
+  usert.phoneNum,
+  usert.name as userName,
+  usert.belongCMP,
+  usert.role,
+  usert.initPwdChanged,
+  DriverT.lastAlert,
+  DriverT.Approved_date,
+  UserT.Deleted_Date as Deleted_Date
+FROM DriverT
+  inner join usert on DriverT.id = UserT.id
+  inner join cmpt on usert.belongCMP = cmpt.id
+where DriverT.id = $1
+LIMIT 1
 `
 
 type GetDriverRow struct {
@@ -1072,7 +1282,6 @@ type GetDriverRow struct {
 	DeletedDate      sql.NullTime
 }
 
-// percentage,
 func (q *Queries) GetDriver(ctx context.Context, id int64) (GetDriverRow, error) {
 	row := q.db.QueryRowContext(ctx, getDriver, id)
 	var i GetDriverRow
@@ -1097,15 +1306,32 @@ func (q *Queries) GetDriver(ctx context.Context, id int64) (GetDriverRow, error)
 }
 
 const getDriverRevenue = `-- name: GetDriverRevenue :many
-SELECT
- coalesce(sum(t1.percentage), 0) as earn,
-coalesce((select count(*) from ClaimJobT t1 where t1.driverID = $1 
- and (t1.finished_date IS NOT NULL and approved_date IS NOT NULL and t1.deleted_date IS NULL) 
-and date(t1.finished_date) >= date($2) and date(t1.finished_date) <= date($3)), 0) as count
-from ClaimJobT t1 inner join JobsT t2 on t1.jobID = t2.id
-where t1.driverID = $1 
-and (t1.finished_date IS NOT NULL and approved_date IS NOT NULL and t1.deleted_date IS NULL) 
-and date(t1.finished_date) >= date($2) and date(t1.finished_date) <= date($3)
+SELECT coalesce(sum(t1.percentage), 0) as earn,
+  coalesce(
+    (
+      select count(*)
+      from ClaimJobT t1
+      where t1.driverID = $1
+        and (
+          t1.finished_date IS NOT NULL
+          and approved_date IS NOT NULL
+          and t1.deleted_date IS NULL
+        )
+        and date(t1.finished_date) >= date($2)
+        and date(t1.finished_date) <= date($3)
+    ),
+    0
+  ) as count
+from ClaimJobT t1
+  inner join JobsT t2 on t1.jobID = t2.id
+where t1.driverID = $1
+  and (
+    t1.finished_date IS NOT NULL
+    and approved_date IS NOT NULL
+    and t1.deleted_date IS NULL
+  )
+  and date(t1.finished_date) >= date($2)
+  and date(t1.finished_date) <= date($3)
 `
 
 type GetDriverRevenueParams struct {
@@ -1143,18 +1369,34 @@ func (q *Queries) GetDriverRevenue(ctx context.Context, arg GetDriverRevenuePara
 }
 
 const getDriverRevenueByCmp = `-- name: GetDriverRevenueByCmp :many
-SELECT
- coalesce(sum(t2.price), 0) as earn,
-coalesce((select count(*) from ClaimJobT t1 
-inner join UserT t3 on t1.driverID = t3.id
-where t3.belongCMP= $1 
-and (t1.finished_date IS NOT NULL and approved_date IS NOT NULL and t1.deleted_date IS NULL) 
-and  date(t1.finished_date) >= date($2) and date(t1.finished_date) <= date($3)), 0) as count
-from ClaimJobT t1 inner join JobsT t2 on t1.jobID = t2.id
-inner join UserT t3 on t1.driverID = t3.id
-where t3.belongCMP= $1 
-and (t1.finished_date IS NOT NULL and approved_date IS NOT NULL and t1.deleted_date IS NULL) 
-and date(t1.finished_date) >= date($2) and date(t1.finished_date) <= date($3)
+SELECT coalesce(sum(t2.price), 0) as earn,
+  coalesce(
+    (
+      select count(*)
+      from ClaimJobT t1
+        inner join UserT t3 on t1.driverID = t3.id
+      where t3.belongCMP = $1
+        and (
+          t1.finished_date IS NOT NULL
+          and approved_date IS NOT NULL
+          and t1.deleted_date IS NULL
+        )
+        and date(t1.finished_date) >= date($2)
+        and date(t1.finished_date) <= date($3)
+    ),
+    0
+  ) as count
+from ClaimJobT t1
+  inner join JobsT t2 on t1.jobID = t2.id
+  inner join UserT t3 on t1.driverID = t3.id
+where t3.belongCMP = $1
+  and (
+    t1.finished_date IS NOT NULL
+    and approved_date IS NOT NULL
+    and t1.deleted_date IS NULL
+  )
+  and date(t1.finished_date) >= date($2)
+  and date(t1.finished_date) <= date($3)
 `
 
 type GetDriverRevenueByCmpParams struct {
@@ -1168,6 +1410,58 @@ type GetDriverRevenueByCmpRow struct {
 	Count interface{}
 }
 
+// -- name: GetRevenueExcel :many
+// SELECT
+//
+//	usert.id,
+//	DriverT.plateNum as plateNum,
+//	UserT.Name as Username,
+//	jobst.belongCMP as belongCMP,
+//	jobst.from_loc as FromLoc,
+//	jobst.mid as mid,
+//	jobst.to_loc as ToLoc,
+//	count(*),
+//	jobst.price,
+//	jobst.price * count(*) as totalPrice,
+//	jobst.source,
+//	cmpt.name,
+//	--  (ClaimJobt.Percentage/100)*jobst.price*count(*) as togive,
+//	date(ClaimJobt.approved_date) as ApprovedDate,
+//	ClaimJobt.Memo
+//
+// from
+//
+//	JobsT
+//	left join ClaimJobT on ClaimJobT.JobID = JobsT.id
+//	left join UserT on UserT.id = ClaimJobT.Driverid
+//	left join cmpt on cmpt.id = usert.belongcmp
+//	left join driverT on UserT.id = driverT.id
+//
+// where
+//
+//	(Claimjobt.deleted_date is null)
+//	and (ClaimJobT.Approved_Date is not null)
+//	and (
+//	  ClaimJobT.Approved_date between $1
+//	  and $2
+//	)
+//
+// group by
+//
+//	usert.id,
+//	jobid,
+//	DriverT.plateNum,
+//	UserT.Name,
+//	jobst.from_loc,
+//	jobst.mid,
+//	jobst.to_loc,
+//	jobst.price,
+//	cmpt.name,
+//	-- ClaimJobT.percentage,
+//	jobst.belongCMP,
+//	jobst.source,
+//	date(Claimjobt.approved_date),
+//	ClaimJobt.Memo;
 func (q *Queries) GetDriverRevenueByCmp(ctx context.Context, arg GetDriverRevenueByCmpParams) ([]GetDriverRevenueByCmpRow, error) {
 	rows, err := q.db.QueryContext(ctx, getDriverRevenueByCmp, arg.Belongcmp, arg.Date, arg.Date_2)
 	if err != nil {
@@ -1192,7 +1486,10 @@ func (q *Queries) GetDriverRevenueByCmp(ctx context.Context, arg GetDriverRevenu
 }
 
 const getJobById = `-- name: GetJobById :one
-SELECT id, from_loc, mid, to_loc, price, estimated, remaining, belongcmp, source, memo, create_date, deleted_date, last_modified_date from JobsT where id = $1 LIMIT 1
+SELECT id, from_loc, mid, to_loc, price, estimated, remaining, belongcmp, source, memo, create_date, deleted_date, last_modified_date
+from JobsT
+where id = $1
+LIMIT 1
 `
 
 func (q *Queries) GetJobById(ctx context.Context, id int64) (Jobst, error) {
@@ -1217,7 +1514,9 @@ func (q *Queries) GetJobById(ctx context.Context, id int64) (Jobst, error) {
 }
 
 const getLastAlert = `-- name: GetLastAlert :one
-SELECT lastAlert from driverT where id = $1
+SELECT lastAlert
+from driverT
+where id = $1
 `
 
 func (q *Queries) GetLastAlert(ctx context.Context, id int64) (sql.NullInt64, error) {
@@ -1228,19 +1527,52 @@ func (q *Queries) GetLastAlert(ctx context.Context, id int64) (sql.NullInt64, er
 }
 
 const getRepair = `-- name: GetRepair :many
-SELECT repairT.id as ID, UserT.id as Driverid, UserT.Name as Drivername, repairT.type as type, repairT.Repairinfo as Repairinfo, repairT.Create_Date as CreateDate, repairT.Approved_Date as ApprovedDate
-from repairT 
-inner join UserT on UserT.id = repairT.driverID
-where 
-(repairT.id = $1 OR $1 IS NULL)AND
-(repairT.driverID = $2 OR $2 IS NULL)AND
-(UserT.name = $3 OR $3 IS NULL)AND
-(UserT.belongcmp = $4 OR $4 IS NULL)AND
-((repairT.create_date > $5 OR $5 IS NULL)
- AND (repairT.create_date < $6 OR $6 IS NULL)) AND
-repairT.deleted_date is null AND
-((repairT.last_modified_date > $7 OR $7 IS NULL) 
-AND (repairT.last_modified_date < $8 OR $8 IS NULL))
+SELECT repairT.id as ID,
+  UserT.id as Driverid,
+  UserT.Name as Drivername,
+  repairT.type as type,
+  repairT.Repairinfo as Repairinfo,
+  repairT.Create_Date as CreateDate,
+  repairT.Approved_Date as ApprovedDate
+from repairT
+  inner join UserT on UserT.id = repairT.driverID
+where (
+    repairT.id = $1
+    OR $1 IS NULL
+  )
+  AND (
+    repairT.driverID = $2
+    OR $2 IS NULL
+  )
+  AND (
+    UserT.name = $3
+    OR $3 IS NULL
+  )
+  AND (
+    UserT.belongcmp = $4
+    OR $4 IS NULL
+  )
+  AND (
+    (
+      repairT.create_date > $5
+      OR $5 IS NULL
+    )
+    AND (
+      repairT.create_date < $6
+      OR $6 IS NULL
+    )
+  )
+  AND repairT.deleted_date is null
+  AND (
+    (
+      repairT.last_modified_date > $7
+      OR $7 IS NULL
+    )
+    AND (
+      repairT.last_modified_date < $8
+      OR $8 IS NULL
+    )
+  )
 `
 
 type GetRepairParams struct {
@@ -1305,7 +1637,9 @@ func (q *Queries) GetRepair(ctx context.Context, arg GetRepairParams) ([]GetRepa
 }
 
 const getRepairById = `-- name: GetRepairById :one
-SELECT id, type, driverid, repairinfo, create_date, approved_date, deleted_date, last_modified_date from repairT where id = $1
+SELECT id, type, driverid, repairinfo, create_date, approved_date, deleted_date, last_modified_date
+from repairT
+where id = $1
 `
 
 func (q *Queries) GetRepairById(ctx context.Context, id int64) (Repairt, error) {
@@ -1325,23 +1659,107 @@ func (q *Queries) GetRepairById(ctx context.Context, id int64) (Repairt, error) 
 }
 
 const getRevenueExcel = `-- name: GetRevenueExcel :many
-SELECT usert.id, DriverT.plateNum as plateNum, UserT.Name as Username,jobst.belongCMP as belongCMP,
-	jobst.from_loc as FromLoc, jobst.mid as mid, jobst.to_loc as ToLoc, count(*), 
-	jobst.price, jobst.price*count(*) as totalPrice,
-    jobst.source,
-	cmpt.name,
-  --  (ClaimJobt.Percentage/100)*jobst.price*count(*) as togive,
-    date(ClaimJobt.approved_date) as ApprovedDate
-    ,ClaimJobt.Memo 
-	from JobsT
-left join ClaimJobT on ClaimJobT.JobID = JobsT.id
-left join UserT on UserT.id = ClaimJobT.Driverid
-left join cmpt on cmpt.id = usert.belongcmp
-left join driverT on UserT.id = driverT.id
-where (Claimjobt.deleted_date is null) and (ClaimJobT.Approved_Date is not null) and (ClaimJobT.Approved_date between $1 and $2) 
-group by usert.id, jobid,DriverT.plateNum,  UserT.Name, jobst.from_loc, jobst.mid, jobst.to_loc, jobst.price,cmpt.name, 
-jobst.belongCMP,
-jobst.source, date(Claimjobt.approved_date), ClaimJobt.Memo
+SELECT JSON_BUILD_OBJECT(
+    'uid',
+    MQ.UID,
+    'username',
+    MQ.USERNAME,
+    'list',
+    JSON_AGG(MQ.JSON_BUILD_OBJECT)
+  )
+FROM (
+    SELECT SQ.UID,
+      SQ.USERNAME AS USERNAME,
+      JSON_BUILD_OBJECT(
+        'date',
+        SQ.APPROVEDDATE,
+        'data',
+        JSON_AGG(
+          JSON_BUILD_OBJECT(
+            -- 'id',
+            -- sq.ID,
+            'platenum',
+            SQ.PLATENUM,
+            'cmpName',
+            SQ.CMPNAME,
+            'fromLoc',
+            SQ.FROMLOC,
+            'mid',
+            SQ.MID,
+            'toloc',
+            SQ.TOLOC,
+            'count',
+            SQ.TIMES,
+            'jp',
+            SQ.JP,
+            'total',
+            SQ.TOTALPRICE,
+            'ss',
+            SQ.JOBSOURCE
+          )
+        ),
+        'gas',
+        coalesce(SQ.GAS, 0)
+      )::JSONB
+    FROM (
+        SELECT USERT.ID AS UID,
+          DRIVERT.PLATENUM AS PLATENUM,
+          USERT.NAME AS USERNAME,
+          JOBST.BELONGCMP AS BELONGCMP,
+          JOBST.FROM_LOC AS FROMLOC,
+          coalesce(JOBST.MID, '') AS MID,
+          JOBST.TO_LOC AS TOLOC,
+          COUNT(*) AS TIMES,
+          JOBST.PRICE AS JP,
+          JOBST.PRICE * COUNT(*) AS TOTALPRICE,
+          JOBST.SOURCE AS JOBSOURCE,
+          CMPT.NAME AS CMPNAME,
+          DATE (CLAIMJOBT.APPROVED_DATE) AS APPROVEDDATE,
+          CLAIMJOBT.MEMO,
+          RT.GAS
+        FROM CLAIMJOBT
+          LEFT JOIN JOBST ON CLAIMJOBT.JOBID = JOBST.ID
+          LEFT JOIN USERT ON USERT.ID = CLAIMJOBT.DRIVERID
+          LEFT JOIN CMPT ON CMPT.ID = USERT.BELONGCMP
+          LEFT JOIN DRIVERT ON USERT.ID = DRIVERT.ID
+          LEFT JOIN (
+            SELECT DRIVERID,
+              SUM(
+                ((REPAIRINFO->>0)::JSON->>'price')::INT * ((REPAIRINFO->>0)::JSON->>'quantity')::INT
+              ) AS GAS,
+              DATE (CREATE_DATE)
+            FROM REPAIRT
+            GROUP BY DRIVERID,
+              DATE (CREATE_DATE)
+          ) RT ON RT.DRIVERID = DRIVERT.ID
+          AND DATE (RT.DATE) = DATE (CLAIMJOBT.APPROVED_DATE)
+        WHERE (CLAIMJOBT.DELETED_DATE IS NULL)
+          AND (CLAIMJOBT.APPROVED_DATE IS NOT NULL)
+          and (
+            ClaimJobT.Approved_date between $1 and $2
+          )
+        GROUP BY USERT.ID,
+          JOBID,
+          DRIVERT.PLATENUM,
+          USERT.NAME,
+          JOBST.FROM_LOC,
+          JOBST.MID,
+          JOBST.TO_LOC,
+          JOBST.PRICE,
+          CMPT.NAME,
+          JOBST.BELONGCMP,
+          JOBST.SOURCE,
+          DATE (CLAIMJOBT.APPROVED_DATE),
+          CLAIMJOBT.MEMO,
+          RT.GAS
+      ) SQ
+    GROUP BY SQ.UID,
+      SQ.USERNAME,
+      SQ.APPROVEDDATE,
+      SQ.GAS
+  ) MQ
+GROUP BY MQ.UID,
+  MQ.USERNAME
 `
 
 type GetRevenueExcelParams struct {
@@ -1349,52 +1767,19 @@ type GetRevenueExcelParams struct {
 	ApprovedDate_2 sql.NullTime
 }
 
-type GetRevenueExcelRow struct {
-	ID           sql.NullInt64
-	Platenum     sql.NullString
-	Username     sql.NullString
-	Belongcmp    int64
-	Fromloc      string
-	Mid          sql.NullString
-	Toloc        string
-	Count        int64
-	Price        int32
-	Totalprice   int32
-	Source       string
-	Name         sql.NullString
-	Approveddate time.Time
-	Memo         sql.NullString
-}
-
-// ClaimJobT.percentage,
-func (q *Queries) GetRevenueExcel(ctx context.Context, arg GetRevenueExcelParams) ([]GetRevenueExcelRow, error) {
+func (q *Queries) GetRevenueExcel(ctx context.Context, arg GetRevenueExcelParams) ([]json.RawMessage, error) {
 	rows, err := q.db.QueryContext(ctx, getRevenueExcel, arg.ApprovedDate, arg.ApprovedDate_2)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetRevenueExcelRow
+	var items []json.RawMessage
 	for rows.Next() {
-		var i GetRevenueExcelRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Platenum,
-			&i.Username,
-			&i.Belongcmp,
-			&i.Fromloc,
-			&i.Mid,
-			&i.Toloc,
-			&i.Count,
-			&i.Price,
-			&i.Totalprice,
-			&i.Source,
-			&i.Name,
-			&i.Approveddate,
-			&i.Memo,
-		); err != nil {
+		var json_build_object json.RawMessage
+		if err := rows.Scan(&json_build_object); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, json_build_object)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -1406,8 +1791,13 @@ func (q *Queries) GetRevenueExcel(ctx context.Context, arg GetRevenueExcelParams
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, role, deleted_date,pwd FROM  UserT
-WHERE phoneNum=$1  LIMIT 1
+SELECT id,
+  role,
+  deleted_date,
+  pwd
+FROM UserT
+WHERE phoneNum = $1
+LIMIT 1
 `
 
 type GetUserRow struct {
@@ -1430,13 +1820,27 @@ func (q *Queries) GetUser(ctx context.Context, phonenum interface{}) (GetUserRow
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT
-UserT.id as ID, cmpt.name as Cmpname, usert.phoneNum as phoneNum, usert.name as Username, usert.belongCMP, usert.role, usert.initPwdChanged, UserT.Deleted_Date as Deleted_Date, insurances, registration, driverLicense, TruckLicense, nationalidnumber,
-plateNum, Approved_date
-from UserT 
-inner join cmpt on UserT.belongcmp = cmpt.id 
-left join DriverT on driverT.id= usert.id 
-where UserT.id=$1 LIMIT 1
+SELECT UserT.id as ID,
+  cmpt.name as Cmpname,
+  usert.phoneNum as phoneNum,
+  usert.name as Username,
+  usert.belongCMP,
+  usert.role,
+  usert.initPwdChanged,
+  UserT.Deleted_Date as Deleted_Date,
+  insurances,
+  registration,
+  driverLicense,
+  TruckLicense,
+  nationalidnumber,
+  --  percentage,
+  plateNum,
+  Approved_date
+from UserT
+  inner join cmpt on UserT.belongcmp = cmpt.id
+  left join DriverT on driverT.id = usert.id
+where UserT.id = $1
+LIMIT 1
 `
 
 type GetUserByIDRow struct {
@@ -1457,7 +1861,6 @@ type GetUserByIDRow struct {
 	ApprovedDate     sql.NullTime
 }
 
-// percentage,
 func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, error) {
 	row := q.db.QueryRowContext(ctx, getUserByID, id)
 	var i GetUserByIDRow
@@ -1482,31 +1885,81 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, er
 }
 
 const getUserList = `-- name: GetUserList :many
-SELECT json_build_object('cmpid', cmpt.id, 'Cmpname', cmpt.name, 'list'
-    , 
-	json_agg(json_build_object('id',UT.id, 
-	'phoneNum', UT.phonenum,
-	'Role', UT.Role,
-	'Username', UT.name,
-	'deleted_date',UT.deleted_date,
-	'last_modified_date', UT.last_modified_date
-	))
+SELECT json_build_object(
+    'cmpid',
+    cmpt.id,
+    'Cmpname',
+    cmpt.name,
+    'list',
+    json_agg(
+      json_build_object(
+        'id',
+        UT.id,
+        'phoneNum',
+        UT.phonenum,
+        'Role',
+        UT.Role,
+        'Username',
+        UT.name,
+        'deleted_date',
+        UT.deleted_date,
+        'last_modified_date',
+        UT.last_modified_date
+      )
     )
-
+  )
 from UserT UT
-right join cmpt on UT.belongcmp = cmpt.id
-where 
-(UT.id = $1 OR $1 IS NULL)AND
-(phoneNum = $2::Text OR $2::Text IS NULL)AND
-(UT.name like $3 OR $3 IS NULL)AND
-(belongcmp = $4 OR $4 IS NULL)AND
-(cmpt.Name like $5 OR $5 IS NULL)AND
-((UT.create_date > $6 OR $6 IS NULL)
- AND (UT.create_date < $7 OR $7 IS NULL)) AND
-((UT.deleted_date > $8 OR $8 IS NULL)
- AND (UT.deleted_date < $9 OR $9 IS NULL)) AND
-((UT.last_modified_date > $10 OR $10 IS NULL) 
-AND (UT.last_modified_date < $11 OR $11 IS NULL))
+  right join cmpt on UT.belongcmp = cmpt.id
+where (
+    UT.id = $1
+    OR $1 IS NULL
+  )
+  AND (
+    phoneNum = $2::Text
+    OR $2::Text IS NULL
+  )
+  AND (
+    UT.name like $3
+    OR $3 IS NULL
+  )
+  AND (
+    belongcmp = $4
+    OR $4 IS NULL
+  )
+  AND (
+    cmpt.Name like $5
+    OR $5 IS NULL
+  )
+  AND (
+    (
+      UT.create_date > $6
+      OR $6 IS NULL
+    )
+    AND (
+      UT.create_date < $7
+      OR $7 IS NULL
+    )
+  )
+  AND (
+    (
+      UT.deleted_date > $8
+      OR $8 IS NULL
+    )
+    AND (
+      UT.deleted_date < $9
+      OR $9 IS NULL
+    )
+  )
+  AND (
+    (
+      UT.last_modified_date > $10
+      OR $10 IS NULL
+    )
+    AND (
+      UT.last_modified_date < $11
+      OR $11 IS NULL
+    )
+  )
 group by cmpt.id
 `
 
@@ -1560,9 +2013,11 @@ func (q *Queries) GetUserList(ctx context.Context, arg GetUserListParams) ([]jso
 }
 
 const getUserSeed = `-- name: GetUserSeed :one
-SELECT seed from UserT 
-inner join cmpt on UserT.belongcmp = cmpt.id 
-where UserT.id=$1 LIMIT 1
+SELECT seed
+from UserT
+  inner join cmpt on UserT.belongcmp = cmpt.id
+where UserT.id = $1
+LIMIT 1
 `
 
 func (q *Queries) GetUserSeed(ctx context.Context, id int64) (sql.NullString, error) {
@@ -1573,7 +2028,11 @@ func (q *Queries) GetUserSeed(ctx context.Context, id int64) (sql.NullString, er
 }
 
 const increaseRemaining = `-- name: IncreaseRemaining :one
-Update JobsT set remaining = remaining + 1, last_modified_date = NOW() where id = $1 RETURNING remaining
+Update JobsT
+set remaining = remaining + 1,
+  last_modified_date = NOW()
+where id = $1
+RETURNING remaining
 `
 
 func (q *Queries) IncreaseRemaining(ctx context.Context, id int64) (int32, error) {
@@ -1584,7 +2043,9 @@ func (q *Queries) IncreaseRemaining(ctx context.Context, id int64) (int32, error
 }
 
 const newCmp = `-- name: NewCmp :one
-INSERT INTO cmpt (name) values ($1) RETURNING id
+INSERT INTO cmpt (name)
+values ($1)
+RETURNING id
 `
 
 func (q *Queries) NewCmp(ctx context.Context, name string) (int64, error) {
@@ -1595,8 +2056,8 @@ func (q *Queries) NewCmp(ctx context.Context, name string) (int64, error) {
 }
 
 const newSeed = `-- name: NewSeed :exec
-UPDATE UserT set 
-  seed = $2,
+UPDATE UserT
+set seed = $2,
   last_modified_date = NOW()
 WHERE id = $1
 `
@@ -1612,8 +2073,8 @@ func (q *Queries) NewSeed(ctx context.Context, arg NewSeedParams) error {
 }
 
 const setJobNoMore = `-- name: SetJobNoMore :exec
-UPDATE JobsT 
-  set finished_date = NOW(),
+UPDATE JobsT
+set finished_date = NOW(),
   last_modified_date = NOW()
 WHERE id = $1
 `
@@ -1624,9 +2085,9 @@ func (q *Queries) SetJobNoMore(ctx context.Context, id int64) error {
 }
 
 const updateAlert = `-- name: UpdateAlert :exec
-Update AlertT Set
-alert = $2,
-last_modified_date = NOW()
+Update AlertT
+Set alert = $2,
+  last_modified_date = NOW()
 where id = $1
 `
 
@@ -1642,9 +2103,8 @@ func (q *Queries) UpdateAlert(ctx context.Context, arg UpdateAlertParams) error 
 
 const updateCmp = `-- name: UpdateCmp :exec
 UPDATE cmpt
-    set
-    name = $2,
-    last_modified_date = NOW()
+set name = $2,
+  last_modified_date = NOW()
 WHERE id = $1
 `
 
@@ -1659,8 +2119,8 @@ func (q *Queries) UpdateCmp(ctx context.Context, arg UpdateCmpParams) error {
 }
 
 const updateDriver = `-- name: UpdateDriver :exec
-UPDATE DriverT set 
-  -- percentage = COALESCE($2, percentage),
+UPDATE DriverT
+set -- percentage = COALESCE($2, percentage),
   nationalidnumber = COALESCE($2, nationalidnumber),
   plateNum = COALESCE($3, plateNum)
 WHERE id = $1
@@ -1678,8 +2138,8 @@ func (q *Queries) UpdateDriver(ctx context.Context, arg UpdateDriverParams) erro
 }
 
 const updateDriverPic = `-- name: UpdateDriverPic :exec
-UPDATE DriverT set 
-  insurances = COALESCE($2, insurances),
+UPDATE DriverT
+set insurances = COALESCE($2, insurances),
   registration = COALESCE($3, registration),
   driverLicense = COALESCE($4, driverLicense),
   truckLicense = COALESCE($5, truckLicense),
@@ -1707,20 +2167,20 @@ func (q *Queries) UpdateDriverPic(ctx context.Context, arg UpdateDriverPicParams
 }
 
 const updateJob = `-- name: UpdateJob :one
-UPDATE JobsT set 
-    from_loc = $1,
-    mid = $2,
-    to_loc = $3,
-    price = $4,
-    remaining = $5,
-    belongCMP = $6,
-    source = $7,
-    -- jobDate = $8,
-    memo = $8,
-    -- close_date = $9,
-    last_modified_date = NOW()
+UPDATE JobsT
+set from_loc = $1,
+  mid = $2,
+  to_loc = $3,
+  price = $4,
+  remaining = $5,
+  belongCMP = $6,
+  source = $7,
+  -- jobDate = $8,
+  memo = $8,
+  -- close_date = $9,
+  last_modified_date = NOW()
 where id = $9
- RETURNING id
+RETURNING id
 `
 
 type UpdateJobParams struct {
@@ -1753,8 +2213,8 @@ func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (int64, er
 }
 
 const updateLastAlert = `-- name: UpdateLastAlert :exec
-Update driverT set
-lastAlert = $2
+Update driverT
+set lastAlert = $2
 where id = $1
 `
 
@@ -1769,8 +2229,8 @@ func (q *Queries) UpdateLastAlert(ctx context.Context, arg UpdateLastAlertParams
 }
 
 const updateUser = `-- name: UpdateUser :exec
-UPDATE UserT set 
-  phoneNum = COALESCE($2, phoneNum),
+UPDATE UserT
+set phoneNum = COALESCE($2, phoneNum),
   name = COALESCE($3, name),
   belongCMP = COALESCE($4, belongCMP),
   role = COALESCE($5, role),
@@ -1798,8 +2258,8 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
 }
 
 const updateUserPassword = `-- name: UpdateUserPassword :exec
-UPDATE UserT set 
-  pwd = $2,
+UPDATE UserT
+set pwd = $2,
   initPwdChanged = True,
   last_modified_date = NOW()
 WHERE id = $1
@@ -1816,7 +2276,8 @@ func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPassword
 }
 
 const uploadRepairPic = `-- name: UploadRepairPic :exec
-insert into RepairPicT (repair_id, pic) values ($1, $2)
+insert into RepairPicT (repair_id, pic)
+values ($1, $2)
 `
 
 type UploadRepairPicParams struct {
@@ -1830,8 +2291,8 @@ func (q *Queries) UploadRepairPic(ctx context.Context, arg UploadRepairPicParams
 }
 
 const userHasModified = `-- name: UserHasModified :exec
-UPDATE UserT set 
-  last_modified_date = NOW()
+UPDATE UserT
+set last_modified_date = NOW()
 WHERE id = $1
 `
 

@@ -3,12 +3,13 @@ package service
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	db "main/sql"
 )
 
 type RevenueServ interface {
-	GetExcel(param db.GetRevenueExcelParams) ([]db.GetRevenueExcelRow, error)
+	GetExcel(param db.GetRevenueExcelParams) ([]json.RawMessage, error)
 	GetRevenueByCmp(param db.GetDriverRevenueByCmpParams) ([]db.GetDriverRevenueByCmpRow, error)
 	GetRevenue(param db.GetDriverRevenueParams) ([]db.GetDriverRevenueRow, error)
 }
@@ -18,8 +19,10 @@ type RevenueServImpl struct {
 	conn *sql.DB
 }
 
-func (s *RevenueServImpl) GetExcel(param db.GetRevenueExcelParams) ([]db.GetRevenueExcelRow, error) {
+func (s *RevenueServImpl) GetExcel(param db.GetRevenueExcelParams) ([]json.RawMessage, error) {
 	res, err := s.q.GetRevenueExcel(context.Background(), param)
+	// rres := []apptypes.Excel(res)
+	// rres = reflect.ValueOf(res)
 	return res, err
 }
 
