@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -738,12 +737,12 @@ func (u *JobsCtrlImpl) CreateJob(c *gin.Context) {
 	// 	return
 	// }
 
-	var CloseDate sql.NullTime
-	if reqBody.CloseDate == "" {
-		CloseDate.Valid = false
-	} else {
-		CloseDate.Scan(reqBody.CloseDate)
-	}
+	// var CloseDate sql.NullTime
+	// if reqBody.CloseDate == "" {
+	// 	CloseDate.Valid = false
+	// } else {
+	// 	CloseDate.Scan(reqBody.CloseDate)
+	// }
 
 	// var UserID sql.NullInt64
 	// UserID.Scan(cuid)
@@ -833,23 +832,23 @@ func (u *JobsCtrlImpl) UpdateJob(c *gin.Context) {
 	// 	return
 	// }
 
-	var CloseDate sql.NullTime
-	if reqBody.CloseDate != "" {
+	// var CloseDate sql.NullTime
+	// if reqBody.CloseDate != "" {
 
-		ct, err := time.Parse(time.DateOnly, strings.Split(reqBody.CloseDate, "T")[0])
-		if err != nil {
+	// 	ct, err := time.Parse(time.DateOnly, strings.Split(reqBody.CloseDate, "T")[0])
+	// 	if err != nil {
 
-			fmt.Print(2)
-			c.Status(http.StatusBadRequest)
-			c.Abort()
-			return
-		}
-		fmt.Print("ct: ", ct)
-		CloseDate.Scan(ct)
+	// 		fmt.Print(2)
+	// 		c.Status(http.StatusBadRequest)
+	// 		c.Abort()
+	// 		return
+	// 	}
+	// 	fmt.Print("ct: ", ct)
+	// 	CloseDate.Scan(ct)
 
-	} else {
-		CloseDate.Valid = false
-	}
+	// } else {
+	// 	CloseDate.Valid = false
+	// }
 
 	var UserID sql.NullInt64
 	UserID.Scan(cuid)
