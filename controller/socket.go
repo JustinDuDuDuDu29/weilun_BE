@@ -50,6 +50,7 @@ func SandByCmp(reciver int, msgType int, msg string) {
 		if c.cmp != int64(reciver) {
 			break
 		}
+		fmt.Println("sending ", c)
 
 		msg := socketMsgT{
 			Type: msgType,
@@ -57,7 +58,7 @@ func SandByCmp(reciver int, msgType int, msg string) {
 		}
 
 		if err := c.wsc.WriteJSON(msg); err != nil {
-			fmt.Println(err)
+			fmt.Println("err is ", err)
 			return
 		}
 	}
@@ -159,7 +160,10 @@ func (s *SocketCtrlImpl) TestSocket(c *gin.Context) {
 	}
 
 	// fmt.Println("New Conn: ", c.MustGet("UserID"))
-	defer conn.Close()
+	defer func() {
+		fmt.Println("closing ", conn)
+		conn.Close()
+	}()
 	// defer delete(clients, c.MustGet("UserID").(int))
 	for {
 		_, msg, err := conn.ReadMessage()
