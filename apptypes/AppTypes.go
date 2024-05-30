@@ -65,10 +65,10 @@ type UpdateJobBodyT struct {
 	Remaining int    `json:"remaining" binding:""`
 	Belongcmp int    `json:"belongCmp" binding:"required"`
 	Source    string `json:"source" binding:"required"`
-	Jobdate   string `json:"jobDate" binding:"required"`
-	Memo      string `json:"memo"`
-	CloseDate string `json:"closeDate"`
-	ID        int    `json:"id" binding:"required"`
+	// Jobdate   string `json:"jobDate" binding:"required"`
+	Memo string `json:"memo"`
+	// CloseDate string `json:"closeDate"`
+	ID int `json:"id" binding:"required"`
 }
 
 type NewRepairBodyT struct {
@@ -88,9 +88,9 @@ type CreateJobBodyT struct {
 	Estimated int    `json:"estimated" binding:"required"`
 	Belongcmp int    `json:"belongCmp" binding:"required"`
 	Source    string `json:"source" binding:"required"`
-	Jobdate   string `json:"jobDate" binding:"required"`
-	Memo      string `json:"memo"`
-	CloseDate string `json:"closeDate"`
+	// Jobdate   string `json:"jobDate" binding:"required"`
+	Memo string `json:"memo"`
+	// CloseDate string `json:"closeDate"`
 }
 
 type DriverInfo struct {
