@@ -12,10 +12,10 @@ CREATE TABLE JobsT(
 
     belongCMP BigInt references CMPT(id) NOT NULL,
     source varchar(40) NOT NULL,
-    jobDate Timestamp NOT NULL DEFAULT NOW(),
+    -- jobDate Timestamp NOT NULL DEFAULT NOW(),
     memo varchar(60),
     -- BLABLABLA
-    close_date Timestamp,
+    -- close_date Timestamp,
     create_date Timestamp NOT NULL DEFAULT NOW(),
     deleted_date Timestamp,
     last_modified_date Timestamp NOT NULL DEFAULT NOW() 

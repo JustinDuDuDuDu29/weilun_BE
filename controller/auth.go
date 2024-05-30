@@ -2,12 +2,12 @@ package controller
 
 import (
 	"database/sql"
+	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
 	"strconv"
 	"time"
-    "fmt"
 
 	"net/http"
 	"os"
@@ -59,7 +59,19 @@ func (a *AuthCtrlImpl) Login(c *gin.Context) {
 	}
 
 	rand := randstr.Hex(16)
+	var seed sql.NullString
+	seed.Scan(rand)
 
+	param := db.NewSeedParams{
+		ID:   res.ID,
+		Seed: seed,
+	}
+
+	err = a.svc.UserServ.NewSeed(param)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"err": err})
+		return
+	}
 	var newClaim apptypes.CustomClaims
 	newClaim.Audience = []string{strconv.Itoa(int(res.ID))}
 	newClaim.IssuedAt = jwt.NewNumericDate(time.Now())
@@ -72,19 +84,6 @@ func (a *AuthCtrlImpl) Login(c *gin.Context) {
 
 	tokenString, err := jwtToken.SignedString([]byte(os.Getenv("accessToken")))
 
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"err": err})
-		return
-	}
-	var seed sql.NullString
-	seed.Scan(rand)
-
-	param := db.NewSeedParams{
-		ID:   res.ID,
-		Seed: seed,
-	}
-
-	err = a.svc.UserServ.NewSeed(param)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"err": err})
 		return

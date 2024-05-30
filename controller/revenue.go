@@ -192,7 +192,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
-		f.SetCellValue("Sheet1", cell, row.Togive)
+		f.SetCellValue("Sheet1", cell, "")
 	}
 	targetPath := time.DateOnly + ".xlsx"
 	if err := f.SaveAs("./excel/" + targetPath); err != nil {

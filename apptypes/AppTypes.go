@@ -94,8 +94,8 @@ type CreateJobBodyT struct {
 }
 
 type DriverInfo struct {
-	PlateNum         string `json:"plateNum" binding:"required"`
-	Percentage       int    `json:"percentage" binding:"required"`
+	PlateNum string `json:"plateNum" binding:"required"`
+	// Percentage       int    `json:"percentage" binding:"required"`
 	NationalIdNumber string `json:"nationalIdNumber" binding:"required"`
 }
 

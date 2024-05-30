@@ -4,7 +4,7 @@ CREATE TABLE ClaimJobT(
     id BIGSERIAL PRIMARY KEY,
     jobID BigInt references JobsT(id) NOT NULL,
     driverID BigInt references DriverT(id) NOT NULL,
-    percentage integer,
+    -- percentage integer,
     finished_date Timestamp,
     finishPic varchar,
     memo  varchar,

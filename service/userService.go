@@ -11,7 +11,7 @@ type UserServ interface {
 	HaveUser(phonenum interface{}) (db.GetUserRow, error)
 	GetUserById(id int64) (db.GetUserByIDRow, error)
 	RegisterCmpAdmin(queryParam db.CreateUserParams) (int64, error)
-	RegisterDriver(queryParam db.CreateUserParams, percentage int, nationalIdNumber string, plateNum string) (int64, error)
+	RegisterDriver(queryParam db.CreateUserParams, nationalIdNumber string, plateNum string) (int64, error)
 	DeleteUser(queryParam int64) error
 	GetUserList(queryParam db.GetUserListParams) ([]json.RawMessage, error)
 	UpdateUser(param db.UpdateUserParams) error
@@ -84,8 +84,8 @@ func (u *UserServImpl) UpdateDriver(param db.UpdateDriverParams, userParam db.Up
 	if curInfo.Role != 300 {
 		var cdi = db.CreateDriverInfoParams{
 			Nationalidnumber: param.Nationalidnumber,
-			Percentage:       param.Percentage,
-			ID:               param.ID,
+			// Percentage:       param.Percentage,
+			ID: param.ID,
 		}
 		_, err = qtx.CreateDriverInfo(context.Background(), cdi)
 
@@ -119,7 +119,7 @@ func (u *UserServImpl) RegisterCmpAdmin(queryParam db.CreateUserParams) (int64, 
 	return res, err
 }
 
-func (u *UserServImpl) RegisterDriver(queryParam db.CreateUserParams, percentage int, nationalIdNumber string, plateNum string) (int64, error) {
+func (u *UserServImpl) RegisterDriver(queryParam db.CreateUserParams, nationalIdNumber string, plateNum string) (int64, error) {
 
 	tx, err := u.conn.BeginTx(context.Background(), nil)
 
@@ -135,8 +135,8 @@ func (u *UserServImpl) RegisterDriver(queryParam db.CreateUserParams, percentage
 		return -99, err
 	}
 	driverParam := db.CreateDriverInfoParams{
-		ID:               id,
-		Percentage:       int32(percentage),
+		ID: id,
+		// Percentage:       int32(percentage),
 		Nationalidnumber: nationalIdNumber,
 		Platenum:         plateNum,
 	}
