@@ -50,18 +50,21 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 	}
 	AppFrom.Scan(fm)
 
-	me, err := time.Parse(time.DateOnly, strings.Split(time.Date(year, time.Month(month)+1, -1, 0, 0, 0, 0, tDate.Location()).String(), " ")[0])
+	me, err := time.Parse(time.DateOnly, strings.Split(time.Date(year, time.Month(month)+1, 1, 0, 0, 0, 0, tDate.Location()).String(), " ")[0])
 	if err != nil {
 		fmt.Println(err)
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
+	fmt.Println("param = ", me)
+
 	AppEnd.Scan(me)
 
 	param := db.GetRevenueExcelParams{
 		ApprovedDate:   AppFrom,
 		ApprovedDate_2: AppEnd,
 	}
+	fmt.Println("param = ", param)
 
 	res, err := a.svc.RevenueServ.GetExcel(param)
 
@@ -79,8 +82,9 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 			c.AbortWithStatus(http.StatusBadRequest)
 		}
 	}()
+	// fmt.Println("res = ", res)
 
-	for idx, userRecord := range res {
+	for _, userRecord := range res {
 		var record apptypes.Excel
 		json.Unmarshal(userRecord, &record)
 		date, err := time.Parse(time.DateOnly, record.List[0].Date)
@@ -89,7 +93,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
-		sheetname := record.Username + date.Month().String() + "月報表"
+		sheetname := record.Username + strconv.Itoa(int(date.Month())) + "月報表"
 
 		_, err = f.NewSheet(sheetname)
 		if err != nil {
@@ -101,7 +105,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 		for _, row := range [][]interface{}{
 			{"日期", "車號", "駕駛", "發貨地", "中轉", "卸貨地", "趟次", "運費", "應收款", "甲方", "司機運費", "油資", "備註", "業主"},
 		} {
-			cell, err := excelize.CoordinatesToCellName(1, idx+1)
+			cell, err := excelize.CoordinatesToCellName(1, 1)
 			if err != nil {
 				fmt.Println(err)
 				c.AbortWithStatus(http.StatusBadRequest)
@@ -110,8 +114,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 
 			f.SetSheetRow(sheetname, cell, &row)
 		}
-
-		for _, ls := range record.List {
+		for idx, ls := range record.List {
 			date, err := time.Parse(time.DateOnly, ls.Date)
 			if err != nil {
 				fmt.Println(err)
@@ -123,7 +126,8 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 			month := strconv.Itoa(int(date.Month()))
 			day := strconv.Itoa(date.Day())
 
-			for idx, row := range ls.Data {
+			for _, row := range ls.Data {
+				fmt.Print(idx)
 				// month
 				cell, err := excelize.CoordinatesToCellName(1, idx+2)
 				if err != nil {
@@ -131,9 +135,9 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 					c.AbortWithStatus(http.StatusBadRequest)
 					return
 				}
+				f.SetCellValue(sheetname, cell, (year + month + day))
 
 				// platenum
-				f.SetCellValue(sheetname, cell, (year + month + day))
 				cell, err = excelize.CoordinatesToCellName(2, idx+2)
 				if err != nil {
 					fmt.Println(err)
@@ -237,7 +241,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				}
 
 				// 備註
-				cell, err = excelize.CoordinatesToCellName(11, idx+2)
+				cell, err = excelize.CoordinatesToCellName(13, idx+2)
 				if err != nil {
 					fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
@@ -246,7 +250,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				f.SetCellValue(sheetname, cell, "")
 
 				// 業主
-				cell, err = excelize.CoordinatesToCellName(11, idx+2)
+				cell, err = excelize.CoordinatesToCellName(14, idx+2)
 				if err != nil {
 					fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
@@ -255,6 +259,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				f.SetCellValue(sheetname, cell, row.Ss)
 			}
 		}
+
 	}
 	targetPath := time.DateOnly + ".xlsx"
 	if err := f.SaveAs("./excel/" + targetPath); err != nil {
