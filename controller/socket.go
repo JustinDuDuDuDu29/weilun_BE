@@ -59,7 +59,7 @@ func SandByCmp(reciver int, msgType int, msg string) {
 
 		if err := c.wsc.WriteJSON(msg); err != nil {
 			fmt.Println("err is ", err)
-			return
+			break
 		}
 	}
 }
@@ -162,7 +162,9 @@ func (s *SocketCtrlImpl) TestSocket(c *gin.Context) {
 	// fmt.Println("New Conn: ", c.MustGet("UserID"))
 	defer func() {
 		fmt.Println("closing ", conn)
+
 		conn.Close()
+		delete(clients, c.MustGet("UserID").(int))
 	}()
 	// defer delete(clients, c.MustGet("UserID").(int))
 	for {
