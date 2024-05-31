@@ -516,69 +516,9 @@ where t2.driverID = $1
   )
 order by t2.create_date
 LIMIT 1;
--- -- name: GetRevenueExcel :many
--- SELECT
---   usert.id,
---   DriverT.plateNum as plateNum,
---   UserT.Name as Username,
---   jobst.belongCMP as belongCMP,
---   jobst.from_loc as FromLoc,
---   jobst.mid as mid,
---   jobst.to_loc as ToLoc,
---   count(*),
---   jobst.price,
---   jobst.price * count(*) as totalPrice,
---   jobst.source,
---   cmpt.name,
---   --  (ClaimJobt.Percentage/100)*jobst.price*count(*) as togive,
---   date(ClaimJobt.approved_date) as ApprovedDate,
---   ClaimJobt.Memo
--- from
---   JobsT
---   left join ClaimJobT on ClaimJobT.JobID = JobsT.id
---   left join UserT on UserT.id = ClaimJobT.Driverid
---   left join cmpt on cmpt.id = usert.belongcmp
---   left join driverT on UserT.id = driverT.id
--- where
---   (Claimjobt.deleted_date is null)
---   and (ClaimJobT.Approved_Date is not null)
---   and (
---     ClaimJobT.Approved_date between $1
---     and $2
---   )
--- group by
---   usert.id,
---   jobid,
---   DriverT.plateNum,
---   UserT.Name,
---   jobst.from_loc,
---   jobst.mid,
---   jobst.to_loc,
---   jobst.price,
---   cmpt.name,
---   -- ClaimJobT.percentage,
---   jobst.belongCMP,
---   jobst.source,
---   date(Claimjobt.approved_date),
---   ClaimJobt.Memo;
 -- name: GetDriverRevenueByCmp :many
-SELECT coalesce(sum(t2.price), 0) as earn,
-  coalesce(
-    (
-      select count(*)
-      from ClaimJobT t1
-        inner join UserT t3 on t1.driverID = t3.id
-      where t3.belongCMP = $1
-        and (
-          t1.finished_date IS NOT NULL
-          and approved_date IS NOT NULL
-          and t1.deleted_date IS NULL
-        )
-        and date(t1.finished_date) >= date($2)
-        and date(t1.finished_date) <= date($3)
-    ),
-    0
-  ) as count
+SELECT coalesce(sum(t2.PRICE), 0) as earn,
+  coalesce(sum(t2.ID), 0) as count
 from ClaimJobT t1
   inner join JobsT t2 on t1.jobID = t2.id
   inner join UserT t3 on t1.driverID = t3.id
@@ -591,21 +531,8 @@ where t3.belongCMP = $1
   and date(t1.finished_date) >= date($2)
   and date(t1.finished_date) <= date($3);
 -- name: GetDriverRevenue :many
-SELECT coalesce(
-    (
-      select count(*)
-      from ClaimJobT t1
-      where t1.driverID = $1
-        and (
-          t1.finished_date IS NOT NULL
-          and approved_date IS NOT NULL
-          and t1.deleted_date IS NULL
-        )
-        and date(t1.finished_date) >= date($2)
-        and date(t1.finished_date) <= date($3)
-    ),
-    0
-  ) as count
+SELECT coalesce(sum(t2.PRICE), 0) as earn,
+  coalesce(sum(t2.ID), 0) as count
 from ClaimJobT t1
   inner join JobsT t2 on t1.jobID = t2.id
 where t1.driverID = $1

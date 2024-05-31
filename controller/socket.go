@@ -50,7 +50,6 @@ func SandByCmp(reciver int, msgType int, msg string) {
 		if c.cmp != int64(reciver) {
 			break
 		}
-		fmt.Println("sending ", c)
 
 		msg := socketMsgT{
 			Type: msgType,
@@ -67,7 +66,6 @@ func SandByCmp(reciver int, msgType int, msg string) {
 func SandMsg(reciver int, msgType int, msg string) {
 
 	if conn, ok := clients[reciver]; ok {
-		fmt.Println("sending ", conn)
 		msg := socketMsgT{
 			Type: msgType,
 			Msg:  msg,
@@ -80,7 +78,6 @@ func SandMsg(reciver int, msgType int, msg string) {
 }
 
 func getUD(m *SocketCtrlImpl, rtoken string) (int, int16, int64, error) {
-	fmt.Println("get: ", rtoken)
 	if rtoken == "" {
 		fmt.Println("err: ", 1)
 		return 0, 0, 0, errors.New("1")
@@ -160,7 +157,6 @@ func (s *SocketCtrlImpl) TestSocket(c *gin.Context) {
 
 	// fmt.Println("New Conn: ", c.MustGet("UserID"))
 	defer func() {
-		fmt.Println("closing ", conn)
 
 		conn.Close()
 		// delete(clients, c.MustGet("UserID").(int))
@@ -180,8 +176,6 @@ func (s *SocketCtrlImpl) TestSocket(c *gin.Context) {
 				fmt.Print(err)
 				return
 			}
-			fmt.Println(id)
-			fmt.Println(cmp)
 
 			newClient := client{
 				wsc: conn,

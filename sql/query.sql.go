@@ -1306,21 +1306,8 @@ func (q *Queries) GetDriver(ctx context.Context, id int64) (GetDriverRow, error)
 }
 
 const getDriverRevenue = `-- name: GetDriverRevenue :many
-SELECT coalesce(
-    (
-      select count(*)
-      from ClaimJobT t1
-      where t1.driverID = $1
-        and (
-          t1.finished_date IS NOT NULL
-          and approved_date IS NOT NULL
-          and t1.deleted_date IS NULL
-        )
-        and date(t1.finished_date) >= date($2)
-        and date(t1.finished_date) <= date($3)
-    ),
-    0
-  ) as count
+SELECT coalesce(sum(t2.PRICE), 0) as earn,
+  coalesce(sum(t2.ID), 0) as count
 from ClaimJobT t1
   inner join JobsT t2 on t1.jobID = t2.id
 where t1.driverID = $1
@@ -1339,19 +1326,24 @@ type GetDriverRevenueParams struct {
 	Date_2   interface{}
 }
 
-func (q *Queries) GetDriverRevenue(ctx context.Context, arg GetDriverRevenueParams) ([]interface{}, error) {
+type GetDriverRevenueRow struct {
+	Earn  interface{}
+	Count interface{}
+}
+
+func (q *Queries) GetDriverRevenue(ctx context.Context, arg GetDriverRevenueParams) ([]GetDriverRevenueRow, error) {
 	rows, err := q.db.QueryContext(ctx, getDriverRevenue, arg.Driverid, arg.Date, arg.Date_2)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []interface{}
+	var items []GetDriverRevenueRow
 	for rows.Next() {
-		var count interface{}
-		if err := rows.Scan(&count); err != nil {
+		var i GetDriverRevenueRow
+		if err := rows.Scan(&i.Earn, &i.Count); err != nil {
 			return nil, err
 		}
-		items = append(items, count)
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -1363,23 +1355,8 @@ func (q *Queries) GetDriverRevenue(ctx context.Context, arg GetDriverRevenuePara
 }
 
 const getDriverRevenueByCmp = `-- name: GetDriverRevenueByCmp :many
-SELECT coalesce(sum(t2.price), 0) as earn,
-  coalesce(
-    (
-      select count(*)
-      from ClaimJobT t1
-        inner join UserT t3 on t1.driverID = t3.id
-      where t3.belongCMP = $1
-        and (
-          t1.finished_date IS NOT NULL
-          and approved_date IS NOT NULL
-          and t1.deleted_date IS NULL
-        )
-        and date(t1.finished_date) >= date($2)
-        and date(t1.finished_date) <= date($3)
-    ),
-    0
-  ) as count
+SELECT coalesce(sum(t2.PRICE), 0) as earn,
+  coalesce(sum(t2.ID), 0) as count
 from ClaimJobT t1
   inner join JobsT t2 on t1.jobID = t2.id
   inner join UserT t3 on t1.driverID = t3.id
@@ -1404,58 +1381,6 @@ type GetDriverRevenueByCmpRow struct {
 	Count interface{}
 }
 
-// -- name: GetRevenueExcel :many
-// SELECT
-//
-//	usert.id,
-//	DriverT.plateNum as plateNum,
-//	UserT.Name as Username,
-//	jobst.belongCMP as belongCMP,
-//	jobst.from_loc as FromLoc,
-//	jobst.mid as mid,
-//	jobst.to_loc as ToLoc,
-//	count(*),
-//	jobst.price,
-//	jobst.price * count(*) as totalPrice,
-//	jobst.source,
-//	cmpt.name,
-//	--  (ClaimJobt.Percentage/100)*jobst.price*count(*) as togive,
-//	date(ClaimJobt.approved_date) as ApprovedDate,
-//	ClaimJobt.Memo
-//
-// from
-//
-//	JobsT
-//	left join ClaimJobT on ClaimJobT.JobID = JobsT.id
-//	left join UserT on UserT.id = ClaimJobT.Driverid
-//	left join cmpt on cmpt.id = usert.belongcmp
-//	left join driverT on UserT.id = driverT.id
-//
-// where
-//
-//	(Claimjobt.deleted_date is null)
-//	and (ClaimJobT.Approved_Date is not null)
-//	and (
-//	  ClaimJobT.Approved_date between $1
-//	  and $2
-//	)
-//
-// group by
-//
-//	usert.id,
-//	jobid,
-//	DriverT.plateNum,
-//	UserT.Name,
-//	jobst.from_loc,
-//	jobst.mid,
-//	jobst.to_loc,
-//	jobst.price,
-//	cmpt.name,
-//	-- ClaimJobT.percentage,
-//	jobst.belongCMP,
-//	jobst.source,
-//	date(Claimjobt.approved_date),
-//	ClaimJobt.Memo;
 func (q *Queries) GetDriverRevenueByCmp(ctx context.Context, arg GetDriverRevenueByCmpParams) ([]GetDriverRevenueByCmpRow, error) {
 	rows, err := q.db.QueryContext(ctx, getDriverRevenueByCmp, arg.Belongcmp, arg.Date, arg.Date_2)
 	if err != nil {
