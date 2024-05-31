@@ -28,6 +28,7 @@ type JobsCtrl interface {
 	GetCurrentClaimedJob(c *gin.Context)
 	ApproveClaimedJob(c *gin.Context)
 	GetClaimedJobByDriverID(c *gin.Context)
+	GetCJDate(c *gin.Context)
 }
 
 type JobsCtrlImpl struct {
@@ -123,9 +124,83 @@ func (u *JobsCtrlImpl) GetClaimedJobByID(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 
 }
-
 func (u *JobsCtrlImpl) GetAllClaimedJobs(c *gin.Context) {
-	res, err := u.svc.JobsServ.GetAllClaimedJobs()
+	role := c.MustGet("Role").(int16)
+	id := c.MustGet("UserID")
+	belongCmp := c.MustGet("belongCmp")
+
+	var Uid sql.NullInt64
+	if role == 300 {
+		Uid.Scan(id)
+	} else {
+		if c.Query("uid") != "" {
+			Uid.Scan(c.Query("uid"))
+		}
+	}
+	var Jobid sql.NullInt64
+	if c.Query("jobid") != "" {
+		Jobid.Scan(c.Query("jobid"))
+	}
+	var cjID sql.NullInt64
+	if c.Query("cjID") != "" {
+		cjID.Scan(c.Query("cjID"))
+	}
+	var CmpID sql.NullInt64
+	if role >= 200 {
+		CmpID.Scan(belongCmp)
+	} else {
+		if c.Query("cmpID") != "" {
+			CmpID.Scan(c.Query("cmpID"))
+		}
+	}
+	var Ym sql.NullTime
+	if c.Query("ym") != "" {
+		d := c.Query("ym") + "-01"
+		dt, err := time.Parse(time.DateOnly, d)
+		if err != nil {
+			fmt.Println("err!! ", err)
+			c.Status(http.StatusInternalServerError)
+			c.Abort()
+			return
+		}
+		Ym.Scan(dt)
+	}
+
+	param := db.GetAllClaimedJobsParams{
+		Uid:   Uid,
+		Jobid: Jobid,
+		CmpID: CmpID,
+		CjID:  cjID,
+		Ym:    Ym,
+	}
+
+	fmt.Println(param)
+
+	res, err := u.svc.JobsServ.GetAllClaimedJobs(param)
+
+	if err != nil {
+		fmt.Println("err is ", err)
+		c.Status(http.StatusInternalServerError)
+		c.Abort()
+		return
+	}
+	fmt.Println(res)
+
+	c.JSON(http.StatusOK, res)
+}
+
+func (u *JobsCtrlImpl) GetCJDate(c *gin.Context) {
+	// protect
+	sid := c.Query("id")
+	id, err := strconv.Atoi(sid)
+	if err != nil {
+		fmt.Println("11: ", err)
+
+		c.Status(http.StatusInternalServerError)
+		c.Abort()
+		return
+	}
+	res, err := u.svc.JobsServ.GetCJDate(int64(id))
 
 	if err != nil {
 		fmt.Println(err)

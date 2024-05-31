@@ -100,6 +100,7 @@ type Repairt struct {
 	Type             string
 	Driverid         int64
 	Repairinfo       json.RawMessage
+	Pic              sql.NullString
 	CreateDate       time.Time
 	ApprovedDate     sql.NullTime
 	DeletedDate      sql.NullTime

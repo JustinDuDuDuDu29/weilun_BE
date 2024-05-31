@@ -9,6 +9,7 @@ import (
 )
 
 type JobsServ interface {
+	GetCJDate(param int64) ([]string, error)
 	GetClaimedJobByID(id int64) (db.GetClaimedJobByIDRow, error)
 	CreateJob(param db.CreateJobParams) (int64, error)
 	IncreaseRemaining(id int64) (int32, error)
@@ -23,7 +24,7 @@ type JobsServ interface {
 	DeleteClaimedJob(param db.DeleteClaimedJobParams) (int32, error)
 	ApproveFinishedJob(param db.ApproveFinishedJobParams) error
 	SetJobNoMore(id int64) error
-	GetAllClaimedJobs() ([]db.GetAllClaimedJobsRow, error)
+	GetAllClaimedJobs(param db.GetAllClaimedJobsParams) ([]db.GetAllClaimedJobsRow, error)
 	GetClaimedJobByCmp(id int64) ([]db.GetClaimedJobByCmpRow, error)
 	GetClaimedJobByDriverID(id int64) ([]db.GetClaimedJobByDriverIDRow, error)
 }
@@ -139,8 +140,8 @@ func (s *JobsServImpl) GetClaimedJobByID(id int64) (db.GetClaimedJobByIDRow, err
 	return res, err
 }
 
-func (s *JobsServImpl) GetAllClaimedJobs() ([]db.GetAllClaimedJobsRow, error) {
-	res, err := s.q.GetAllClaimedJobs(context.Background())
+func (s *JobsServImpl) GetAllClaimedJobs(param db.GetAllClaimedJobsParams) ([]db.GetAllClaimedJobsRow, error) {
+	res, err := s.q.GetAllClaimedJobs(context.Background(), param)
 	return res, err
 }
 
@@ -149,7 +150,10 @@ func (s *JobsServImpl) FinishClaimedJob(param db.FinishClaimedJobParams) error {
 	fmt.Println("it is: ", err)
 	return err
 }
-
+func (s *JobsServImpl) GetCJDate(param int64) ([]string, error) {
+	res, err := s.q.GetCJDate(context.Background(), param)
+	return res, err
+}
 func (s *JobsServImpl) ClaimJob(param db.ClaimJobParams) (int64, error, int32) {
 	tx, err := s.conn.BeginTx(context.Background(), nil)
 

@@ -7,6 +7,7 @@ import (
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
+	"main/utils"
 	"net/http"
 	"strconv"
 
@@ -18,25 +19,45 @@ type RepairCtrl interface {
 	DeleteRepair(c *gin.Context)
 	ApproveRepair(c *gin.Context)
 	GetRepair(c *gin.Context)
+	GetRepairByID(c *gin.Context)
 }
 
 type RepairCtrlImpl struct {
 	svc *service.AppService
 }
 
-func (r *RepairCtrlImpl) GetRepair(c *gin.Context) {
+func (r *RepairCtrlImpl) GetRepairByID(c *gin.Context) {
 
-	UserID := c.MustGet("UserID").(int)
-
-	res, err := r.svc.UserServ.GetUserById(int64(UserID))
-
+	// UserID := c.MustGet("UserID").(int)
+	rid, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		c.Abort()
 		return
 	}
+	res, err := r.svc.RepairServ.GetRepairById(int64(rid))
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		c.Abort()
+		return
+	}
+	c.JSON(http.StatusOK, res)
 
-	userRole := res.Role
+}
+
+func (r *RepairCtrlImpl) GetRepair(c *gin.Context) {
+
+	UserID := c.MustGet("UserID").(int)
+	belongCmp := c.MustGet("belongCmp").(int64)
+	// res, err := r.svc.UserServ.GetUserById(int64(UserID))
+
+	// if err != nil {
+	// 	c.Status(http.StatusBadRequest)
+	// 	c.Abort()
+	// 	return
+	// }
+
+	userRole := c.MustGet("Role").(int16)
 
 	var Id sql.NullInt64
 	if !(c.Query("id") == "") {
@@ -65,26 +86,26 @@ func (r *RepairCtrlImpl) GetRepair(c *gin.Context) {
 	// cmp and up
 	var BelongCmp sql.NullInt64
 	if userRole >= 200 {
-		BelongCmp.Scan(res.Belongcmp)
+		BelongCmp.Scan(belongCmp)
 	} else {
 		if !(c.Query("belongCmp") == "") {
 			BelongCmp.Scan(c.Query("belongCmp"))
 		}
 	}
 
-	var CreateDateStart sql.NullTime
-	if c.Query("CreateDateStart") == "" {
-		CreateDateStart.Valid = false
-	} else {
-		CreateDateStart.Scan(c.Query("CreateDateStart"))
-	}
+	// var CreateDateStart sql.NullTime
+	// if c.Query("CreateDateStart") == "" {
+	// 	CreateDateStart.Valid = false
+	// } else {
+	// 	CreateDateStart.Scan(c.Query("CreateDateStart"))
+	// }
 
-	var CreateDateEnd sql.NullTime
-	if c.Query("CreateDateEnd") == "" {
-		CreateDateEnd.Valid = false
-	} else {
-		CreateDateEnd.Scan(c.Query("CreateDateEnd"))
-	}
+	// var CreateDateEnd sql.NullTime
+	// if c.Query("CreateDateEnd") == "" {
+	// 	CreateDateEnd.Valid = false
+	// } else {
+	// 	CreateDateEnd.Scan(c.Query("CreateDateEnd"))
+	// }
 
 	// var DeletedDateStart sql.NullTime
 	// if c.Query("DeletedDateStart") == "" {
@@ -100,31 +121,31 @@ func (r *RepairCtrlImpl) GetRepair(c *gin.Context) {
 	// 	DeletedDateEnd.Scan(c.Query("DeletedDateEnd"))
 	// }
 
-	var LastModifiedDateStart sql.NullTime
-	if c.Query("LastModifiedDateStart") == "" {
-		LastModifiedDateStart.Valid = false
-	} else {
-		LastModifiedDateStart.Scan(c.Query("LastModifiedDateStart"))
-	}
+	// var LastModifiedDateStart sql.NullTime
+	// if c.Query("LastModifiedDateStart") == "" {
+	// 	LastModifiedDateStart.Valid = false
+	// } else {
+	// 	LastModifiedDateStart.Scan(c.Query("LastModifiedDateStart"))
+	// }
 
-	var LastModifiedDateEnd sql.NullTime
-	if c.Query("LastModifiedDateEnd") == "" {
-		LastModifiedDateEnd.Valid = false
-	} else {
-		LastModifiedDateEnd.Scan(c.Query("LastModifiedDateEnd"))
-	}
+	// var LastModifiedDateEnd sql.NullTime
+	// if c.Query("LastModifiedDateEnd") == "" {
+	// 	LastModifiedDateEnd.Valid = false
+	// } else {
+	// 	LastModifiedDateEnd.Scan(c.Query("LastModifiedDateEnd"))
+	// }
 
 	param := db.GetRepairParams{
-		ID:              Id,
-		DriverID:        DriverId,
-		Name:            Name,
-		Belongcmp:       BelongCmp,
-		CreateDateStart: CreateDateStart,
-		CreateDateEnd:   CreateDateEnd,
+		ID:        Id,
+		DriverID:  DriverId,
+		Name:      Name,
+		Belongcmp: BelongCmp,
+		// CreateDateStart: CreateDateStart,
+		// CreateDateEnd:   CreateDateEnd,
 		// DeletedDateStart:      DeletedDateStart,
 		// DeletedDateEnd:        DeletedDateEnd,
-		LastModifiedDateStart: LastModifiedDateStart,
-		LastModifiedDateEnd:   LastModifiedDateEnd,
+		// LastModifiedDateStart: LastModifiedDateStart,
+		// LastModifiedDateEnd:   LastModifiedDateEnd,
 	}
 	repairRes, err := r.svc.RepairServ.GetRepair(param)
 
@@ -172,7 +193,7 @@ func (r *RepairCtrlImpl) ApproveRepair(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	SandMsg(int(res.Driverid), 300, "Repair "+strconv.Itoa(id)+" is approved")
+	SandMsg(int(res.Uid), 300, "Repair "+strconv.Itoa(id)+" is approved")
 
 	c.Status(http.StatusOK)
 	c.Abort()
@@ -225,11 +246,29 @@ func (r *RepairCtrlImpl) CreateNewRepair(c *gin.Context) {
 	cuid := c.MustGet("UserID").(int)
 
 	info := json.RawMessage(reqBody.Repairinfo)
+	var pic sql.NullString
+	if reqBody.RepairPic != nil {
+		path, uuid, err := utils.GenPicRoute(reqBody.RepairPic.Header["Content-Type"][0])
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		err = c.SaveUploadedFile(reqBody.RepairPic, path)
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+		// fmt.Print(reqBody.RepairPic)
+		pic.Scan(uuid)
+
+	}
 
 	param := db.CreateNewRepairParams{
 		Type:       repairType,
 		Driverid:   int64(cuid),
 		Repairinfo: info,
+		Pic:        pic,
 	}
 
 	res, err := r.svc.RepairServ.NewRepair(param)

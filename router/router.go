@@ -60,7 +60,7 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 
 		claimed := api.Group("/claimed")
 		claimed.GET("", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.GetAllClaimedJobs)
-		claimed.GET(":id", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetClaimedJobByID)
+		claimed.GET("/cj", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetCJDate)
 		claimed.GET("/list", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetClaimedJobByDriverID)
 		claimed.POST("/current", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetCurrentClaimedJob)
 		claimed.POST(":id", m.RoleMid.IsLoggedIn, c.JobsCtrl.ClaimJob)
@@ -70,6 +70,7 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 
 		repair := api.Group("/repair")
 		repair.GET("", m.RoleMid.IsLoggedIn, c.RepairCtrl.GetRepair)
+		// repair.GET(":id", m.RoleMid.IsLoggedIn, c.RepairCtrl.GetRepairByID)
 		repair.POST("", m.RoleMid.IsLoggedIn, c.RepairCtrl.CreateNewRepair)
 		repair.POST(":id", m.RoleMid.IsLoggedIn, c.RepairCtrl.ApproveRepair)
 		repair.DELETE(":id", m.RoleMid.IsLoggedIn, c.RepairCtrl.DeleteRepair)

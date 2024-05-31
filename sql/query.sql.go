@@ -205,8 +205,8 @@ func (q *Queries) CreateJob(ctx context.Context, arg CreateJobParams) (int64, er
 }
 
 const createNewRepair = `-- name: CreateNewRepair :one
-INSERT into repairT (type, driverID, repairInfo)
-values ($1, $2, $3)
+INSERT into repairT (type, driverID, repairInfo, pic)
+values ($1, $2, $3, $4)
 RETURNING id
 `
 
@@ -214,10 +214,16 @@ type CreateNewRepairParams struct {
 	Type       string
 	Driverid   int64
 	Repairinfo json.RawMessage
+	Pic        sql.NullString
 }
 
 func (q *Queries) CreateNewRepair(ctx context.Context, arg CreateNewRepairParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, createNewRepair, arg.Type, arg.Driverid, arg.Repairinfo)
+	row := q.db.QueryRowContext(ctx, createNewRepair,
+		arg.Type,
+		arg.Driverid,
+		arg.Repairinfo,
+		arg.Pic,
+	)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
@@ -534,7 +540,38 @@ from ClaimJobT
   inner join UserT on UserT.id = ClaimJobT.Driverid
   inner join Cmpt on UserT.belongCMP = cmpt.id
 WHERE ClaimJobT.Deleted_date is null
+  and (
+    ClaimJobT.driverid = $1
+    OR $1 IS NULL
+  )
+  and (
+    claimjobt.jobID = $2
+    OR $2 IS NULL
+  )
+  and (
+    usert.belongCMP = $3
+    OR $3 IS NULL
+  )
+  and (
+    claimjobt.id = $4
+    OR $4 IS NULL
+  )
+  and (
+    to_char(date(claimjobt.create_date), 'YYYY-MM') = to_char(date($5), 'YYYY-MM')
+    OR $5 IS NULL
+  ) -- and (
+  --   claimjobt.approved_date = sqlc.narg('ym')
+  --   OR sqlc.narg('ym') IS NULL
+  -- )
 `
+
+type GetAllClaimedJobsParams struct {
+	Uid   sql.NullInt64
+	Jobid sql.NullInt64
+	CmpID sql.NullInt64
+	CjID  sql.NullInt64
+	Ym    interface{}
+}
 
 type GetAllClaimedJobsRow struct {
 	ID           int64
@@ -551,8 +588,14 @@ type GetAllClaimedJobsRow struct {
 	Finishdate   sql.NullTime
 }
 
-func (q *Queries) GetAllClaimedJobs(ctx context.Context) ([]GetAllClaimedJobsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getAllClaimedJobs)
+func (q *Queries) GetAllClaimedJobs(ctx context.Context, arg GetAllClaimedJobsParams) ([]GetAllClaimedJobsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllClaimedJobs,
+		arg.Uid,
+		arg.Jobid,
+		arg.CmpID,
+		arg.CjID,
+		arg.Ym,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -918,6 +961,36 @@ func (q *Queries) GetAllJobsClient(ctx context.Context, arg GetAllJobsClientPara
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getCJDate = `-- name: GetCJDate :many
+SELECT to_char(create_date, 'YYYY-MM')
+FROM public.claimjobt
+where driverid = $1
+group by to_char(create_date, 'YYYY-MM')
+`
+
+func (q *Queries) GetCJDate(ctx context.Context, driverid int64) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, getCJDate, driverid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var to_char string
+		if err := rows.Scan(&to_char); err != nil {
+			return nil, err
+		}
+		items = append(items, to_char)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -1452,7 +1525,8 @@ SELECT repairT.id as ID,
   repairT.type as type,
   repairT.Repairinfo as Repairinfo,
   repairT.Create_Date as CreateDate,
-  repairT.Approved_Date as ApprovedDate
+  repairT.Approved_Date as ApprovedDate,
+  repairT.pic as pic
 from repairT
   inner join UserT on UserT.id = repairT.driverID
 where (
@@ -1513,6 +1587,7 @@ type GetRepairRow struct {
 	Repairinfo   json.RawMessage
 	Createdate   time.Time
 	Approveddate sql.NullTime
+	Pic          sql.NullString
 }
 
 func (q *Queries) GetRepair(ctx context.Context, arg GetRepairParams) ([]GetRepairRow, error) {
@@ -1541,6 +1616,7 @@ func (q *Queries) GetRepair(ctx context.Context, arg GetRepairParams) ([]GetRepa
 			&i.Repairinfo,
 			&i.Createdate,
 			&i.Approveddate,
+			&i.Pic,
 		); err != nil {
 			return nil, err
 		}
@@ -1556,23 +1632,46 @@ func (q *Queries) GetRepair(ctx context.Context, arg GetRepairParams) ([]GetRepa
 }
 
 const getRepairById = `-- name: GetRepairById :one
-SELECT id, type, driverid, repairinfo, create_date, approved_date, deleted_date, last_modified_date
+SELECT repairT.id as id,
+  repairT.driverID as uid,
+  repairT.repairInfo,
+  repairT.pic,
+  repairT.Approved_Date,
+  repairT.Create_Date,
+  usert.name,
+  cmpt.id as cmpid,
+  cmpt.name
 from repairT
-where id = $1
+  inner join usert on usert.id = repairT.driverID
+  inner join cmpt on usert.belongCMP = cmpt.id
+where repairT.id = $1
 `
 
-func (q *Queries) GetRepairById(ctx context.Context, id int64) (Repairt, error) {
+type GetRepairByIdRow struct {
+	ID           int64
+	Uid          int64
+	Repairinfo   json.RawMessage
+	Pic          sql.NullString
+	ApprovedDate sql.NullTime
+	CreateDate   time.Time
+	Name         string
+	Cmpid        int64
+	Name_2       string
+}
+
+func (q *Queries) GetRepairById(ctx context.Context, id int64) (GetRepairByIdRow, error) {
 	row := q.db.QueryRowContext(ctx, getRepairById, id)
-	var i Repairt
+	var i GetRepairByIdRow
 	err := row.Scan(
 		&i.ID,
-		&i.Type,
-		&i.Driverid,
+		&i.Uid,
 		&i.Repairinfo,
-		&i.CreateDate,
+		&i.Pic,
 		&i.ApprovedDate,
-		&i.DeletedDate,
-		&i.LastModifiedDate,
+		&i.CreateDate,
+		&i.Name,
+		&i.Cmpid,
+		&i.Name_2,
 	)
 	return i, err
 }

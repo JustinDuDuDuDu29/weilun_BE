@@ -11,7 +11,7 @@ type RepairServ interface {
 	GetRepair(param db.GetRepairParams) ([]db.GetRepairRow, error)
 	DeleteRepair(param int64) error
 	ApproveRepair(param int64) error
-	GetRepairById(param int64) (db.Repairt, error)
+	GetRepairById(param int64) (db.GetRepairByIdRow, error)
 }
 
 type RepairServImpl struct {
@@ -39,7 +39,7 @@ func (r *RepairServImpl) ApproveRepair(param int64) error {
 	return err
 }
 
-func (r *RepairServImpl) GetRepairById(param int64) (db.Repairt, error) {
+func (r *RepairServImpl) GetRepairById(param int64) (db.GetRepairByIdRow, error) {
 	res, err := r.q.GetRepairById(context.Background(), param)
 	return res, err
 }

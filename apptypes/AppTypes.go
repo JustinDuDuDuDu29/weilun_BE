@@ -92,7 +92,8 @@ type UpdateJobBodyT struct {
 }
 
 type NewRepairBodyT struct {
-	Repairinfo string `form:"repairInfo" binding:"required"`
+	Repairinfo string                `form:"repairInfo" binding:"required"`
+	RepairPic  *multipart.FileHeader `form:"repairPic"`
 }
 
 type CreateAlertBodyT struct {

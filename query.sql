@@ -398,7 +398,31 @@ from ClaimJobT
   inner join JobsT on JobsT.id = ClaimJobT.JobId
   inner join UserT on UserT.id = ClaimJobT.Driverid
   inner join Cmpt on UserT.belongCMP = cmpt.id
-WHERE ClaimJobT.Deleted_date is null;
+WHERE ClaimJobT.Deleted_date is null
+  and (
+    ClaimJobT.driverid = sqlc.narg('uid')
+    OR sqlc.narg('uid') IS NULL
+  )
+  and (
+    claimjobt.jobID = sqlc.narg('jobid')
+    OR sqlc.narg('jobid') IS NULL
+  )
+  and (
+    usert.belongCMP = sqlc.narg('cmpID')
+    OR sqlc.narg('cmpID') IS NULL
+  )
+  and (
+    claimjobt.id = sqlc.narg('cjID')
+    OR sqlc.narg('cjID') IS NULL
+  )
+  and (
+    to_char(date(claimjobt.create_date), 'YYYY-MM') = to_char(date(sqlc.narg('ym')), 'YYYY-MM')
+    OR sqlc.narg('ym') IS NULL
+  ) -- and (
+  --   claimjobt.approved_date = sqlc.narg('ym')
+  --   OR sqlc.narg('ym') IS NULL
+  -- )
+;
 -- name: GetClaimedJobByDriverID :many
 SELECT ClaimJobT.id as id,
   JobsT.id as JobID,
@@ -544,8 +568,8 @@ where t1.driverID = $1
   and date(t1.finished_date) >= date($2)
   and date(t1.finished_date) <= date($3);
 -- name: CreateNewRepair :one
-INSERT into repairT (type, driverID, repairInfo)
-values ($1, $2, $3)
+INSERT into repairT (type, driverID, repairInfo, pic)
+values ($1, $2, $3, $4)
 RETURNING id;
 -- name: GetRepair :many
 SELECT repairT.id as ID,
@@ -554,7 +578,8 @@ SELECT repairT.id as ID,
   repairT.type as type,
   repairT.Repairinfo as Repairinfo,
   repairT.Create_Date as CreateDate,
-  repairT.Approved_Date as ApprovedDate
+  repairT.Approved_Date as ApprovedDate,
+  repairT.pic as pic
 from repairT
   inner join UserT on UserT.id = repairT.driverID
 where (
@@ -684,9 +709,19 @@ from alertT
 where belongCMP = $1
 order by id desc;
 -- name: GetRepairById :one
-SELECT *
+SELECT repairT.id as id,
+  repairT.driverID as uid,
+  repairT.repairInfo,
+  repairT.pic,
+  repairT.Approved_Date,
+  repairT.Create_Date,
+  usert.name,
+  cmpt.id as cmpid,
+  cmpt.name
 from repairT
-where id = $1;
+  inner join usert on usert.id = repairT.driverID
+  inner join cmpt on usert.belongCMP = cmpt.id
+where repairT.id = $1;
 -- name: UploadRepairPic :exec
 insert into RepairPicT (repair_id, pic)
 values ($1, $2);
@@ -797,5 +832,8 @@ FROM (
   ) MQ
 GROUP BY MQ.UID,
   MQ.USERNAME;
--- MQ.APPROVEDDATE
--- MQ.json_build_object
+-- name: GetCJDate :many
+SELECT to_char(create_date, 'YYYY-MM')
+FROM public.claimjobt
+where driverid = $1
+group by to_char(create_date, 'YYYY-MM');
