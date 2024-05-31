@@ -518,7 +518,7 @@ order by t2.create_date
 LIMIT 1;
 -- name: GetDriverRevenueByCmp :many
 SELECT coalesce(sum(t2.PRICE), 0) as earn,
-  coalesce(sum(t2.ID), 0) as count
+  coalesce(count(t2.ID), 0) as count
 from ClaimJobT t1
   inner join JobsT t2 on t1.jobID = t2.id
   inner join UserT t3 on t1.driverID = t3.id
@@ -532,7 +532,7 @@ where t3.belongCMP = $1
   and date(t1.finished_date) <= date($3);
 -- name: GetDriverRevenue :many
 SELECT coalesce(sum(t2.PRICE), 0) as earn,
-  coalesce(sum(t2.ID), 0) as count
+  coalesce(count(t2.ID), 0) as count
 from ClaimJobT t1
   inner join JobsT t2 on t1.jobID = t2.id
 where t1.driverID = $1

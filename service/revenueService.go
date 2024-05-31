@@ -42,8 +42,9 @@ func (s *RevenueServImpl) GetRevenueByCmp(param db.GetDriverRevenueByCmpParams) 
 }
 
 func (s *RevenueServImpl) GetRevenue(param db.GetDriverRevenueParams) ([]db.GetDriverRevenueRow, error) {
-	fmt.Println("param: ", param)
 	res, err := s.q.GetDriverRevenue(context.Background(), param)
+	fmt.Println("param: ", res)
+
 	if len(res) == 0 {
 		res = []db.GetDriverRevenueRow{}
 		tmp := db.GetDriverRevenueRow{

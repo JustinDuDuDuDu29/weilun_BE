@@ -1307,7 +1307,7 @@ func (q *Queries) GetDriver(ctx context.Context, id int64) (GetDriverRow, error)
 
 const getDriverRevenue = `-- name: GetDriverRevenue :many
 SELECT coalesce(sum(t2.PRICE), 0) as earn,
-  coalesce(sum(t2.ID), 0) as count
+  coalesce(count(t2.ID), 0) as count
 from ClaimJobT t1
   inner join JobsT t2 on t1.jobID = t2.id
 where t1.driverID = $1
@@ -1356,7 +1356,7 @@ func (q *Queries) GetDriverRevenue(ctx context.Context, arg GetDriverRevenuePara
 
 const getDriverRevenueByCmp = `-- name: GetDriverRevenueByCmp :many
 SELECT coalesce(sum(t2.PRICE), 0) as earn,
-  coalesce(sum(t2.ID), 0) as count
+  coalesce(count(t2.ID), 0) as count
 from ClaimJobT t1
   inner join JobsT t2 on t1.jobID = t2.id
   inner join UserT t3 on t1.driverID = t3.id
