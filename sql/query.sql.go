@@ -529,12 +529,14 @@ SELECT ClaimJobT.id as id,
   JobsT.From_Loc,
   JobsT.mid,
   JobsT.To_Loc,
+  JobsT.Price,
   ClaimJobT.Create_Date,
   usert.name as userName,
   cmpt.name as cmpname,
   cmpT.id as cmpID,
   ClaimJobT.Approved_date as ApprovedDate,
-  ClaimJobT.Finished_Date as FinishDate
+  ClaimJobT.Finished_Date as FinishDate,
+  ClaimJobT.finishPic
 from ClaimJobT
   inner join JobsT on JobsT.id = ClaimJobT.JobId
   inner join UserT on UserT.id = ClaimJobT.Driverid
@@ -580,12 +582,14 @@ type GetAllClaimedJobsRow struct {
 	FromLoc      string
 	Mid          sql.NullString
 	ToLoc        string
+	Price        int32
 	CreateDate   time.Time
 	Username     string
 	Cmpname      string
 	Cmpid        int64
 	Approveddate sql.NullTime
 	Finishdate   sql.NullTime
+	Finishpic    sql.NullString
 }
 
 func (q *Queries) GetAllClaimedJobs(ctx context.Context, arg GetAllClaimedJobsParams) ([]GetAllClaimedJobsRow, error) {
@@ -610,12 +614,14 @@ func (q *Queries) GetAllClaimedJobs(ctx context.Context, arg GetAllClaimedJobsPa
 			&i.FromLoc,
 			&i.Mid,
 			&i.ToLoc,
+			&i.Price,
 			&i.CreateDate,
 			&i.Username,
 			&i.Cmpname,
 			&i.Cmpid,
 			&i.Approveddate,
 			&i.Finishdate,
+			&i.Finishpic,
 		); err != nil {
 			return nil, err
 		}
@@ -1544,39 +1550,38 @@ where (
   AND (
     UserT.belongcmp = $4
     OR $4 IS NULL
-  )
-  AND (
-    (
-      repairT.create_date > $5
-      OR $5 IS NULL
-    )
-    AND (
-      repairT.create_date < $6
-      OR $6 IS NULL
-    )
-  )
-  AND repairT.deleted_date is null
-  AND (
-    (
-      repairT.last_modified_date > $7
-      OR $7 IS NULL
-    )
-    AND (
-      repairT.last_modified_date < $8
-      OR $8 IS NULL
-    )
+  ) -- AND (
+  --   (
+  --     repairT.create_date > sqlc.narg('create_date_start')
+  --     OR sqlc.narg('create_date_start') IS NULL
+  --   )
+  --   AND (
+  --     repairT.create_date < sqlc.narg('create_date_end')
+  --     OR sqlc.narg('create_date_end') IS NULL
+  --   )
+  -- )
+  AND repairT.deleted_date is null -- AND (
+  --   (
+  --     repairT.last_modified_date > sqlc.narg('last_modified_date_start')
+  --     OR sqlc.narg('last_modified_date_start') IS NULL
+  --   )
+  --   AND (
+  --     repairT.last_modified_date < sqlc.narg('last_modified_date_end')
+  --     OR sqlc.narg('last_modified_date_end') IS NULL
+  --   )
+  -- )
+  and (
+    to_char(date(repairT.create_date), 'YYYY-MM') = to_char(date($5), 'YYYY-MM')
+    OR $5 IS NULL
   )
 `
 
 type GetRepairParams struct {
-	ID                    sql.NullInt64
-	DriverID              sql.NullInt64
-	Name                  sql.NullString
-	Belongcmp             sql.NullInt64
-	CreateDateStart       sql.NullTime
-	CreateDateEnd         sql.NullTime
-	LastModifiedDateStart sql.NullTime
-	LastModifiedDateEnd   sql.NullTime
+	ID        sql.NullInt64
+	DriverID  sql.NullInt64
+	Name      sql.NullString
+	Belongcmp sql.NullInt64
+	Ym        interface{}
 }
 
 type GetRepairRow struct {
@@ -1596,10 +1601,7 @@ func (q *Queries) GetRepair(ctx context.Context, arg GetRepairParams) ([]GetRepa
 		arg.DriverID,
 		arg.Name,
 		arg.Belongcmp,
-		arg.CreateDateStart,
-		arg.CreateDateEnd,
-		arg.LastModifiedDateStart,
-		arg.LastModifiedDateEnd,
+		arg.Ym,
 	)
 	if err != nil {
 		return nil, err
@@ -1674,6 +1676,149 @@ func (q *Queries) GetRepairById(ctx context.Context, id int64) (GetRepairByIdRow
 		&i.Name_2,
 	)
 	return i, err
+}
+
+const getRepairDate = `-- name: GetRepairDate :many
+SELECT to_char(create_date, 'YYYY-MM')
+FROM public.repairT
+where driverid = $1
+group by to_char(create_date, 'YYYY-MM')
+`
+
+func (q *Queries) GetRepairDate(ctx context.Context, driverid int64) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, getRepairDate, driverid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var to_char string
+		if err := rows.Scan(&to_char); err != nil {
+			return nil, err
+		}
+		items = append(items, to_char)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRepairXXX = `-- name: GetRepairXXX :many
+SELECT repairT.id as ID,
+  UserT.id as Driverid,
+  UserT.Name as Drivername,
+  repairT.type as type,
+  repairT.Repairinfo as Repairinfo,
+  repairT.Create_Date as CreateDate,
+  repairT.Approved_Date as ApprovedDate,
+  repairT.pic as pic
+from repairT
+  inner join UserT on UserT.id = repairT.driverID
+where (
+    repairT.id = $1
+    OR $1 IS NULL
+  )
+  AND (
+    repairT.driverID = $2
+    OR $2 IS NULL
+  )
+  AND (
+    UserT.name = $3
+    OR $3 IS NULL
+  )
+  AND (
+    UserT.belongcmp = $4
+    OR $4 IS NULL
+  )
+  AND (
+    (
+      repairT.create_date > $5
+      OR $5 IS NULL
+    )
+    AND (
+      repairT.create_date < $6
+      OR $6 IS NULL
+    )
+  )
+  AND repairT.deleted_date is null
+  AND (
+    (
+      repairT.last_modified_date > $7
+      OR $7 IS NULL
+    )
+    AND (
+      repairT.last_modified_date < $8
+      OR $8 IS NULL
+    )
+  )
+`
+
+type GetRepairXXXParams struct {
+	ID                    sql.NullInt64
+	DriverID              sql.NullInt64
+	Name                  sql.NullString
+	Belongcmp             sql.NullInt64
+	CreateDateStart       sql.NullTime
+	CreateDateEnd         sql.NullTime
+	LastModifiedDateStart sql.NullTime
+	LastModifiedDateEnd   sql.NullTime
+}
+
+type GetRepairXXXRow struct {
+	ID           int64
+	Driverid     int64
+	Drivername   string
+	Type         string
+	Repairinfo   json.RawMessage
+	Createdate   time.Time
+	Approveddate sql.NullTime
+	Pic          sql.NullString
+}
+
+func (q *Queries) GetRepairXXX(ctx context.Context, arg GetRepairXXXParams) ([]GetRepairXXXRow, error) {
+	rows, err := q.db.QueryContext(ctx, getRepairXXX,
+		arg.ID,
+		arg.DriverID,
+		arg.Name,
+		arg.Belongcmp,
+		arg.CreateDateStart,
+		arg.CreateDateEnd,
+		arg.LastModifiedDateStart,
+		arg.LastModifiedDateEnd,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetRepairXXXRow
+	for rows.Next() {
+		var i GetRepairXXXRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Driverid,
+			&i.Drivername,
+			&i.Type,
+			&i.Repairinfo,
+			&i.Createdate,
+			&i.Approveddate,
+			&i.Pic,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getRevenueExcel = `-- name: GetRevenueExcel :many

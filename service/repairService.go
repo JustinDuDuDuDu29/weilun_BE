@@ -12,11 +12,17 @@ type RepairServ interface {
 	DeleteRepair(param int64) error
 	ApproveRepair(param int64) error
 	GetRepairById(param int64) (db.GetRepairByIdRow, error)
+	GetRepairDate(param int64) ([]string, error)
 }
 
 type RepairServImpl struct {
 	q    *db.Queries
 	conn *sql.DB
+}
+
+func (s *RepairServImpl) GetRepairDate(param int64) ([]string, error) {
+	res, err := s.q.GetRepairDate(context.Background(), param)
+	return res, err
 }
 
 func (r *RepairServImpl) NewRepair(param db.CreateNewRepairParams) (int64, error) {

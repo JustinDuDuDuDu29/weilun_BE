@@ -70,6 +70,7 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 
 		repair := api.Group("/repair")
 		repair.GET("", m.RoleMid.IsLoggedIn, c.RepairCtrl.GetRepair)
+		repair.GET("/cj", m.RoleMid.IsLoggedIn, c.RepairCtrl.GetRepairDate)
 		// repair.GET(":id", m.RoleMid.IsLoggedIn, c.RepairCtrl.GetRepairByID)
 		repair.POST("", m.RoleMid.IsLoggedIn, c.RepairCtrl.CreateNewRepair)
 		repair.POST(":id", m.RoleMid.IsLoggedIn, c.RepairCtrl.ApproveRepair)

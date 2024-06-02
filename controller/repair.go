@@ -10,6 +10,7 @@ import (
 	"main/utils"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,12 +21,33 @@ type RepairCtrl interface {
 	ApproveRepair(c *gin.Context)
 	GetRepair(c *gin.Context)
 	GetRepairByID(c *gin.Context)
+	GetRepairDate(c *gin.Context)
 }
 
 type RepairCtrlImpl struct {
 	svc *service.AppService
 }
 
+func (u *RepairCtrlImpl) GetRepairDate(c *gin.Context) {
+	// protect
+	sid := c.Query("id")
+	id, err := strconv.Atoi(sid)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		c.Abort()
+		return
+	}
+	res, err := u.svc.RepairServ.GetRepairDate(int64(id))
+
+	if err != nil {
+		fmt.Println(err)
+		c.Status(http.StatusInternalServerError)
+		c.Abort()
+		return
+	}
+
+	c.JSON(http.StatusOK, res)
+}
 func (r *RepairCtrlImpl) GetRepairByID(c *gin.Context) {
 
 	// UserID := c.MustGet("UserID").(int)
@@ -64,6 +86,18 @@ func (r *RepairCtrlImpl) GetRepair(c *gin.Context) {
 		Id.Scan(c.Query("id"))
 	} else {
 		Id.Valid = false
+	}
+	var Ym sql.NullTime
+	if c.Query("ym") != "" {
+		d := c.Query("ym") + "-01"
+		dt, err := time.Parse(time.DateOnly, d)
+		if err != nil {
+			fmt.Println("err!! ", err)
+			c.Status(http.StatusInternalServerError)
+			c.Abort()
+			return
+		}
+		Ym.Scan(dt)
 	}
 
 	var DriverId sql.NullInt64
@@ -140,6 +174,7 @@ func (r *RepairCtrlImpl) GetRepair(c *gin.Context) {
 		DriverID:  DriverId,
 		Name:      Name,
 		Belongcmp: BelongCmp,
+		Ym:        Ym,
 		// CreateDateStart: CreateDateStart,
 		// CreateDateEnd:   CreateDateEnd,
 		// DeletedDateStart:      DeletedDateStart,

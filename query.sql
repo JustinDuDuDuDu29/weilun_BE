@@ -388,12 +388,14 @@ SELECT ClaimJobT.id as id,
   JobsT.From_Loc,
   JobsT.mid,
   JobsT.To_Loc,
+  JobsT.Price,
   ClaimJobT.Create_Date,
   usert.name as userName,
   cmpt.name as cmpname,
   cmpT.id as cmpID,
   ClaimJobT.Approved_date as ApprovedDate,
-  ClaimJobT.Finished_Date as FinishDate
+  ClaimJobT.Finished_Date as FinishDate,
+  ClaimJobT.finishPic
 from ClaimJobT
   inner join JobsT on JobsT.id = ClaimJobT.JobId
   inner join UserT on UserT.id = ClaimJobT.Driverid
@@ -572,6 +574,56 @@ INSERT into repairT (type, driverID, repairInfo, pic)
 values ($1, $2, $3, $4)
 RETURNING id;
 -- name: GetRepair :many
+SELECT repairT.id as ID,
+  UserT.id as Driverid,
+  UserT.Name as Drivername,
+  repairT.type as type,
+  repairT.Repairinfo as Repairinfo,
+  repairT.Create_Date as CreateDate,
+  repairT.Approved_Date as ApprovedDate,
+  repairT.pic as pic
+from repairT
+  inner join UserT on UserT.id = repairT.driverID
+where (
+    repairT.id = sqlc.narg('id')
+    OR sqlc.narg('id') IS NULL
+  )
+  AND (
+    repairT.driverID = sqlc.narg('driverID')
+    OR sqlc.narg('driverID') IS NULL
+  )
+  AND (
+    UserT.name = sqlc.narg('name')
+    OR sqlc.narg('name') IS NULL
+  )
+  AND (
+    UserT.belongcmp = sqlc.narg('belongcmp')
+    OR sqlc.narg('belongcmp') IS NULL
+  ) -- AND (
+  --   (
+  --     repairT.create_date > sqlc.narg('create_date_start')
+  --     OR sqlc.narg('create_date_start') IS NULL
+  --   )
+  --   AND (
+  --     repairT.create_date < sqlc.narg('create_date_end')
+  --     OR sqlc.narg('create_date_end') IS NULL
+  --   )
+  -- )
+  AND repairT.deleted_date is null -- AND (
+  --   (
+  --     repairT.last_modified_date > sqlc.narg('last_modified_date_start')
+  --     OR sqlc.narg('last_modified_date_start') IS NULL
+  --   )
+  --   AND (
+  --     repairT.last_modified_date < sqlc.narg('last_modified_date_end')
+  --     OR sqlc.narg('last_modified_date_end') IS NULL
+  --   )
+  -- )
+  and (
+    to_char(date(repairT.create_date), 'YYYY-MM') = to_char(date(sqlc.narg('ym')), 'YYYY-MM')
+    OR sqlc.narg('ym') IS NULL
+  );
+-- name: GetRepairXXX :many
 SELECT repairT.id as ID,
   UserT.id as Driverid,
   UserT.Name as Drivername,
@@ -835,5 +887,10 @@ GROUP BY MQ.UID,
 -- name: GetCJDate :many
 SELECT to_char(create_date, 'YYYY-MM')
 FROM public.claimjobt
+where driverid = $1
+group by to_char(create_date, 'YYYY-MM');
+-- name: GetRepairDate :many
+SELECT to_char(create_date, 'YYYY-MM')
+FROM public.repairT
 where driverid = $1
 group by to_char(create_date, 'YYYY-MM');

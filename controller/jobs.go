@@ -194,8 +194,6 @@ func (u *JobsCtrlImpl) GetCJDate(c *gin.Context) {
 	sid := c.Query("id")
 	id, err := strconv.Atoi(sid)
 	if err != nil {
-		fmt.Println("11: ", err)
-
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
