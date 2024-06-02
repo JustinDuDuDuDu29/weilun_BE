@@ -111,6 +111,7 @@ type Repairt struct {
 type Usert struct {
 	ID               int64
 	Phonenum         interface{}
+	Phonenumind      interface{}
 	Pwd              string
 	Name             string
 	Belongcmp        int64

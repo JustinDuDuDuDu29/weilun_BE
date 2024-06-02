@@ -107,7 +107,6 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 			return
 		}
 		userInfo, err := m.svc.UserServ.GetUserById(int64(id))
-		fmt.Println(err)
 
 		if err != nil {
 

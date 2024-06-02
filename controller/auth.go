@@ -2,7 +2,6 @@ package controller
 
 import (
 	"database/sql"
-	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -39,7 +38,6 @@ func (a *AuthCtrlImpl) Login(c *gin.Context) {
 	res, err := a.svc.UserServ.HaveUser(reqBody.Phonenum)
 
 	if err != nil {
-		fmt.Println("hu ", err)
 		c.Status(http.StatusNotFound)
 		c.Abort()
 		return
@@ -47,7 +45,6 @@ func (a *AuthCtrlImpl) Login(c *gin.Context) {
 
 	if err = bcrypt.CompareHashAndPassword([]byte(res.Pwd), []byte(reqBody.Pwd)); err != nil {
 
-		fmt.Println("wp ", err)
 		c.Status(http.StatusNotFound)
 		c.Abort()
 		return

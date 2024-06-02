@@ -90,8 +90,6 @@ func getUD(m *SocketCtrlImpl, rtoken string) (int, int16, int64, error) {
 
 	if err != nil {
 
-		fmt.Println("err: ", 2)
-		fmt.Print(err)
 		return 0, 0, 0, errors.New("2")
 	}
 

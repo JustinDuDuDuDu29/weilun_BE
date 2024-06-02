@@ -61,7 +61,6 @@ func (u *JobsCtrlImpl) GetClaimedJobByDriverID(c *gin.Context) {
 			return
 		}
 
-		fmt.Println(res)
 		c.JSON(http.StatusOK, res)
 		return
 
@@ -165,6 +164,13 @@ func (u *JobsCtrlImpl) GetAllClaimedJobs(c *gin.Context) {
 		}
 		Ym.Scan(dt)
 	}
+	var Cat sql.NullString
+
+	if c.Query("cat") != "" {
+		Cat.Scan(c.Query("cat"))
+	} else {
+		Cat.Valid = false
+	}
 
 	param := db.GetAllClaimedJobsParams{
 		Uid:   Uid,
@@ -172,9 +178,8 @@ func (u *JobsCtrlImpl) GetAllClaimedJobs(c *gin.Context) {
 		CmpID: CmpID,
 		CjID:  cjID,
 		Ym:    Ym,
+		Cat:   Cat,
 	}
-
-	fmt.Println(param)
 
 	res, err := u.svc.JobsServ.GetAllClaimedJobs(param)
 
@@ -649,7 +654,6 @@ func (u *JobsCtrlImpl) FinishClaimJob(c *gin.Context) {
 		Driverid:  int64(UserID),
 		Finishpic: Fp,
 	}
-	fmt.Println(param)
 	err = u.svc.JobsServ.FinishClaimedJob(param)
 	if err != nil {
 		os.Remove(path)
@@ -744,9 +748,6 @@ func (u *JobsCtrlImpl) CancelClaimJob(c *gin.Context) {
 	}
 	if !(cJobRes.CreateDate.Add(time.Minute*10).After(time.Now()) && cJobRes.Userid == int64(UserID)) && !(res.Role <= int16(100)) {
 		// reject has pass 5 min
-		fmt.Println(cJobRes.CreateDate.Add(time.Minute * 10))
-		fmt.Println(time.Now())
-		fmt.Println(cJobRes.CreateDate.Add(time.Minute * 10).After(time.Now()))
 
 		c.Status(http.StatusConflict)
 		c.Abort()

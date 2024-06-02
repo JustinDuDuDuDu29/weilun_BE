@@ -86,17 +86,25 @@ func (q *Queries) ClaimJob(ctx context.Context, arg ClaimJobParams) (int64, erro
 }
 
 const createAdmin = `-- name: CreateAdmin :one
-INSERT INTO UserT(pwd, name, role, belongcmp, phoneNum)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO UserT(
+    pwd,
+    name,
+    role,
+    belongcmp,
+    phoneNum,
+    phoneNumInD
+  )
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id
 `
 
 type CreateAdminParams struct {
-	Pwd       string
-	Name      string
-	Role      int16
-	Belongcmp int64
-	Phonenum  interface{}
+	Pwd         string
+	Name        string
+	Role        int16
+	Belongcmp   int64
+	Phonenum    interface{}
+	Phonenumind interface{}
 }
 
 func (q *Queries) CreateAdmin(ctx context.Context, arg CreateAdminParams) (int64, error) {
@@ -106,6 +114,7 @@ func (q *Queries) CreateAdmin(ctx context.Context, arg CreateAdminParams) (int64
 		arg.Role,
 		arg.Belongcmp,
 		arg.Phonenum,
+		arg.Phonenumind,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -232,17 +241,25 @@ func (q *Queries) CreateNewRepair(ctx context.Context, arg CreateNewRepairParams
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO UserT(pwd, name, role, belongcmp, phoneNum)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO UserT(
+    pwd,
+    name,
+    role,
+    belongcmp,
+    phoneNum,
+    phoneNumInD
+  )
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id
 `
 
 type CreateUserParams struct {
-	Pwd       string
-	Name      string
-	Role      int16
-	Belongcmp int64
-	Phonenum  interface{}
+	Pwd         string
+	Name        string
+	Role        int16
+	Belongcmp   int64
+	Phonenum    interface{}
+	Phonenumind interface{}
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, error) {
@@ -252,6 +269,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, 
 		arg.Role,
 		arg.Belongcmp,
 		arg.Phonenum,
+		arg.Phonenumind,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -342,6 +360,7 @@ func (q *Queries) DeleteRepair(ctx context.Context, id int64) error {
 const deleteUser = `-- name: DeleteUser :exec
 UPDATE UserT
 set deleted_date = NOW(),
+  phoneNum = null,
   last_modified_date = NOW()
 WHERE id = $1
 `
@@ -561,9 +580,17 @@ WHERE ClaimJobT.Deleted_date is null
     OR $4 IS NULL
   )
   and (
-    to_char(date(claimjobt.create_date), 'YYYY-MM') = to_char(date($5), 'YYYY-MM')
-    OR $5 IS NULL
-  ) -- and (
+    (
+      $5 = 'pending'
+      AND claimjobt.Approved_date IS NULL
+    )
+    OR ($5 IS NULL)
+  )
+  and (
+    to_char(date(claimjobt.create_date), 'YYYY-MM') = to_char(date($6), 'YYYY-MM')
+    OR $6 IS NULL
+  )
+  and (claimjobt.deleted_date IS NULL) -- and (
   --   claimjobt.approved_date = sqlc.narg('ym')
   --   OR sqlc.narg('ym') IS NULL
   -- )
@@ -574,6 +601,7 @@ type GetAllClaimedJobsParams struct {
 	Jobid sql.NullInt64
 	CmpID sql.NullInt64
 	CjID  sql.NullInt64
+	Cat   interface{}
 	Ym    interface{}
 }
 
@@ -600,6 +628,7 @@ func (q *Queries) GetAllClaimedJobs(ctx context.Context, arg GetAllClaimedJobsPa
 		arg.Jobid,
 		arg.CmpID,
 		arg.CjID,
+		arg.Cat,
 		arg.Ym,
 	)
 	if err != nil {
@@ -1218,7 +1247,7 @@ func (q *Queries) GetClaimedJobByID(ctx context.Context, id int64) (GetClaimedJo
 }
 
 const getCmp = `-- name: GetCmp :one
-SELECT cmpt.id, cmpt.name, cmpt.create_date, cmpt.deleted_date, cmpt.last_modified_date, usert.id, phonenum, pwd, usert.name, belongcmp, seed, role, initpwdchanged, usert.create_date, usert.deleted_date, usert.last_modified_date
+SELECT cmpt.id, cmpt.name, cmpt.create_date, cmpt.deleted_date, cmpt.last_modified_date, usert.id, phonenum, phonenumind, pwd, usert.name, belongcmp, seed, role, initpwdchanged, usert.create_date, usert.deleted_date, usert.last_modified_date
 FROM cmpt
   inner join usert on cmpt.id = usert.belongcmp
   AND (
@@ -1236,6 +1265,7 @@ type GetCmpRow struct {
 	LastModifiedDate   time.Time
 	ID_2               int64
 	Phonenum           interface{}
+	Phonenumind        interface{}
 	Pwd                string
 	Name_2             string
 	Belongcmp          int64
@@ -1258,6 +1288,7 @@ func (q *Queries) GetCmp(ctx context.Context, id int64) (GetCmpRow, error) {
 		&i.LastModifiedDate,
 		&i.ID_2,
 		&i.Phonenum,
+		&i.Phonenumind,
 		&i.Pwd,
 		&i.Name_2,
 		&i.Belongcmp,
@@ -1537,7 +1568,6 @@ SELECT repairT.id as ID,
   repairT.Approved_Date as ApprovedDate,
   repairT.pic as pic,
   repairT.place as place,
-  repairT.create_date as Createdate,
   driverT.plateNum as plateNum
 from repairT
   inner join UserT on UserT.id = repairT.driverID
@@ -1579,8 +1609,15 @@ where (
   --   )
   -- )
   and (
-    to_char(date(repairT.create_date), 'YYYY-MM') = to_char(date($5), 'YYYY-MM')
-    OR $5 IS NULL
+    (
+      $5 = 'pending'
+      AND repairT.Approved_date IS NULL
+    )
+    OR ($5 IS NULL)
+  )
+  and (
+    to_char(date(repairT.create_date), 'YYYY-MM') = to_char(date($6), 'YYYY-MM')
+    OR $6 IS NULL
   )
 `
 
@@ -1589,6 +1626,7 @@ type GetRepairParams struct {
 	DriverID  sql.NullInt64
 	Name      sql.NullString
 	Belongcmp sql.NullInt64
+	Cat       interface{}
 	Ym        interface{}
 }
 
@@ -1603,7 +1641,6 @@ type GetRepairRow struct {
 	Approveddate sql.NullTime
 	Pic          sql.NullString
 	Place        string
-	Createdate_2 time.Time
 	Platenum     string
 }
 
@@ -1613,6 +1650,7 @@ func (q *Queries) GetRepair(ctx context.Context, arg GetRepairParams) ([]GetRepa
 		arg.DriverID,
 		arg.Name,
 		arg.Belongcmp,
+		arg.Cat,
 		arg.Ym,
 	)
 	if err != nil {
@@ -1633,7 +1671,6 @@ func (q *Queries) GetRepair(ctx context.Context, arg GetRepairParams) ([]GetRepa
 			&i.Approveddate,
 			&i.Pic,
 			&i.Place,
-			&i.Createdate_2,
 			&i.Platenum,
 		); err != nil {
 			return nil, err
@@ -2139,6 +2176,7 @@ where (
       OR $11 IS NULL
     )
   )
+  AND(UT.Deleted_Date is null)
 group by cmpt.id
 `
 

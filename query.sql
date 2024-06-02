@@ -132,14 +132,29 @@ where (
       OR sqlc.narg('last_modified_date_end') IS NULL
     )
   )
+  AND(UT.Deleted_Date is null)
 group by cmpt.id;
 -- name: CreateAdmin :one
-INSERT INTO UserT(pwd, name, role, belongcmp, phoneNum)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO UserT(
+    pwd,
+    name,
+    role,
+    belongcmp,
+    phoneNum,
+    phoneNumInD
+  )
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id;
 -- name: CreateUser :one
-INSERT INTO UserT(pwd, name, role, belongcmp, phoneNum)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO UserT(
+    pwd,
+    name,
+    role,
+    belongcmp,
+    phoneNum,
+    phoneNumInD
+  )
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id;
 -- name: CreateDriverInfo :one
 insert into driverT (id, nationalidnumber, plateNum)
@@ -189,6 +204,7 @@ where id = $1;
 -- name: DeleteUser :exec
 UPDATE UserT
 set deleted_date = NOW(),
+  phoneNum = null,
   last_modified_date = NOW()
 WHERE id = $1;
 -- name: GetCmp :one
@@ -418,9 +434,17 @@ WHERE ClaimJobT.Deleted_date is null
     OR sqlc.narg('cjID') IS NULL
   )
   and (
+    (
+      sqlc.narg('cat') = 'pending'
+      AND claimjobt.Approved_date IS NULL
+    )
+    OR (sqlc.narg('cat') IS NULL)
+  )
+  and (
     to_char(date(claimjobt.create_date), 'YYYY-MM') = to_char(date(sqlc.narg('ym')), 'YYYY-MM')
     OR sqlc.narg('ym') IS NULL
-  ) -- and (
+  )
+  and (claimjobt.deleted_date IS NULL) -- and (
   --   claimjobt.approved_date = sqlc.narg('ym')
   --   OR sqlc.narg('ym') IS NULL
   -- )
@@ -584,7 +608,6 @@ SELECT repairT.id as ID,
   repairT.Approved_Date as ApprovedDate,
   repairT.pic as pic,
   repairT.place as place,
-  repairT.create_date as Createdate,
   driverT.plateNum as plateNum
 from repairT
   inner join UserT on UserT.id = repairT.driverID
@@ -625,6 +648,13 @@ where (
   --     OR sqlc.narg('last_modified_date_end') IS NULL
   --   )
   -- )
+  and (
+    (
+      sqlc.arg('cat') = 'pending'
+      AND repairT.Approved_date IS NULL
+    )
+    OR (sqlc.narg('cat') IS NULL)
+  )
   and (
     to_char(date(repairT.create_date), 'YYYY-MM') = to_char(date(sqlc.narg('ym')), 'YYYY-MM')
     OR sqlc.narg('ym') IS NULL

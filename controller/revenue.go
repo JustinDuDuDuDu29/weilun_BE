@@ -127,7 +127,6 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 			day := strconv.Itoa(date.Day())
 
 			for _, row := range ls.Data {
-				fmt.Print(idx)
 				// month
 				cell, err := excelize.CoordinatesToCellName(1, idx+2)
 				if err != nil {

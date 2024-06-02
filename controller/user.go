@@ -202,8 +202,6 @@ func (u *UserCtrlImpl) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	fmt.Println("hh : ", string(hash))
-
 	param := db.UpdateUserPasswordParams{
 		ID:  int64(reqBody.Id),
 		Pwd: string(hash),
@@ -227,8 +225,6 @@ func (u *UserCtrlImpl) UpdatePassword(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-	fmt.Println(reqBody.Pwd)
-	fmt.Println(reqBody.OldPwd)
 	if cuid != reqBody.Id {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
@@ -343,6 +339,7 @@ func (u *UserCtrlImpl) UpdateUser(c *gin.Context) {
 }
 
 func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
+
 	userType := c.Query("userType")
 
 	var newid int64
@@ -377,9 +374,11 @@ func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"id": newid})
 
 	case "driver":
+
 		var reqBody apptypes.RegisterDriverBodyT
 
 		if err := c.BindJSON(&reqBody); err != nil {
+			fmt.Println(err)
 			return
 		}
 		hash, err := bcrypt.GenerateFromPassword([]byte(reqBody.PhoneNum), bcrypt.MinCost)
@@ -398,6 +397,7 @@ func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
 
 		newid, err = u.svc.UserServ.RegisterDriver(param, reqBody.DriverInfo.NationalIdNumber, reqBody.DriverInfo.PlateNum)
 		if err != nil {
+			fmt.Println(err)
 			c.Status(http.StatusConflict)
 			c.Abort()
 			return
@@ -406,6 +406,7 @@ func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"id": newid})
 
 	default:
+
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}

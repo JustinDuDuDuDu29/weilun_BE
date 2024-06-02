@@ -168,12 +168,19 @@ func (r *RepairCtrlImpl) GetRepair(c *gin.Context) {
 	// } else {
 	// 	LastModifiedDateEnd.Scan(c.Query("LastModifiedDateEnd"))
 	// }
+	var Cat sql.NullString
 
+	if c.Query("cat") != "" {
+		Cat.Scan(c.Query("cat"))
+	} else {
+		Cat.Valid = false
+	}
 	param := db.GetRepairParams{
 		ID:        Id,
 		DriverID:  DriverId,
 		Name:      Name,
 		Belongcmp: BelongCmp,
+		Cat:       Cat,
 		Ym:        Ym,
 		// CreateDateStart: CreateDateStart,
 		// CreateDateEnd:   CreateDateEnd,
@@ -185,7 +192,7 @@ func (r *RepairCtrlImpl) GetRepair(c *gin.Context) {
 	repairRes, err := r.svc.RepairServ.GetRepair(param)
 
 	if err != nil && err != sql.ErrNoRows {
-		fmt.Print(err)
+		fmt.Print("err", err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
@@ -304,6 +311,7 @@ func (r *RepairCtrlImpl) CreateNewRepair(c *gin.Context) {
 		Driverid:   int64(cuid),
 		Repairinfo: info,
 		Pic:        pic,
+		Place:      reqBody.Place,
 	}
 
 	res, err := r.svc.RepairServ.NewRepair(param)
