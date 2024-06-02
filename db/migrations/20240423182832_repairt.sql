@@ -6,6 +6,7 @@ CREATE TABLE repairT(
   driverID BigInt references DriverT(id) NOT NULL,
   repairInfo JSONB NOT NULL,
   pic varchar,
+  place varchar NOT null,
   create_date Timestamp NOT NULL DEFAULT NOW(),
   approved_date Timestamp,
   deleted_date Timestamp,

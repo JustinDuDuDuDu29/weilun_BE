@@ -205,8 +205,8 @@ func (q *Queries) CreateJob(ctx context.Context, arg CreateJobParams) (int64, er
 }
 
 const createNewRepair = `-- name: CreateNewRepair :one
-INSERT into repairT (type, driverID, repairInfo, pic)
-values ($1, $2, $3, $4)
+INSERT into repairT (type, driverID, repairInfo, pic, place)
+values ($1, $2, $3, $4, $5)
 RETURNING id
 `
 
@@ -215,6 +215,7 @@ type CreateNewRepairParams struct {
 	Driverid   int64
 	Repairinfo json.RawMessage
 	Pic        sql.NullString
+	Place      string
 }
 
 func (q *Queries) CreateNewRepair(ctx context.Context, arg CreateNewRepairParams) (int64, error) {
@@ -223,6 +224,7 @@ func (q *Queries) CreateNewRepair(ctx context.Context, arg CreateNewRepairParams
 		arg.Driverid,
 		arg.Repairinfo,
 		arg.Pic,
+		arg.Place,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -1528,13 +1530,19 @@ const getRepair = `-- name: GetRepair :many
 SELECT repairT.id as ID,
   UserT.id as Driverid,
   UserT.Name as Drivername,
+  cmpt.name as cmpName,
   repairT.type as type,
   repairT.Repairinfo as Repairinfo,
   repairT.Create_Date as CreateDate,
   repairT.Approved_Date as ApprovedDate,
-  repairT.pic as pic
+  repairT.pic as pic,
+  repairT.place as place,
+  repairT.create_date as Createdate,
+  driverT.plateNum as plateNum
 from repairT
   inner join UserT on UserT.id = repairT.driverID
+  inner join driverT on UserT.id = driverT.id
+  inner join cmpt on cmpT.id = UserT.belongCMP
 where (
     repairT.id = $1
     OR $1 IS NULL
@@ -1588,11 +1596,15 @@ type GetRepairRow struct {
 	ID           int64
 	Driverid     int64
 	Drivername   string
+	Cmpname      string
 	Type         string
 	Repairinfo   json.RawMessage
 	Createdate   time.Time
 	Approveddate sql.NullTime
 	Pic          sql.NullString
+	Place        string
+	Createdate_2 time.Time
+	Platenum     string
 }
 
 func (q *Queries) GetRepair(ctx context.Context, arg GetRepairParams) ([]GetRepairRow, error) {
@@ -1614,11 +1626,15 @@ func (q *Queries) GetRepair(ctx context.Context, arg GetRepairParams) ([]GetRepa
 			&i.ID,
 			&i.Driverid,
 			&i.Drivername,
+			&i.Cmpname,
 			&i.Type,
 			&i.Repairinfo,
 			&i.Createdate,
 			&i.Approveddate,
 			&i.Pic,
+			&i.Place,
+			&i.Createdate_2,
+			&i.Platenum,
 		); err != nil {
 			return nil, err
 		}

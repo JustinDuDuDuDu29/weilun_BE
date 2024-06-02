@@ -570,20 +570,26 @@ where t1.driverID = $1
   and date(t1.finished_date) >= date($2)
   and date(t1.finished_date) <= date($3);
 -- name: CreateNewRepair :one
-INSERT into repairT (type, driverID, repairInfo, pic)
-values ($1, $2, $3, $4)
+INSERT into repairT (type, driverID, repairInfo, pic, place)
+values ($1, $2, $3, $4, $5)
 RETURNING id;
 -- name: GetRepair :many
 SELECT repairT.id as ID,
   UserT.id as Driverid,
   UserT.Name as Drivername,
+  cmpt.name as cmpName,
   repairT.type as type,
   repairT.Repairinfo as Repairinfo,
   repairT.Create_Date as CreateDate,
   repairT.Approved_Date as ApprovedDate,
-  repairT.pic as pic
+  repairT.pic as pic,
+  repairT.place as place,
+  repairT.create_date as Createdate,
+  driverT.plateNum as plateNum
 from repairT
   inner join UserT on UserT.id = repairT.driverID
+  inner join driverT on UserT.id = driverT.id
+  inner join cmpt on cmpT.id = UserT.belongCMP
 where (
     repairT.id = sqlc.narg('id')
     OR sqlc.narg('id') IS NULL
