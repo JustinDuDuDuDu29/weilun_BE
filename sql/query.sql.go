@@ -249,17 +249,16 @@ INSERT INTO UserT(
     phoneNum,
     phoneNumInD
   )
-VALUES ($1, $2, $3, $4, $5, $6)
+VALUES ($1, $2, $3, $4, $5, $5)
 RETURNING id
 `
 
 type CreateUserParams struct {
-	Pwd         string
-	Name        string
-	Role        int16
-	Belongcmp   int64
-	Phonenum    interface{}
-	Phonenumind interface{}
+	Pwd       string
+	Name      string
+	Role      int16
+	Belongcmp int64
+	Phonenum  interface{}
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, error) {
@@ -269,7 +268,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, 
 		arg.Role,
 		arg.Belongcmp,
 		arg.Phonenum,
-		arg.Phonenumind,
 	)
 	var id int64
 	err := row.Scan(&id)

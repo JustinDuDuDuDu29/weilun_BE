@@ -154,7 +154,7 @@ INSERT INTO UserT(
     phoneNum,
     phoneNumInD
   )
-VALUES ($1, $2, $3, $4, $5, $6)
+VALUES ($1, $2, $3, $4, $5, $5)
 RETURNING id;
 -- name: CreateDriverInfo :one
 insert into driverT (id, nationalidnumber, plateNum)
