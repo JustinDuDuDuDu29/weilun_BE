@@ -195,7 +195,7 @@ func (u *UserCtrlImpl) ResetPassword(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-
+	// fmt.Println(user.Phonenum)
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Phonenum.(string)), bcrypt.MinCost)
 	if err != nil {
 		c.AbortWithStatus(http.StatusInternalServerError)
