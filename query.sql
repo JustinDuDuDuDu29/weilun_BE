@@ -885,7 +885,7 @@ FROM (
           LEFT JOIN (
             SELECT DRIVERID,
               SUM(
-                ((REPAIRINFO->>0)::JSON->>'price')::INT * ((REPAIRINFO->>0)::JSON->>'quantity')::INT
+                ((REPAIRINFO->>0)::JSON->>'price')::INT --* ((REPAIRINFO->>0)::JSON->>'quantity')::INT
               ) AS GAS,
               DATE (CREATE_DATE)
             FROM REPAIRT
