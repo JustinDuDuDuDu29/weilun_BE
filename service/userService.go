@@ -21,7 +21,7 @@ type UserServ interface {
 	UpdatePassword(param db.UpdateUserPasswordParams) error
 	NewSeed(param db.NewSeedParams) error
 	GetDriverInfo(id int64) (db.GetDriverRow, error)
-	GetSeed(id int64) (sql.NullString, error)
+	GetSeed(id int64) (db.GetUserSeedRow, error)
 }
 
 type UserServImpl struct {
@@ -29,7 +29,7 @@ type UserServImpl struct {
 	conn *sql.DB
 }
 
-func (u *UserServImpl) GetSeed(id int64) (sql.NullString, error) {
+func (u *UserServImpl) GetSeed(id int64) (db.GetUserSeedRow, error) {
 	res, err := u.q.GetUserSeed(context.Background(), id)
 	return res, err
 }

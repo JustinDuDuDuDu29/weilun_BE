@@ -51,7 +51,8 @@ from UserT
 where UserT.id = $1
 LIMIT 1;
 -- name: GetUserSeed :one
-SELECT seed
+SELECT seed,
+  UserT.deleted_date
 from UserT
   inner join cmpt on UserT.belongcmp = cmpt.id
 where UserT.id = $1

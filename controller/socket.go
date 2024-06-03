@@ -122,7 +122,7 @@ func getUD(m *SocketCtrlImpl, rtoken string) (int, int16, int64, error) {
 			fmt.Println("err: ", 6)
 			return 0, 0, 0, errors.New("6")
 		}
-		if info.String != issuer {
+		if info.Seed.String != issuer {
 
 			fmt.Println("err: ", 7)
 			return 0, 0, 0, errors.New("7")

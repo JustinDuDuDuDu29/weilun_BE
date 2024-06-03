@@ -2228,18 +2228,24 @@ func (q *Queries) GetUserList(ctx context.Context, arg GetUserListParams) ([]jso
 }
 
 const getUserSeed = `-- name: GetUserSeed :one
-SELECT seed
+SELECT seed,
+  UserT.deleted_date
 from UserT
   inner join cmpt on UserT.belongcmp = cmpt.id
 where UserT.id = $1
 LIMIT 1
 `
 
-func (q *Queries) GetUserSeed(ctx context.Context, id int64) (sql.NullString, error) {
+type GetUserSeedRow struct {
+	Seed        sql.NullString
+	DeletedDate sql.NullTime
+}
+
+func (q *Queries) GetUserSeed(ctx context.Context, id int64) (GetUserSeedRow, error) {
 	row := q.db.QueryRowContext(ctx, getUserSeed, id)
-	var seed sql.NullString
-	err := row.Scan(&seed)
-	return seed, err
+	var i GetUserSeedRow
+	err := row.Scan(&i.Seed, &i.DeletedDate)
+	return i, err
 }
 
 const increaseRemaining = `-- name: IncreaseRemaining :one

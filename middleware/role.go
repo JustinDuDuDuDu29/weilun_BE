@@ -101,7 +101,7 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 			c.Abort()
 			return
 		}
-		if info.String != issuer {
+		if info.Seed.String != issuer || info.DeletedDate.Valid {
 			c.JSON(http.StatusUnavailableForLegalReasons, gin.H{"err": "Revalid"})
 			c.Abort()
 			return
