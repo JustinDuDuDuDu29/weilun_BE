@@ -2,6 +2,7 @@ package router
 
 import (
 	// "main/middleware"
+
 	"main/controller"
 	"main/middleware"
 	"net/http"
@@ -19,15 +20,11 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 	api := router.Group("/api")
 	{
 
-		api.GET("", func(ctx *gin.Context) {
-			ctx.JSON(http.StatusOK, gin.H{"version": os.Getenv("version")})
-		})
-
 		auth := api.Group("/auth")
 		auth.POST("", c.AuthCtrl.Login)
 
 		io := api.Group("/io")
-		io.GET("/", c.SocketCtrl.TestSocket)
+		io.GET("", c.SocketCtrl.TestSocket)
 
 		static := api.Group("/static", m.RoleMid.IsLoggedIn)
 		static.StaticFS("/img", http.Dir("./img"))
@@ -85,7 +82,9 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		revenue := api.Group("/revenue")
 		revenue.GET("", m.RoleMid.IsLoggedIn, c.RevenueCtrl.RevenueDriver)
 		revenue.GET("/excel", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.RevenueCtrl.RevenueExcel)
-
+		api.GET("/", func(ctx *gin.Context) {
+			ctx.JSON(http.StatusOK, gin.H{"version": os.Getenv("version")})
+		})
 	}
 	router.Run(":8080")
 }
