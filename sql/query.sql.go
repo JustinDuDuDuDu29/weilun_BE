@@ -741,24 +741,15 @@ where (
   )
   AND (
     (
-      JobsT.deleted_date > $9
+      JobsT.last_modified_date > $9
       OR $9 IS NULL
     )
     AND (
-      JobsT.deleted_date < $10
+      JobsT.last_modified_date < $10
       OR $10 IS NULL
     )
   )
-  AND (
-    (
-      JobsT.last_modified_date > $11
-      OR $11 IS NULL
-    )
-    AND (
-      JobsT.last_modified_date < $12
-      OR $12 IS NULL
-    )
-  )
+  AND(JobsT.deleted_date is NULL)
 `
 
 type GetAllJobsAdminParams struct {
@@ -770,8 +761,6 @@ type GetAllJobsAdminParams struct {
 	Remaining             sql.NullInt32
 	CreateDateStart       sql.NullTime
 	CreateDateEnd         sql.NullTime
-	DeletedDateStart      sql.NullTime
-	DeletedDateEnd        sql.NullTime
 	LastModifiedDateStart sql.NullTime
 	LastModifiedDateEnd   sql.NullTime
 }
@@ -818,8 +807,6 @@ func (q *Queries) GetAllJobsAdmin(ctx context.Context, arg GetAllJobsAdminParams
 		arg.Remaining,
 		arg.CreateDateStart,
 		arg.CreateDateEnd,
-		arg.DeletedDateStart,
-		arg.DeletedDateEnd,
 		arg.LastModifiedDateStart,
 		arg.LastModifiedDateEnd,
 	)
@@ -869,6 +856,18 @@ from JobsT
 where belongcmp = $1
 `
 
+// AND (
+//
+//	(
+//	  JobsT.deleted_date > sqlc.narg('deleted_date_start')
+//	  OR sqlc.narg('deleted_date_start') IS NULL
+//	)
+//	AND (
+//	  JobsT.deleted_date < sqlc.narg('deleted_date_end')
+//	  OR sqlc.narg('deleted_date_end') IS NULL
+//	)
+//
+// )
 func (q *Queries) GetAllJobsByCmp(ctx context.Context, belongcmp int64) ([]Jobst, error) {
 	rows, err := q.db.QueryContext(ctx, getAllJobsByCmp, belongcmp)
 	if err != nil {

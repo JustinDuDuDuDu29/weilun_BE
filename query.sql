@@ -320,16 +320,6 @@ where (
   )
   AND (
     (
-      JobsT.deleted_date > sqlc.narg('deleted_date_start')
-      OR sqlc.narg('deleted_date_start') IS NULL
-    )
-    AND (
-      JobsT.deleted_date < sqlc.narg('deleted_date_end')
-      OR sqlc.narg('deleted_date_end') IS NULL
-    )
-  )
-  AND (
-    (
       JobsT.last_modified_date > sqlc.narg('last_modified_date_start')
       OR sqlc.narg('last_modified_date_start') IS NULL
     )
@@ -337,7 +327,19 @@ where (
       JobsT.last_modified_date < sqlc.narg('last_modified_date_end')
       OR sqlc.narg('last_modified_date_end') IS NULL
     )
-  );
+  )
+  AND(JobsT.deleted_date is NULL);
+;
+-- AND (
+--   (
+--     JobsT.deleted_date > sqlc.narg('deleted_date_start')
+--     OR sqlc.narg('deleted_date_start') IS NULL
+--   )
+--   AND (
+--     JobsT.deleted_date < sqlc.narg('deleted_date_end')
+--     OR sqlc.narg('deleted_date_end') IS NULL
+--   )
+-- )
 -- name: GetAllJobsByCmp :many
 SELECT *
 from JobsT
