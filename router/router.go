@@ -56,7 +56,8 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		jobs.DELETE(":id", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.DeleteJob)
 
 		claimed := api.Group("/claimed")
-		claimed.GET("", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.GetAllClaimedJobs)
+		// claimed.GET("", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.GetAllClaimedJobs)
+		claimed.GET("", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetAllClaimedJobs)
 		claimed.GET("/cj", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetCJDate)
 		claimed.GET("/list", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetClaimedJobByDriverID)
 		claimed.POST("/current", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetCurrentClaimedJob)
