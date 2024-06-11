@@ -48,7 +48,7 @@ func SandByCmp(reciver int, msgType int, msg string) {
 	for _, c := range clients {
 
 		if c.cmp != int64(reciver) {
-			break
+			continue
 		}
 
 		msg := socketMsgT{
@@ -56,9 +56,9 @@ func SandByCmp(reciver int, msgType int, msg string) {
 			Msg:  msg,
 		}
 
-		if err := c.wsc.WriteJSON(msg); err != nil {
+		if err := c.wsc.WriteJSON(&msg); err != nil {
 			fmt.Println("err is ", err)
-			break
+			continue
 		}
 	}
 }
