@@ -114,7 +114,9 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 
 			f.SetSheetRow(sheetname, cell, &row)
 		}
-		for idx, ls := range record.List {
+		rr := 0
+		for _, ls := range record.List {
+
 			date, err := time.Parse(time.DateOnly, ls.Date)
 			if err != nil {
 				fmt.Println(err)
@@ -126,9 +128,10 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 			month := strconv.Itoa(int(date.Month()))
 			day := strconv.Itoa(date.Day())
 
-			for _, row := range ls.Data {
+			for ids, row := range ls.Data {
 				// month
-				cell, err := excelize.CoordinatesToCellName(1, idx+2)
+				fmt.Println(row, " ", rr)
+				cell, err := excelize.CoordinatesToCellName(1, rr+2)
 				if err != nil {
 					fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
@@ -137,7 +140,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				f.SetCellValue(sheetname, cell, (year + month + day))
 
 				// platenum
-				cell, err = excelize.CoordinatesToCellName(2, idx+2)
+				cell, err = excelize.CoordinatesToCellName(2, rr+2)
 				if err != nil {
 					fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
@@ -146,7 +149,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				f.SetCellValue(sheetname, cell, row.Platenum)
 
 				// 駕駛
-				cell, err = excelize.CoordinatesToCellName(3, idx+2)
+				cell, err = excelize.CoordinatesToCellName(3, rr+2)
 				if err != nil {
 					fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
@@ -155,7 +158,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				f.SetCellValue(sheetname, cell, record.Username)
 
 				// 發貨地
-				cell, err = excelize.CoordinatesToCellName(4, idx+2)
+				cell, err = excelize.CoordinatesToCellName(4, rr+2)
 				if err != nil {
 					fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
@@ -164,7 +167,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				f.SetCellValue(sheetname, cell, row.FromLoc)
 
 				// 中轉
-				cell, err = excelize.CoordinatesToCellName(5, idx+2)
+				cell, err = excelize.CoordinatesToCellName(5, rr+2)
 				if err != nil {
 					fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
@@ -173,7 +176,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				f.SetCellValue(sheetname, cell, row.Mid)
 
 				// 卸貨地
-				cell, err = excelize.CoordinatesToCellName(6, idx+2)
+				cell, err = excelize.CoordinatesToCellName(6, rr+2)
 				if err != nil {
 					fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
@@ -182,7 +185,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				f.SetCellValue(sheetname, cell, row.Toloc)
 
 				// 趟次
-				cell, err = excelize.CoordinatesToCellName(7, idx+2)
+				cell, err = excelize.CoordinatesToCellName(7, rr+2)
 				if err != nil {
 					fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
@@ -191,7 +194,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				f.SetCellValue(sheetname, cell, row.Count)
 
 				// 運費
-				cell, err = excelize.CoordinatesToCellName(8, idx+2)
+				cell, err = excelize.CoordinatesToCellName(8, rr+2)
 				if err != nil {
 					fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
@@ -200,7 +203,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				f.SetCellValue(sheetname, cell, row.Jp)
 
 				// 應收款
-				cell, err = excelize.CoordinatesToCellName(9, idx+2)
+				cell, err = excelize.CoordinatesToCellName(9, rr+2)
 				if err != nil {
 					fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
@@ -209,7 +212,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				f.SetCellValue(sheetname, cell, row.Total)
 
 				// 甲方
-				cell, err = excelize.CoordinatesToCellName(10, idx+2)
+				cell, err = excelize.CoordinatesToCellName(10, rr+2)
 				if err != nil {
 					fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
@@ -218,7 +221,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				f.SetCellValue(sheetname, cell, row.CmpName)
 
 				// 司機運費
-				cell, err = excelize.CoordinatesToCellName(11, idx+2)
+				cell, err = excelize.CoordinatesToCellName(11, rr+2)
 				if err != nil {
 					fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
@@ -227,20 +230,21 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				f.SetCellValue(sheetname, cell, "")
 
 				// 油資
-				cell, err = excelize.CoordinatesToCellName(12, idx+2)
+				cell, err = excelize.CoordinatesToCellName(12, rr+2)
 				if err != nil {
 					fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
 					return
 				}
-				if idx == len(ls.Data)-1 {
+				fmt.Println(ids, " ", len(ls.Data)-1)
+				if ids == len(ls.Data)-1 {
 					f.SetCellValue(sheetname, cell, ls.Gas)
 				} else {
 					f.SetCellValue(sheetname, cell, "")
 				}
 
 				// 備註
-				cell, err = excelize.CoordinatesToCellName(13, idx+2)
+				cell, err = excelize.CoordinatesToCellName(13, rr+2)
 				if err != nil {
 					fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
@@ -249,13 +253,15 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				f.SetCellValue(sheetname, cell, "")
 
 				// 業主
-				cell, err = excelize.CoordinatesToCellName(14, idx+2)
+				cell, err = excelize.CoordinatesToCellName(14, rr+2)
 				if err != nil {
 					fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
 					return
 				}
 				f.SetCellValue(sheetname, cell, row.Ss)
+				rr += 1
+
 			}
 		}
 
