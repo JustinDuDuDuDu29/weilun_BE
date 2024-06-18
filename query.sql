@@ -302,6 +302,7 @@ where (
     belongcmp = sqlc.narg('belongcmp')
     OR sqlc.narg('belongcmp') IS NULL
   )
+  AND (remaining <> 0)
   AND (
     remaining <> sqlc.narg('remaining')
     OR sqlc.narg('remaining') IS NULL

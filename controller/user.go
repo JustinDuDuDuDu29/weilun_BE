@@ -78,7 +78,7 @@ func (u *UserCtrlImpl) ApproveUser(c *gin.Context) {
 		return
 	}
 
-	SandMsg(id, 200, "driver Approved")
+	// SandMsg(id, 200, "driver Approved")
 	c.AbortWithStatus(http.StatusOK)
 }
 

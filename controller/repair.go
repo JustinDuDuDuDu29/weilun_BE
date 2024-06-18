@@ -229,13 +229,14 @@ func (r *RepairCtrlImpl) ApproveRepair(c *gin.Context) {
 		return
 	}
 
-	res, err := r.svc.RepairServ.GetRepairById(int64(id))
+	// res, err := r.svc.RepairServ.GetRepairById(int64(id))
+	_, err = r.svc.RepairServ.GetRepairById(int64(id))
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		c.Abort()
 		return
 	}
-	SandMsg(int(res.Uid), 300, "Repair "+strconv.Itoa(id)+" is approved")
+	// SandMsg(int(res.Uid), 300, "Repair "+strconv.Itoa(id)+" is approved")
 
 	c.Status(http.StatusOK)
 	c.Abort()

@@ -723,6 +723,7 @@ where (
     belongcmp = $5
     OR $5 IS NULL
   )
+  AND (remaining <> 0)
   AND (
     remaining <> $6
     OR $6 IS NULL

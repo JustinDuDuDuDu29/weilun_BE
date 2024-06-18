@@ -575,7 +575,7 @@ func (u *JobsCtrlImpl) ClaimJob(c *gin.Context) {
 		Jobid:    int64(id),
 		Driverid: int64(UserID),
 	}
-	res, err, num := u.svc.JobsServ.ClaimJob(param)
+	res, err, _ := u.svc.JobsServ.ClaimJob(param)
 
 	if err != nil {
 		fmt.Print(err)
@@ -592,9 +592,9 @@ func (u *JobsCtrlImpl) ClaimJob(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	if num == 1 {
-		SandMsg(1, 400, "check job open")
-	}
+	// if num == 1 {
+	// 	SandMsg(1, 400, "check job open")
+	// }
 	c.JSON(http.StatusOK, gin.H{"res": res})
 
 }
@@ -705,13 +705,13 @@ func (u *JobsCtrlImpl) ApproveClaimedJob(c *gin.Context) {
 		return
 	}
 
-	cJobInfo, err := u.svc.JobsServ.GetClaimedJobByID(int64(id))
+	_, err = u.svc.JobsServ.GetClaimedJobByID(int64(id))
 	if err != nil {
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
-	SandMsg(int(cJobInfo.Userid), 300, "Job "+strconv.Itoa(id)+" is approved")
+	// SandMsg(int(cJobInfo.Userid), 300, "Job "+strconv.Itoa(id)+" is approved")
 
 	c.AbortWithStatus(http.StatusOK)
 
@@ -764,7 +764,7 @@ func (u *JobsCtrlImpl) CancelClaimJob(c *gin.Context) {
 
 	num, err := u.svc.JobsServ.DeleteClaimedJob(param)
 	if num == 1 {
-		SandMsg(1, 400, "check job open")
+		// SandMsg(1, 400, "check job open")
 	}
 
 	if err != nil {
