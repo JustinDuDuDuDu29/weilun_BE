@@ -103,11 +103,12 @@ type CreateAlertBodyT struct {
 }
 
 type CreateJobBodyT struct {
-	FromLoc   string `json:"fromLoc" binding:"required"`
-	Mid       string `json:"mid"`
-	ToLoc     string `json:"toLoc" binding:"required"`
-	Price     int    `json:"price" binding:"required"`
-	Estimated int    `json:"estimated" binding:"required"`
+	FromLoc string `json:"fromLoc" binding:"required"`
+	Mid     string `json:"mid"`
+	ToLoc   string `json:"toLoc" binding:"required"`
+	Price   int    `json:"price" binding:"required"`
+	// Estimated int    `json:"estimated" binding:"required"`
+	Estimated int    `json:"estimated"`
 	Belongcmp int    `json:"belongCmp" binding:"required"`
 	Source    string `json:"source" binding:"required"`
 	// Jobdate   string `json:"jobDate" binding:"required"`

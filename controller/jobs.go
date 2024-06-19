@@ -820,13 +820,19 @@ func (u *JobsCtrlImpl) CreateJob(c *gin.Context) {
 
 	// var UserID sql.NullInt64
 	// UserID.Scan(cuid)
+	var estimatedN int
+	if reqBody.Estimated == 0 {
+		estimatedN = 2147483647
+	} else {
+		estimatedN = reqBody.Estimated
+	}
 
 	param := db.CreateJobParams{
 		FromLoc:   reqBody.FromLoc,
 		Mid:       Mid,
 		ToLoc:     reqBody.ToLoc,
 		Price:     int32(reqBody.Price),
-		Estimated: int32(reqBody.Estimated),
+		Estimated: int32(estimatedN),
 		Belongcmp: int64(reqBody.Belongcmp),
 		Source:    reqBody.Source,
 		// Jobdate:   Jobdate,
@@ -926,6 +932,12 @@ func (u *JobsCtrlImpl) UpdateJob(c *gin.Context) {
 
 	var UserID sql.NullInt64
 	UserID.Scan(cuid)
+	var Remaining int
+	if reqBody.Remaining == 0 {
+		Remaining = 2147483647
+	} else {
+		Remaining = reqBody.Remaining
+	}
 
 	param := db.UpdateJobParams{
 		ID:        int64(reqBody.ID),
@@ -938,7 +950,7 @@ func (u *JobsCtrlImpl) UpdateJob(c *gin.Context) {
 		// Jobdate:   Jobdate,
 		Memo: Memo,
 		// CloseDate: CloseDate,
-		Remaining: int32(reqBody.Remaining),
+		Remaining: int32(Remaining),
 	}
 	res, err := u.svc.JobsServ.UpdateJob(param)
 
