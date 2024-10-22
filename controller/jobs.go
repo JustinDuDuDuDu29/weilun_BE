@@ -828,9 +828,9 @@ func (u *JobsCtrlImpl) CreateJob(c *gin.Context) {
 	}
 
 	param := db.CreateJobParams{
-		FromLoc:   reqBody.FromLoc,
+		Fromloc:   reqBody.FromLoc,
 		Mid:       Mid,
-		ToLoc:     reqBody.ToLoc,
+		Toloc:     reqBody.ToLoc,
 		Price:     int32(reqBody.Price),
 		Estimated: int32(estimatedN),
 		Belongcmp: int64(reqBody.Belongcmp),
@@ -941,9 +941,9 @@ func (u *JobsCtrlImpl) UpdateJob(c *gin.Context) {
 
 	param := db.UpdateJobParams{
 		ID:        int64(reqBody.ID),
-		FromLoc:   reqBody.FromLoc,
+		Fromloc:   reqBody.FromLoc,
 		Mid:       Mid,
-		ToLoc:     reqBody.ToLoc,
+		Toloc:     reqBody.ToLoc,
 		Price:     int32(reqBody.Price),
 		Belongcmp: int64(reqBody.Belongcmp),
 		Source:    reqBody.Source,

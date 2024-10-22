@@ -5,14 +5,14 @@ CREATE TABLE ClaimJobT(
     jobID BigInt references JobsT(id) NOT NULL,
     driverID BigInt references DriverT(id) NOT NULL,
     -- percentage integer,
-    finished_date Timestamp,
     finishPic varchar,
     memo  varchar,
     create_date Timestamp NOT NULL DEFAULT NOW(),
     deleted_date Timestamp,
     deleted_by BigInt references UserT(id),
+    finished_date Timestamp,
     last_modified_date Timestamp NOT NULL DEFAULT NOW(),
-    Approved_By BigInt references UserT(id),
+    approved_By BigInt references UserT(id),
     approved_date Timestamp 
   );
 -- +goose StatementEnd

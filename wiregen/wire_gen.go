@@ -24,7 +24,8 @@ func Init(q *sql.Queries, conn *sql2.DB) *controller.AppControllerImpl {
 	repairServImpl := service.RepairServInit(q, conn)
 	alertServImpl := service.AlertServInit(q, conn)
 	revenueServImpl := service.RevenueServInit(q, conn)
-	appService := service.AppServiceInit(userServImpl, cmpServImpl, jobsServImpl, repairServImpl, alertServImpl, revenueServImpl)
+	gasServImpl := service.GasServInit(q, conn)
+	appService := service.AppServiceInit(userServImpl, cmpServImpl, jobsServImpl, repairServImpl, alertServImpl, revenueServImpl, gasServImpl)
 	userCtrlImpl := controller.UserCtrlInit(appService)
 	authCtrlImpl := controller.AuthCtrlInit(appService)
 	cmpCtrlImpl := controller.CmpCtrlInit(appService)
@@ -33,7 +34,8 @@ func Init(q *sql.Queries, conn *sql2.DB) *controller.AppControllerImpl {
 	alertCtrlImpl := controller.AlertCtrlInit(appService)
 	socketCtrlImpl := controller.SocketCtrlInit(appService)
 	revenueCtrlImpl := controller.RevenueCtrlInit(appService)
-	appControllerImpl := controller.AppControllerInit(userCtrlImpl, authCtrlImpl, cmpCtrlImpl, jobsCtrlImpl, repairCtrlImpl, alertCtrlImpl, socketCtrlImpl, revenueCtrlImpl)
+	gasCtrlImpl := controller.GasCtrlInit(appService)
+	appControllerImpl := controller.AppControllerInit(userCtrlImpl, authCtrlImpl, cmpCtrlImpl, jobsCtrlImpl, repairCtrlImpl, alertCtrlImpl, socketCtrlImpl, revenueCtrlImpl, gasCtrlImpl)
 	return appControllerImpl
 }
 
@@ -44,7 +46,8 @@ func MInit(q *sql.Queries, conn *sql2.DB) *middleware.AppMiddlewareImpl {
 	repairServImpl := service.RepairServInit(q, conn)
 	alertServImpl := service.AlertServInit(q, conn)
 	revenueServImpl := service.RevenueServInit(q, conn)
-	appService := service.AppServiceInit(userServImpl, cmpServImpl, jobsServImpl, repairServImpl, alertServImpl, revenueServImpl)
+	gasServImpl := service.GasServInit(q, conn)
+	appService := service.AppServiceInit(userServImpl, cmpServImpl, jobsServImpl, repairServImpl, alertServImpl, revenueServImpl, gasServImpl)
 	roleMidImpl := middleware.RoleMidInit(appService)
 	appMiddlewareImpl := middleware.AppMiddlewareInit(roleMidImpl)
 	return appMiddlewareImpl
@@ -64,6 +67,8 @@ var userServSet = wire.NewSet(service.UserServInit, wire.Bind(new(service.UserSe
 
 var repairServSet = wire.NewSet(service.RepairServInit, wire.Bind(new(service.RepairServ), new(*service.RepairServImpl)))
 
+var gasServSet = wire.NewSet(service.GasServInit, wire.Bind(new(service.GasServ), new(*service.GasServImpl)))
+
 var revenueCtrlSet = wire.NewSet(controller.RevenueCtrlInit, wire.Bind(new(controller.RevenueCtrl), new(*controller.RevenueCtrlImpl)))
 
 var userCtrlSet = wire.NewSet(controller.UserCtrlInit, wire.Bind(new(controller.UserCtrl), new(*controller.UserCtrlImpl)))
@@ -77,6 +82,8 @@ var authCtrlSet = wire.NewSet(controller.AuthCtrlInit, wire.Bind(new(controller.
 var cmpCtrlSet = wire.NewSet(controller.CmpCtrlInit, wire.Bind(new(controller.CmpCtrl), new(*controller.CmpCtrlImpl)))
 
 var repairCtrlSet = wire.NewSet(controller.RepairCtrlInit, wire.Bind(new(controller.RepairCtrl), new(*controller.RepairCtrlImpl)))
+
+var gasCtrlSet = wire.NewSet(controller.GasCtrlInit, wire.Bind(new(controller.GasCtrl), new(*controller.GasCtrlImpl)))
 
 var socketCtrlSet = wire.NewSet(controller.SocketCtrlInit, wire.Bind(new(controller.SocketCtrl), new(*controller.SocketCtrlImpl)))
 

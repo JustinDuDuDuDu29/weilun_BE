@@ -6,12 +6,13 @@ type AppControllerImpl struct {
 	CmpCtrl     CmpCtrl
 	JobsCtrl    JobsCtrl
 	RepairCtrl  RepairCtrl
+	GasCtrl     GasCtrl
 	AlertCtrl   AlertCtrl
 	SocketCtrl  SocketCtrl
 	RevenueCtrl RevenueCtrl
 }
 
-func AppControllerInit(userCtrl UserCtrl, authCtrl AuthCtrl, cmpCtrl CmpCtrl, jobsCtrl JobsCtrl, repairCtrl RepairCtrl, alertCtrl AlertCtrl, socketCtrl SocketCtrl, revenueCtrl RevenueCtrl) *AppControllerImpl {
+func AppControllerInit(userCtrl UserCtrl, authCtrl AuthCtrl, cmpCtrl CmpCtrl, jobsCtrl JobsCtrl, repairCtrl RepairCtrl, alertCtrl AlertCtrl, socketCtrl SocketCtrl, revenueCtrl RevenueCtrl, gasCtrl GasCtrl) *AppControllerImpl {
 	return &AppControllerImpl{
 		UserCtrl:    userCtrl,
 		AuthCtrl:    authCtrl,
@@ -21,5 +22,6 @@ func AppControllerInit(userCtrl UserCtrl, authCtrl AuthCtrl, cmpCtrl CmpCtrl, jo
 		AlertCtrl:   alertCtrl,
 		SocketCtrl:  socketCtrl,
 		RevenueCtrl: revenueCtrl,
+		GasCtrl:     gasCtrl,
 	}
 }

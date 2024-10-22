@@ -43,6 +43,11 @@ var repairServSet = wire.NewSet(
 	wire.Bind(new(service.RepairServ), new(*service.RepairServImpl)),
 )
 
+var gasServSet = wire.NewSet(
+	service.GasServInit,
+	wire.Bind(new(service.GasServ), new(*service.GasServImpl)),
+)
+
 var revenueCtrlSet = wire.NewSet(
 	controller.RevenueCtrlInit,
 	wire.Bind(new(controller.RevenueCtrl), new(*controller.RevenueCtrlImpl)),
@@ -78,6 +83,11 @@ var repairCtrlSet = wire.NewSet(
 	wire.Bind(new(controller.RepairCtrl), new(*controller.RepairCtrlImpl)),
 )
 
+var gasCtrlSet = wire.NewSet(
+	controller.GasCtrlInit,
+	wire.Bind(new(controller.GasCtrl), new(*controller.GasCtrlImpl)),
+)
+
 var socketCtrlSet = wire.NewSet(
 	controller.SocketCtrlInit,
 	wire.Bind(new(controller.SocketCtrl), new(*controller.SocketCtrlImpl)),
@@ -101,6 +111,8 @@ func Init(q *db.Queries, conn *sql.DB) *controller.AppControllerImpl {
 		jobsServSet,
 		repairCtrlSet,
 		repairServSet,
+		gasCtrlSet,
+		gasServSet,
 		revenueServSet,
 		alertServSet,
 		alertCtrlSet,
@@ -119,6 +131,7 @@ func MInit(q *db.Queries, conn *sql.DB) *middleware.AppMiddlewareImpl {
 		service.AppServiceInit,
 		jobsServSet,
 		repairServSet,
+		gasServSet,
 		middleware.AppMiddlewareInit,
 		roleMidSet,
 		alertServSet,

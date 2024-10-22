@@ -14,7 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type RepairCtrl interface {
+type GasCtrl interface {
 	CreateNewRepair(c *gin.Context)
 	DeleteRepair(c *gin.Context)
 	ApproveRepair(c *gin.Context)
@@ -23,11 +23,11 @@ type RepairCtrl interface {
 	GetRepairDate(c *gin.Context)
 }
 
-type RepairCtrlImpl struct {
+type GasCtrlImpl struct {
 	svc *service.AppService
 }
 
-func (u *RepairCtrlImpl) GetRepairDate(c *gin.Context) {
+func (u *GasCtrlImpl) GetRepairDate(c *gin.Context) {
 	// protect
 	sid := c.Query("id")
 	id, err := strconv.Atoi(sid)
@@ -47,7 +47,7 @@ func (u *RepairCtrlImpl) GetRepairDate(c *gin.Context) {
 
 	c.JSON(http.StatusOK, res)
 }
-func (r *RepairCtrlImpl) GetRepairByID(c *gin.Context) {
+func (r *GasCtrlImpl) GetRepairByID(c *gin.Context) {
 
 	// UserID := c.MustGet("UserID").(int)
 	rid, err := strconv.Atoi(c.Param("id"))
@@ -66,7 +66,7 @@ func (r *RepairCtrlImpl) GetRepairByID(c *gin.Context) {
 
 }
 
-func (r *RepairCtrlImpl) GetRepair(c *gin.Context) {
+func (r *GasCtrlImpl) GetRepair(c *gin.Context) {
 
 	UserID := c.MustGet("UserID").(int)
 	belongCmp := c.MustGet("belongCmp").(int64)
@@ -198,7 +198,7 @@ func (r *RepairCtrlImpl) GetRepair(c *gin.Context) {
 
 }
 
-func (r *RepairCtrlImpl) ApproveRepair(c *gin.Context) {
+func (r *GasCtrlImpl) ApproveRepair(c *gin.Context) {
 
 	param_id := c.Param("id")
 
@@ -235,7 +235,7 @@ func (r *RepairCtrlImpl) ApproveRepair(c *gin.Context) {
 	c.Abort()
 }
 
-func (r *RepairCtrlImpl) DeleteRepair(c *gin.Context) {
+func (r *GasCtrlImpl) DeleteRepair(c *gin.Context) {
 
 	param_id := c.Param("id")
 
@@ -262,7 +262,7 @@ func (r *RepairCtrlImpl) DeleteRepair(c *gin.Context) {
 	c.Abort()
 }
 
-func (r *RepairCtrlImpl) CreateNewRepair(c *gin.Context) {
+func (r *GasCtrlImpl) CreateNewRepair(c *gin.Context) {
 	// TODO: Repair Info In Body
 
 	var reqBody apptypes.NewRepairBodyT
@@ -321,8 +321,8 @@ func (r *RepairCtrlImpl) CreateNewRepair(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"res": rID})
 }
 
-func RepairCtrlInit(svc *service.AppService) *RepairCtrlImpl {
-	return &RepairCtrlImpl{
+func GasCtrlInit(svc *service.AppService) *GasCtrlImpl {
+	return &GasCtrlImpl{
 		svc: svc,
 	}
 }
