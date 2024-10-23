@@ -15,7 +15,7 @@ import (
 )
 
 type GasCtrl interface {
-	CreateNewRepair(c *gin.Context)
+	CreateNewGas(c *gin.Context)
 	DeleteRepair(c *gin.Context)
 	ApproveRepair(c *gin.Context)
 	GetRepair(c *gin.Context)

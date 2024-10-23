@@ -47,6 +47,7 @@ func (u *RepairCtrlImpl) GetRepairDate(c *gin.Context) {
 
 	c.JSON(http.StatusOK, res)
 }
+
 func (r *RepairCtrlImpl) GetRepairByID(c *gin.Context) {
 
 	// UserID := c.MustGet("UserID").(int)
@@ -56,7 +57,16 @@ func (r *RepairCtrlImpl) GetRepairByID(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	res, err := r.svc.RepairServ.GetRepairById(int64(rid))
+
+	param := db.GetRepairParams{
+		ID:        sql.NullInt64{Int64: int64(rid), Valid: true},
+		DriverID:  sql.NullInt64{Int64: int64(-1), Valid: false},
+		Name:      sql.NullString{String: "", Valid: false},
+		Belongcmp: sql.NullInt64{Int64: int64(-1), Valid: false},
+		Cat:       sql.NullString{String: "", Valid: false},
+		Ym:        sql.NullString{String: "", Valid: false},
+	}
+	res, err := r.svc.RepairServ.GetRepair(param)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		c.Abort()
@@ -223,7 +233,15 @@ func (r *RepairCtrlImpl) ApproveRepair(c *gin.Context) {
 	}
 
 	// res, err := r.svc.RepairServ.GetRepairById(int64(id))
-	_, err = r.svc.RepairServ.GetRepairById(int64(id))
+	param := db.GetRepairParams{
+		ID:        sql.NullInt64{Int64: int64(id), Valid: true},
+		DriverID:  sql.NullInt64{Int64: int64(-1), Valid: false},
+		Name:      sql.NullString{String: "", Valid: false},
+		Belongcmp: sql.NullInt64{Int64: int64(-1), Valid: false},
+		Cat:       sql.NullString{String: "", Valid: false},
+		Ym:        sql.NullString{String: "", Valid: false},
+	}
+	_, err = r.svc.RepairServ.GetRepair(param)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		c.Abort()

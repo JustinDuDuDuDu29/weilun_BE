@@ -55,18 +55,6 @@ func (q *Queries) ApproveRepair(ctx context.Context, id int64) error {
 	return err
 }
 
-const approveRepairPic = `-- name: ApproveRepairPic :exec
-Update RepairPicT
-Set Approved_Date = NOW(),
-  last_modified_date = NOW()
-where repair_id = $1
-`
-
-func (q *Queries) ApproveRepairPic(ctx context.Context, repairID int64) error {
-	_, err := q.db.ExecContext(ctx, approveRepairPic, repairID)
-	return err
-}
-
 const claimJob = `-- name: ClaimJob :one
 INSERT into ClaimJobT (jobID, driverID)
 values ($1, $2)
@@ -1578,6 +1566,7 @@ SELECT repairT.id as ID,
   UserT.id as Driverid,
   UserT.Name as Drivername,
   cmpt.name as cmpName,
+  cmpt.id as cmpName,
   repairT.id as Repairinfo,
   repairT.Create_Date as CreateDate,
   repairT.Approved_Date as ApprovedDate,
@@ -1632,6 +1621,7 @@ type GetRepairRow struct {
 	Driverid     int64
 	Drivername   string
 	Cmpname      string
+	Cmpname_2    int64
 	Repairinfo   int64
 	Createdate   time.Time
 	Approveddate sql.NullTime
@@ -1661,48 +1651,13 @@ func (q *Queries) GetRepair(ctx context.Context, arg GetRepairParams) ([]GetRepa
 			&i.Driverid,
 			&i.Drivername,
 			&i.Cmpname,
+			&i.Cmpname_2,
 			&i.Repairinfo,
 			&i.Createdate,
 			&i.Approveddate,
 			&i.Pic,
 			&i.Place,
 			&i.Platenum,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getRepairById = `-- name: GetRepairById :many
-SELECT id, repairid, itemname, quantity, totalprice, create_date, deleted_date, last_modified_date from RepairInfoT where repairID = $1
-`
-
-func (q *Queries) GetRepairById(ctx context.Context, repairid int64) ([]Repairinfot, error) {
-	rows, err := q.db.QueryContext(ctx, getRepairById, repairid)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Repairinfot
-	for rows.Next() {
-		var i Repairinfot
-		if err := rows.Scan(
-			&i.ID,
-			&i.Repairid,
-			&i.Itemname,
-			&i.Quantity,
-			&i.Totalprice,
-			&i.CreateDate,
-			&i.DeletedDate,
-			&i.LastModifiedDate,
 		); err != nil {
 			return nil, err
 		}
@@ -1737,6 +1692,42 @@ func (q *Queries) GetRepairDate(ctx context.Context, driverid int64) ([]string, 
 			return nil, err
 		}
 		items = append(items, to_char)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRepairInfoById = `-- name: GetRepairInfoById :many
+SELECT id, repairid, itemname, quantity, totalprice, create_date, deleted_date, last_modified_date from RepairInfoT where repairID = $1
+`
+
+func (q *Queries) GetRepairInfoById(ctx context.Context, repairid int64) ([]Repairinfot, error) {
+	rows, err := q.db.QueryContext(ctx, getRepairInfoById, repairid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Repairinfot
+	for rows.Next() {
+		var i Repairinfot
+		if err := rows.Scan(
+			&i.ID,
+			&i.Repairid,
+			&i.Itemname,
+			&i.Quantity,
+			&i.Totalprice,
+			&i.CreateDate,
+			&i.DeletedDate,
+			&i.LastModifiedDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -2128,22 +2119,25 @@ func (q *Queries) GetUserSeed(ctx context.Context, id int64) (GetUserSeedRow, er
 const getUserWithPendingJob = `-- name: GetUserWithPendingJob :many
 SELECT
   UserT.id, 
-  UserT.name, 
-  CMPT.name 
+  UserT.name as userName, 
+  CMPT.name  as cmpName
 from UserT
   left join ClaimJobT on UserT.id = ClaimJobT.driverID 
   left join CMPT on CMPT.id = serT.Belongcmp 
-where ClaimJobT.approved_date = NULL and CMPT.id = $1
+where (ClaimJobT.approved_date = NULL) 
+  and
+    (CMPT.id =  $1
+    OR $1 IS NULL)
 `
 
 type GetUserWithPendingJobRow struct {
-	ID     int64
-	Name   string
-	Name_2 sql.NullString
+	ID       int64
+	Username string
+	Cmpname  sql.NullString
 }
 
-func (q *Queries) GetUserWithPendingJob(ctx context.Context, id int64) ([]GetUserWithPendingJobRow, error) {
-	rows, err := q.db.QueryContext(ctx, getUserWithPendingJob, id)
+func (q *Queries) GetUserWithPendingJob(ctx context.Context, cmpid sql.NullInt64) ([]GetUserWithPendingJobRow, error) {
+	rows, err := q.db.QueryContext(ctx, getUserWithPendingJob, cmpid)
 	if err != nil {
 		return nil, err
 	}
@@ -2151,7 +2145,7 @@ func (q *Queries) GetUserWithPendingJob(ctx context.Context, id int64) ([]GetUse
 	var items []GetUserWithPendingJobRow
 	for rows.Next() {
 		var i GetUserWithPendingJobRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.Name_2); err != nil {
+		if err := rows.Scan(&i.ID, &i.Username, &i.Cmpname); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -2410,38 +2404,6 @@ type UpdateUserPasswordParams struct {
 
 func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
 	_, err := q.db.ExecContext(ctx, updateUserPassword, arg.ID, arg.Pwd)
-	return err
-}
-
-const uploadRepairPic = `-- name: UploadRepairPic :exec
-insert into RepairPicT (repair_id, pic)
-values ($1, $2)
-`
-
-type UploadRepairPicParams struct {
-	RepairID int64
-	Pic      sql.NullString
-}
-
-// SELECT repairT.id as id,
-//
-//	repairT.driverID as uid,
-//	repairT.repairInfo,
-//	repairT.pic,
-//	repairT.Approved_Date,
-//	repairT.Create_Date,
-//	usert.name,
-//	cmpt.id as cmpid,
-//	cmpt.name
-//
-// from repairT
-//
-//	inner join usert on usert.id = repairT.driverID
-//	inner join cmpt on usert.belongCMP = cmpt.id
-//
-// where repairT.id = $1;
-func (q *Queries) UploadRepairPic(ctx context.Context, arg UploadRepairPicParams) error {
-	_, err := q.db.ExecContext(ctx, uploadRepairPic, arg.RepairID, arg.Pic)
 	return err
 }
 

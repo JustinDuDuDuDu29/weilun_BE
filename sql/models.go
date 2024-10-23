@@ -119,16 +119,6 @@ type Repairinfot struct {
 	LastModifiedDate time.Time
 }
 
-type Repairpict struct {
-	ID               int64
-	RepairID         int64
-	Pic              sql.NullString
-	CreateDate       time.Time
-	ApprovedDate     sql.NullTime
-	DeletedDate      sql.NullTime
-	LastModifiedDate time.Time
-}
-
 type Repairt struct {
 	ID               int64
 	Driverid         int64

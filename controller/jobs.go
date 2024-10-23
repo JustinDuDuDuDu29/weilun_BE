@@ -25,6 +25,7 @@ type JobsCtrl interface {
 	FinishClaimJob(c *gin.Context)
 	CancelClaimJob(c *gin.Context)
 	GetAllClaimedJobs(c *gin.Context)
+	GetUserWithPendingJob(c *gin.Context)
 	GetCurrentClaimedJob(c *gin.Context)
 	ApproveClaimedJob(c *gin.Context)
 	GetClaimedJobByDriverID(c *gin.Context)
@@ -122,6 +123,33 @@ func (u *JobsCtrlImpl) GetClaimedJobByID(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, res)
 
+}
+func (u *JobsCtrlImpl) GetUserWithPendingJob(c *gin.Context) {
+	// TODO: Finish This Part
+	role := c.MustGet("Role").(int16)
+	// id := c.MustGet("UserID")
+	belongCmp := c.MustGet("belongCmp")
+
+	var CmpID sql.NullInt64
+	if role >= 200 {
+		CmpID.Scan(belongCmp)
+	} else {
+		if c.Query("cmpID") != "" {
+			CmpID.Scan(c.Query("cmpID"))
+		}
+	}
+
+	res, err := u.svc.JobsServ.GetUserWithPendingJob(CmpID)
+
+	if err != nil {
+		fmt.Println("err is ", err)
+		c.Status(http.StatusInternalServerError)
+		c.Abort()
+		return
+	}
+	fmt.Println(res)
+
+	c.JSON(http.StatusOK, res)
 }
 func (u *JobsCtrlImpl) GetAllClaimedJobs(c *gin.Context) {
 	role := c.MustGet("Role").(int16)
@@ -438,121 +466,6 @@ func (u *JobsCtrlImpl) GetAllJob(c *gin.Context) {
 		c.JSON(http.StatusOK, res)
 	}
 
-}
-
-func (u *JobsCtrlImpl) GetAllJobN(c *gin.Context) {
-
-	role := c.MustGet("Role").(int16)
-	cuid := c.MustGet("UserID").(int)
-	belongCmp := c.MustGet("belongCmp").(int64)
-	var ID sql.NullInt64
-	if role >= 200 {
-		ID.Valid = false
-	} else {
-		if c.Query("Id") == "" {
-			ID.Valid = false
-		} else {
-			ID.Scan(c.Query("Id"))
-		}
-	}
-
-	var BelongCMP sql.NullInt64
-	if role >= 200 {
-		BelongCMP.Scan(belongCmp)
-	} else {
-		if c.Query("belongCMP") == "" {
-			BelongCMP.Valid = false
-		} else {
-			BelongCMP.Scan(c.Query("belongCMP"))
-		}
-	}
-
-	var Alert sql.NullString
-	if c.Query("alert") == "" {
-		Alert.Valid = false
-	} else {
-		Alert.Scan(c.Query("alert"))
-	}
-
-	var CreateDateStart sql.NullTime
-	if c.Query("CreateDateStart") == "" {
-		CreateDateStart.Valid = false
-	} else {
-		CreateDateStart.Scan(c.Query("CreateDateStart"))
-	}
-
-	var CreateDateEnd sql.NullTime
-	if c.Query("CreateDateEnd") == "" {
-		CreateDateEnd.Valid = false
-	} else {
-		CreateDateEnd.Scan(c.Query("CreateDateEnd"))
-	}
-
-	var DeletedDateStart sql.NullTime
-	if c.Query("DeletedDateStart") == "" {
-		DeletedDateStart.Valid = false
-	} else {
-		DeletedDateStart.Scan(c.Query("DeletedDateStart"))
-	}
-
-	var DeletedDateEnd sql.NullTime
-	if c.Query("DeletedDateEnd") == "" {
-		DeletedDateEnd.Valid = false
-	} else {
-		DeletedDateEnd.Scan(c.Query("DeletedDateEnd"))
-	}
-
-	var LastModifiedDateStart sql.NullTime
-	if c.Query("LastModifiedDateStart") == "" {
-		LastModifiedDateStart.Valid = false
-	} else {
-		LastModifiedDateStart.Scan(c.Query("LastModifiedDateStart"))
-	}
-
-	var LastModifiedDateEnd sql.NullTime
-	if c.Query("LastModifiedDateEnd") == "" {
-		LastModifiedDateEnd.Valid = false
-	} else {
-		LastModifiedDateEnd.Scan(c.Query("LastModifiedDateEnd"))
-	}
-
-	param := db.GetAlertParams{
-		ID:                    ID,
-		BelongCMP:             BelongCMP,
-		Alert:                 Alert,
-		CreateDateStart:       CreateDateStart,
-		CreateDateEnd:         CreateDateEnd,
-		DeletedDateStart:      DeletedDateStart,
-		DeletedDateEnd:        DeletedDateEnd,
-		LastModifiedDateStart: LastModifiedDateStart,
-		LastModifiedDateEnd:   LastModifiedDateEnd,
-	}
-	res, err := u.svc.AlertServ.GetAlert(param)
-
-	if err != nil && err != sql.ErrNoRows {
-		c.AbortWithStatus(http.StatusBadRequest)
-		return
-	}
-
-	if err == sql.ErrNoRows || len(res) == 0 {
-		c.JSON(http.StatusOK, gin.H{})
-		c.Abort()
-		return
-	}
-
-	var Lastalert sql.NullInt64
-	Lastalert.Scan(res[0].ID)
-
-	updateParam := db.UpdateLastAlertParams{
-		ID:        int64(cuid),
-		Lastalert: Lastalert,
-	}
-
-	if role >= 300 {
-		u.svc.AlertServ.UpdateLastAlert(updateParam)
-	}
-
-	c.JSON(http.StatusOK, gin.H{"res": res})
 }
 
 func (u *JobsCtrlImpl) ClaimJob(c *gin.Context) {

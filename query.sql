@@ -414,6 +414,7 @@ values (
     -- $10
   )
 RETURNING id;
+
 -- name: GetAllClaimedJobs :many
 SELECT ClaimJobT.id as id,
   JobsT.id as JobID,
@@ -631,6 +632,7 @@ SELECT repairT.id as ID,
   UserT.id as Driverid,
   UserT.Name as Drivername,
   cmpt.name as cmpName,
+  cmpt.id as cmpName,
   repairT.id as Repairinfo,
   repairT.Create_Date as CreateDate,
   repairT.Approved_Date as ApprovedDate,
@@ -675,33 +677,40 @@ Update repairT
 set approved_date = NOW(),
   last_modified_date = NOW()
 where id = $1;
+
 -- name: DeleteRepair :exec
 Update repairT
 set deleted_date = NOW(),
   last_modified_date = NOW()
 where id = $1;
+
 -- name: CreateAlert :one
 INSERT INTO AlertT (alert, belongCMP)
 values ($1, $2)
 RETURNING id;
+
 -- name: UpdateAlert :exec
 Update AlertT
 Set alert = $2,
   last_modified_date = NOW()
 where id = $1;
+
 -- name: DeleteAlert :exec
 Update AlertT
 Set deleted_date = NOW(),
   last_modified_date = NOW()
 where id = $1;
+
 -- name: UpdateLastAlert :exec
 Update driverT
 set lastAlert = $2
 where id = $1;
+
 -- name: GetLastAlert :one
 SELECT lastAlert
 from driverT
 where id = $1;
+
 -- name: GetAlert :many
 SELECT alertT.id as ID,
   cmpt.name as cmpName,
@@ -764,14 +773,6 @@ order by id desc;
 -- name: GetRepairInfoById :many
 SELECT * from RepairInfoT where repairID = $1;
 
--- name: UploadRepairPic :exec
-insert into RepairPicT (repair_id, pic)
-values ($1, $2);
--- name: ApproveRepairPic :exec
-Update RepairPicT
-Set Approved_Date = NOW(),
-  last_modified_date = NOW()
-where repair_id = $1;
 -- name: GetRevenueExcel :many
 SELECT JSON_BUILD_OBJECT(
     'uid',
@@ -874,11 +875,13 @@ FROM (
   ) MQ
 GROUP BY MQ.UID,
   MQ.USERNAME;
+
 -- name: GetCJDate :many
 SELECT to_char(create_date, 'YYYY-MM')
 FROM public.claimjobt
 where driverid = $1
 group by to_char(create_date, 'YYYY-MM');
+
 -- name: GetRepairDate :many
 SELECT to_char(create_date, 'YYYY-MM')
 FROM public.repairT
@@ -888,9 +891,12 @@ group by to_char(create_date, 'YYYY-MM');
 -- name: GetUserWithPendingJob :many
 SELECT
   UserT.id, 
-  UserT.name, 
-  CMPT.name 
+  UserT.name as userName, 
+  CMPT.name  as cmpName
 from UserT
   left join ClaimJobT on UserT.id = ClaimJobT.driverID 
   left join CMPT on CMPT.id = serT.Belongcmp 
-where ClaimJobT.approved_date = NULL and CMPT.id = $1;
+where (ClaimJobT.approved_date = NULL) 
+  and
+    (CMPT.id =  sqlc.narg('cmpid')
+    OR sqlc.narg('cmpid') IS NULL);

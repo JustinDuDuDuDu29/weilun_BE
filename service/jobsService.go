@@ -24,6 +24,7 @@ type JobsServ interface {
 	DeleteClaimedJob(param db.DeleteClaimedJobParams) (int32, error)
 	ApproveFinishedJob(param db.ApproveFinishedJobParams) error
 	SetJobNoMore(id int64) error
+	GetUserWithPendingJob(id sql.NullInt64) ([]db.GetUserWithPendingJobRow, error)
 	GetAllClaimedJobs(param db.GetAllClaimedJobsParams) ([]db.GetAllClaimedJobsRow, error)
 	GetClaimedJobByCmp(id int64) ([]db.GetClaimedJobByCmpRow, error)
 	GetClaimedJobByDriverID(id int64) ([]db.GetClaimedJobByDriverIDRow, error)
@@ -66,6 +67,16 @@ func (s *JobsServImpl) CreateJob(param db.CreateJobParams) (int64, error) {
 func (s *JobsServImpl) SetJobNoMore(id int64) error {
 	err := s.q.SetJobNoMore(context.Background(), id)
 	return err
+}
+
+func (s *JobsServImpl) GetUserWithPendingJob(id sql.NullInt64) ([]db.GetUserWithPendingJobRow, error) {
+	res, err := s.q.GetUserWithPendingJob(context.Background(), id)
+	if err == sql.ErrNoRows {
+
+		var r []db.GetUserWithPendingJobRow
+		return r, nil
+	}
+	return res, err
 }
 
 func (s *JobsServImpl) ApproveFinishedJob(param db.ApproveFinishedJobParams) error {

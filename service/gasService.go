@@ -12,7 +12,8 @@ type GasServ interface {
 	GetRepair(param db.GetRepairParams) ([]db.GetRepairRow, error)
 	DeleteRepair(param int64) error
 	ApproveRepair(param int64) error
-	GetRepairById(param int64) ([]db.Repairinfot, error)
+	// GetRepairById(param int64) ([]db.Repairt, error)
+	GetRepairInfoById(param int64) ([]db.Repairinfot, error)
 	GetRepairDate(param int64) ([]string, error)
 }
 
@@ -51,8 +52,13 @@ func (r *GasServImpl) ApproveRepair(param int64) error {
 	return err
 }
 
-func (r *GasServImpl) GetRepairById(param int64) ([]db.Repairinfot, error) {
-	res, err := r.q.GetRepairById(context.Background(), param)
+func (r *GasServImpl) GetRepairInfoById(param int64) ([]db.Repairinfot, error) {
+	res, err := r.q.GetRepairInfoById(context.Background(), param)
+	if err == sql.ErrNoRows {
+
+		var r []db.Repairinfot
+		return r, nil
+	}
 	return res, err
 }
 
