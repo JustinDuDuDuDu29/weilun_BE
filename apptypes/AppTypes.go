@@ -98,6 +98,12 @@ type NewRepairBodyT struct {
 	RepairPic  *multipart.FileHeader          `form:"repairPic"`
 }
 
+type NewGasBodyT struct {
+	Place   string                      `form:"place" binding:"required"`
+	Gasinfo []db.CreateNewGasInfoParams `form:"gasInfo" binding:"required"`
+	GasPic  *multipart.FileHeader       `form:"gasPic"`
+}
+
 type CreateAlertBodyT struct {
 	Alert     string `json:"alert" binding:"required"`
 	BelongCmp int    `json:"belongCmp" binding:"required"`

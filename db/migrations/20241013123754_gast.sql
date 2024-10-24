@@ -4,8 +4,6 @@ Create Table GasT(
   id BIGSERIAL PRIMARY KEY,
   driverID BigInt references DriverT(id) NOT NULL,
   pic varchar,
-  gasType varchar NOT NULL,
-  price BigInt NOT NULL,
   create_date Timestamp NOT NULL DEFAULT NOW(),
   approved_date Timestamp,
   deleted_date Timestamp,

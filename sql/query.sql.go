@@ -43,6 +43,18 @@ func (q *Queries) ApproveFinishedJob(ctx context.Context, arg ApproveFinishedJob
 	return err
 }
 
+const approveGas = `-- name: ApproveGas :exec
+Update GasT
+set approved_date = NOW(),
+  last_modified_date = NOW()
+where id = $1
+`
+
+func (q *Queries) ApproveGas(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, approveGas, id)
+	return err
+}
+
 const approveRepair = `-- name: ApproveRepair :exec
 Update repairT
 set approved_date = NOW(),
@@ -201,6 +213,49 @@ func (q *Queries) CreateJob(ctx context.Context, arg CreateJobParams) (int64, er
 	return id, err
 }
 
+const createNewGas = `-- name: CreateNewGas :one
+INSERT into GasT (driverID, pic)
+values ($1, $2)
+RETURNING id
+`
+
+type CreateNewGasParams struct {
+	Driverid int64
+	Pic      sql.NullString
+}
+
+func (q *Queries) CreateNewGas(ctx context.Context, arg CreateNewGasParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createNewGas, arg.Driverid, arg.Pic)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createNewGasInfo = `-- name: CreateNewGasInfo :one
+INSERT into GasInfoT (gasID, gasType, quantity, totalPrice)
+values ($1, $2, $3, $4)
+RETURNING id
+`
+
+type CreateNewGasInfoParams struct {
+	Gasid      int64
+	Gastype    string
+	Quantity   int32
+	Totalprice int64
+}
+
+func (q *Queries) CreateNewGasInfo(ctx context.Context, arg CreateNewGasInfoParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createNewGasInfo,
+		arg.Gasid,
+		arg.Gastype,
+		arg.Quantity,
+		arg.Totalprice,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const createNewRepair = `-- name: CreateNewRepair :one
 INSERT into repairT (driverID, pic, place)
 values ($1, $2, $3)
@@ -333,6 +388,18 @@ WHERE id = $1
 
 func (q *Queries) DeleteCmp(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, deleteCmp, id)
+	return err
+}
+
+const deleteGasT = `-- name: DeleteGasT :exec
+Update gasT
+set deleted_date = NOW(),
+  last_modified_date = NOW()
+where id = $1
+`
+
+func (q *Queries) DeleteGasT(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteGasT, id)
 	return err
 }
 
@@ -1507,6 +1574,180 @@ func (q *Queries) GetDriverRevenueByCmp(ctx context.Context, arg GetDriverRevenu
 	for rows.Next() {
 		var i GetDriverRevenueByCmpRow
 		if err := rows.Scan(&i.Earn, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getGas = `-- name: GetGas :many
+SELECT GasT.id as ID,
+  UserT.id as Driverid,
+  UserT.Name as Drivername,
+  cmpt.name as cmpName,
+  cmpt.id as cmpName,
+  GasT.id as Repairinfo,
+  GasT.Create_Date as CreateDate,
+  GasT.Approved_Date as ApprovedDate,
+  GasT.pic as pic,
+  driverT.plateNum as plateNum
+from GasT
+  inner join UserT on UserT.id = GasT.driverID
+  inner join driverT on UserT.id = driverT.id
+  inner join cmpt on cmpT.id = UserT.belongCMP
+where (
+    GasT.id = $1
+    OR $1 IS NULL
+  )
+  AND (
+    GasT.driverID = $2
+    OR $2 IS NULL
+  )
+  AND (
+    UserT.name = $3
+    OR $3 IS NULL
+  )
+  AND (
+    UserT.belongcmp = $4
+    OR $4 IS NULL
+  ) 
+  AND GasT.deleted_date is null 
+  and (
+    (
+      $5 = 'pending'
+      AND GasT.Approved_date IS NULL
+    )
+    OR ($5 IS NULL)
+  )
+  and (
+    to_char(date(GasT.create_date), 'YYYY-MM') = to_char(date($6), 'YYYY-MM')
+    OR $6 IS NULL
+  )
+`
+
+type GetGasParams struct {
+	ID        sql.NullInt64
+	DriverID  sql.NullInt64
+	Name      sql.NullString
+	Belongcmp sql.NullInt64
+	Cat       interface{}
+	Ym        interface{}
+}
+
+type GetGasRow struct {
+	ID           int64
+	Driverid     int64
+	Drivername   string
+	Cmpname      string
+	Cmpname_2    int64
+	Repairinfo   int64
+	Createdate   time.Time
+	Approveddate sql.NullTime
+	Pic          sql.NullString
+	Platenum     string
+}
+
+func (q *Queries) GetGas(ctx context.Context, arg GetGasParams) ([]GetGasRow, error) {
+	rows, err := q.db.QueryContext(ctx, getGas,
+		arg.ID,
+		arg.DriverID,
+		arg.Name,
+		arg.Belongcmp,
+		arg.Cat,
+		arg.Ym,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetGasRow
+	for rows.Next() {
+		var i GetGasRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Driverid,
+			&i.Drivername,
+			&i.Cmpname,
+			&i.Cmpname_2,
+			&i.Repairinfo,
+			&i.Createdate,
+			&i.Approveddate,
+			&i.Pic,
+			&i.Platenum,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getGasDate = `-- name: GetGasDate :many
+SELECT to_char(create_date, 'YYYY-MM')
+FROM public.GasT
+where driverid = $1
+group by to_char(create_date, 'YYYY-MM')
+`
+
+func (q *Queries) GetGasDate(ctx context.Context, driverid int64) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, getGasDate, driverid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var to_char string
+		if err := rows.Scan(&to_char); err != nil {
+			return nil, err
+		}
+		items = append(items, to_char)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getGasInfoById = `-- name: GetGasInfoById :many
+SELECT id, gasid, gastype, quantity, totalprice, create_date, deleted_date, last_modified_date from GasInfoT where gasID = $1
+`
+
+func (q *Queries) GetGasInfoById(ctx context.Context, gasid int64) ([]Gasinfot, error) {
+	rows, err := q.db.QueryContext(ctx, getGasInfoById, gasid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Gasinfot
+	for rows.Next() {
+		var i Gasinfot
+		if err := rows.Scan(
+			&i.ID,
+			&i.Gasid,
+			&i.Gastype,
+			&i.Quantity,
+			&i.Totalprice,
+			&i.CreateDate,
+			&i.DeletedDate,
+			&i.LastModifiedDate,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

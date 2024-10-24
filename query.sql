@@ -617,73 +617,6 @@ where t1.driverID = $1
   and date(t1.finished_date) >= date($2)
   and date(t1.finished_date) <= date($3);
 
--- name: CreateNewRepair :one
-INSERT into repairT (driverID, pic, place)
-values ($1, $2, $3)
-RETURNING id;
-
--- name: CreateNewRepairInfo :one
-INSERT into repairInfoT (repairID, itemName, quantity,totalPrice)
-values ($1, $2, $3, $4)
-RETURNING id;
-
--- name: GetRepair :many
-SELECT repairT.id as ID,
-  UserT.id as Driverid,
-  UserT.Name as Drivername,
-  cmpt.name as cmpName,
-  cmpt.id as cmpName,
-  repairT.id as Repairinfo,
-  repairT.Create_Date as CreateDate,
-  repairT.Approved_Date as ApprovedDate,
-  repairT.pic as pic,
-  repairT.place as place,
-  driverT.plateNum as plateNum
-from repairT
-  inner join UserT on UserT.id = repairT.driverID
-  inner join driverT on UserT.id = driverT.id
-  inner join cmpt on cmpT.id = UserT.belongCMP
-where (
-    repairT.id = sqlc.narg('id')
-    OR sqlc.narg('id') IS NULL
-  )
-  AND (
-    repairT.driverID = sqlc.narg('driverID')
-    OR sqlc.narg('driverID') IS NULL
-  )
-  AND (
-    UserT.name = sqlc.narg('name')
-    OR sqlc.narg('name') IS NULL
-  )
-  AND (
-    UserT.belongcmp = sqlc.narg('belongcmp')
-    OR sqlc.narg('belongcmp') IS NULL
-  ) 
-  AND repairT.deleted_date is null 
-  and (
-    (
-      sqlc.arg('cat') = 'pending'
-      AND repairT.Approved_date IS NULL
-    )
-    OR (sqlc.narg('cat') IS NULL)
-  )
-  and (
-    to_char(date(repairT.create_date), 'YYYY-MM') = to_char(date(sqlc.narg('ym')), 'YYYY-MM')
-    OR sqlc.narg('ym') IS NULL
-  );
-
--- name: ApproveRepair :exec
-Update repairT
-set approved_date = NOW(),
-  last_modified_date = NOW()
-where id = $1;
-
--- name: DeleteRepair :exec
-Update repairT
-set deleted_date = NOW(),
-  last_modified_date = NOW()
-where id = $1;
-
 -- name: CreateAlert :one
 INSERT INTO AlertT (alert, belongCMP)
 values ($1, $2)
@@ -769,6 +702,79 @@ SELECT *
 from alertT
 where belongCMP = $1
 order by id desc;
+
+-- name: CreateNewRepair :one
+INSERT into repairT (driverID, pic, place)
+values ($1, $2, $3)
+RETURNING id;
+
+-- name: CreateNewRepairInfo :one
+INSERT into repairInfoT (repairID, itemName, quantity,totalPrice)
+values ($1, $2, $3, $4)
+RETURNING id;
+
+-- name: GetRepair :many
+SELECT repairT.id as ID,
+  UserT.id as Driverid,
+  UserT.Name as Drivername,
+  cmpt.name as cmpName,
+  cmpt.id as cmpName,
+  repairT.id as Repairinfo,
+  repairT.Create_Date as CreateDate,
+  repairT.Approved_Date as ApprovedDate,
+  repairT.pic as pic,
+  repairT.place as place,
+  driverT.plateNum as plateNum
+from repairT
+  inner join UserT on UserT.id = repairT.driverID
+  inner join driverT on UserT.id = driverT.id
+  inner join cmpt on cmpT.id = UserT.belongCMP
+where (
+    repairT.id = sqlc.narg('id')
+    OR sqlc.narg('id') IS NULL
+  )
+  AND (
+    repairT.driverID = sqlc.narg('driverID')
+    OR sqlc.narg('driverID') IS NULL
+  )
+  AND (
+    UserT.name = sqlc.narg('name')
+    OR sqlc.narg('name') IS NULL
+  )
+  AND (
+    UserT.belongcmp = sqlc.narg('belongcmp')
+    OR sqlc.narg('belongcmp') IS NULL
+  ) 
+  AND repairT.deleted_date is null 
+  and (
+    (
+      sqlc.arg('cat') = 'pending'
+      AND repairT.Approved_date IS NULL
+    )
+    OR (sqlc.narg('cat') IS NULL)
+  )
+  and (
+    to_char(date(repairT.create_date), 'YYYY-MM') = to_char(date(sqlc.narg('ym')), 'YYYY-MM')
+    OR sqlc.narg('ym') IS NULL
+  );
+
+-- name: ApproveRepair :exec
+Update repairT
+set approved_date = NOW(),
+  last_modified_date = NOW()
+where id = $1;
+
+-- name: DeleteRepair :exec
+Update repairT
+set deleted_date = NOW(),
+  last_modified_date = NOW()
+where id = $1;
+
+-- name: GetRepairDate :many
+SELECT to_char(create_date, 'YYYY-MM')
+FROM public.repairT
+where driverid = $1
+group by to_char(create_date, 'YYYY-MM');
 
 -- name: GetRepairInfoById :many
 SELECT * from RepairInfoT where repairID = $1;
@@ -882,12 +888,6 @@ FROM public.claimjobt
 where driverid = $1
 group by to_char(create_date, 'YYYY-MM');
 
--- name: GetRepairDate :many
-SELECT to_char(create_date, 'YYYY-MM')
-FROM public.repairT
-where driverid = $1
-group by to_char(create_date, 'YYYY-MM');
-
 -- name: GetUserWithPendingJob :many
 SELECT
   UserT.id, 
@@ -900,3 +900,78 @@ where (ClaimJobT.approved_date = NULL)
   and
     (CMPT.id =  sqlc.narg('cmpid')
     OR sqlc.narg('cmpid') IS NULL);
+
+-- name: CreateNewGas :one
+INSERT into GasT (driverID, pic)
+values ($1, $2)
+RETURNING id;
+
+-- name: CreateNewGasInfo :one
+INSERT into GasInfoT (gasID, gasType, quantity, totalPrice)
+values ($1, $2, $3, $4)
+RETURNING id;
+
+-- name: GetGas :many
+SELECT GasT.id as ID,
+  UserT.id as Driverid,
+  UserT.Name as Drivername,
+  cmpt.name as cmpName,
+  cmpt.id as cmpName,
+  GasT.id as Repairinfo,
+  GasT.Create_Date as CreateDate,
+  GasT.Approved_Date as ApprovedDate,
+  GasT.pic as pic,
+  driverT.plateNum as plateNum
+from GasT
+  inner join UserT on UserT.id = GasT.driverID
+  inner join driverT on UserT.id = driverT.id
+  inner join cmpt on cmpT.id = UserT.belongCMP
+where (
+    GasT.id = sqlc.narg('id')
+    OR sqlc.narg('id') IS NULL
+  )
+  AND (
+    GasT.driverID = sqlc.narg('driverID')
+    OR sqlc.narg('driverID') IS NULL
+  )
+  AND (
+    UserT.name = sqlc.narg('name')
+    OR sqlc.narg('name') IS NULL
+  )
+  AND (
+    UserT.belongcmp = sqlc.narg('belongcmp')
+    OR sqlc.narg('belongcmp') IS NULL
+  ) 
+  AND GasT.deleted_date is null 
+  and (
+    (
+      sqlc.arg('cat') = 'pending'
+      AND GasT.Approved_date IS NULL
+    )
+    OR (sqlc.narg('cat') IS NULL)
+  )
+  and (
+    to_char(date(GasT.create_date), 'YYYY-MM') = to_char(date(sqlc.narg('ym')), 'YYYY-MM')
+    OR sqlc.narg('ym') IS NULL
+  );
+
+-- name: ApproveGas :exec
+Update GasT
+set approved_date = NOW(),
+  last_modified_date = NOW()
+where id = $1;
+
+-- name: DeleteGasT :exec
+Update gasT
+set deleted_date = NOW(),
+  last_modified_date = NOW()
+where id = $1;
+
+-- name: GetGasDate :many
+SELECT to_char(create_date, 'YYYY-MM')
+FROM public.GasT
+where driverid = $1
+group by to_char(create_date, 'YYYY-MM');
+
+-- name: GetGasInfoById :many
+SELECT * from GasInfoT where gasID = $1;

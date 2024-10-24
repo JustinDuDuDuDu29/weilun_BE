@@ -16,18 +16,18 @@ import (
 
 type GasCtrl interface {
 	CreateNewGas(c *gin.Context)
-	DeleteRepair(c *gin.Context)
-	ApproveRepair(c *gin.Context)
-	GetRepair(c *gin.Context)
-	GetRepairByID(c *gin.Context)
-	GetRepairDate(c *gin.Context)
+	DeleteGas(c *gin.Context)
+	ApproveGas(c *gin.Context)
+	GetGas(c *gin.Context)
+	GetGasByID(c *gin.Context)
+	GetGasDate(c *gin.Context)
 }
 
 type GasCtrlImpl struct {
 	svc *service.AppService
 }
 
-func (u *GasCtrlImpl) GetRepairDate(c *gin.Context) {
+func (u *GasCtrlImpl) GetGasDate(c *gin.Context) {
 	// protect
 	sid := c.Query("id")
 	id, err := strconv.Atoi(sid)
@@ -36,7 +36,7 @@ func (u *GasCtrlImpl) GetRepairDate(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	res, err := u.svc.RepairServ.GetRepairDate(int64(id))
+	res, err := u.svc.GasServ.GetGasDate(int64(id))
 
 	if err != nil {
 		fmt.Println(err)
@@ -47,7 +47,7 @@ func (u *GasCtrlImpl) GetRepairDate(c *gin.Context) {
 
 	c.JSON(http.StatusOK, res)
 }
-func (r *GasCtrlImpl) GetRepairByID(c *gin.Context) {
+func (r *GasCtrlImpl) GetGasByID(c *gin.Context) {
 
 	// UserID := c.MustGet("UserID").(int)
 	rid, err := strconv.Atoi(c.Param("id"))
@@ -56,7 +56,16 @@ func (r *GasCtrlImpl) GetRepairByID(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	res, err := r.svc.RepairServ.GetRepairById(int64(rid))
+
+	param := db.GetGasParams{
+		ID:        sql.NullInt64{Int64: int64(rid), Valid: true},
+		DriverID:  sql.NullInt64{Int64: int64(-1), Valid: false},
+		Name:      sql.NullString{String: "", Valid: false},
+		Belongcmp: sql.NullInt64{Int64: int64(-1), Valid: false},
+		Cat:       sql.NullString{String: "", Valid: false},
+		Ym:        sql.NullString{String: "", Valid: false},
+	}
+	res, err := r.svc.GasServ.GetGas(param)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		c.Abort()
@@ -66,7 +75,7 @@ func (r *GasCtrlImpl) GetRepairByID(c *gin.Context) {
 
 }
 
-func (r *GasCtrlImpl) GetRepair(c *gin.Context) {
+func (r *GasCtrlImpl) GetGas(c *gin.Context) {
 
 	UserID := c.MustGet("UserID").(int)
 	belongCmp := c.MustGet("belongCmp").(int64)
@@ -174,7 +183,7 @@ func (r *GasCtrlImpl) GetRepair(c *gin.Context) {
 	} else {
 		Cat.Valid = false
 	}
-	param := db.GetRepairParams{
+	param := db.GetGasParams{
 		ID:        Id,
 		DriverID:  DriverId,
 		Name:      Name,
@@ -182,7 +191,7 @@ func (r *GasCtrlImpl) GetRepair(c *gin.Context) {
 		Cat:       Cat,
 		Ym:        Ym,
 	}
-	repairRes, err := r.svc.RepairServ.GetRepair(param)
+	repairRes, err := r.svc.GasServ.GetGas(param)
 
 	if err != nil && err != sql.ErrNoRows {
 		fmt.Print("err", err)
@@ -198,7 +207,7 @@ func (r *GasCtrlImpl) GetRepair(c *gin.Context) {
 
 }
 
-func (r *GasCtrlImpl) ApproveRepair(c *gin.Context) {
+func (r *GasCtrlImpl) ApproveGas(c *gin.Context) {
 
 	param_id := c.Param("id")
 
@@ -215,27 +224,35 @@ func (r *GasCtrlImpl) ApproveRepair(c *gin.Context) {
 		return
 	}
 
-	err = r.svc.RepairServ.ApproveRepair(int64(id))
+	err = r.svc.GasServ.ApproveGas(int64(id))
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		c.Abort()
 		return
 	}
-
-	// res, err := r.svc.RepairServ.GetRepairById(int64(id))
-	_, err = r.svc.RepairServ.GetRepairById(int64(id))
+	param := db.GetRepairParams{
+		ID:        sql.NullInt64{Int64: int64(id), Valid: true},
+		DriverID:  sql.NullInt64{Int64: int64(-1), Valid: false},
+		Name:      sql.NullString{String: "", Valid: false},
+		Belongcmp: sql.NullInt64{Int64: int64(-1), Valid: false},
+		Cat:       sql.NullString{String: "", Valid: false},
+		Ym:        sql.NullString{String: "", Valid: false},
+	}
+	_, err = r.svc.RepairServ.GetRepair(param)
+	// res, err := r.svc.GasServ.GetGasById(int64(id))
+	// _, err = r.svc.GasServ.GetGasById(int64(id))
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		c.Abort()
 		return
 	}
-	// SandMsg(int(res.Uid), 300, "Repair "+strconv.Itoa(id)+" is approved")
+	// SandMsg(int(res.Uid), 300, "Gas "+strconv.Itoa(id)+" is approved")
 
 	c.Status(http.StatusOK)
 	c.Abort()
 }
 
-func (r *GasCtrlImpl) DeleteRepair(c *gin.Context) {
+func (r *GasCtrlImpl) DeleteGas(c *gin.Context) {
 
 	param_id := c.Param("id")
 
@@ -252,7 +269,7 @@ func (r *GasCtrlImpl) DeleteRepair(c *gin.Context) {
 		return
 	}
 
-	err = r.svc.RepairServ.DeleteRepair(int64(id))
+	err = r.svc.GasServ.DeleteGas(int64(id))
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		c.Abort()
@@ -262,10 +279,10 @@ func (r *GasCtrlImpl) DeleteRepair(c *gin.Context) {
 	c.Abort()
 }
 
-func (r *GasCtrlImpl) CreateNewRepair(c *gin.Context) {
-	// TODO: Repair Info In Body
+func (r *GasCtrlImpl) CreateNewGas(c *gin.Context) {
+	// TODO: Gas Info In Body
 
-	var reqBody apptypes.NewRepairBodyT
+	var reqBody apptypes.NewGasBodyT
 	err := c.Bind(&reqBody)
 
 	if err != nil {
@@ -276,14 +293,14 @@ func (r *GasCtrlImpl) CreateNewRepair(c *gin.Context) {
 	cuid := c.MustGet("UserID").(int)
 
 	var pic sql.NullString
-	if reqBody.RepairPic != nil {
-		path, uuid, err := utils.GenPicRoute(reqBody.RepairPic.Header["Content-Type"][0])
+	if reqBody.GasPic != nil {
+		path, uuid, err := utils.GenPicRoute(reqBody.GasPic.Header["Content-Type"][0])
 		if err != nil {
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
 
-		err = c.SaveUploadedFile(reqBody.RepairPic, path)
+		err = c.SaveUploadedFile(reqBody.GasPic, path)
 		if err != nil {
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
@@ -293,13 +310,13 @@ func (r *GasCtrlImpl) CreateNewRepair(c *gin.Context) {
 
 	}
 
-	param := db.CreateNewRepairParams{
+	param := db.CreateNewGasParams{
 		Driverid: int64(cuid),
 		Pic:      pic,
-		Place:    reqBody.Place,
+		// Place:    reqBody.Place,
 	}
 
-	rID, err := r.svc.RepairServ.NewRepair(param)
+	rID, err := r.svc.GasServ.NewGas(param)
 
 	if err != nil {
 		fmt.Println("err: ", err)
@@ -308,8 +325,8 @@ func (r *GasCtrlImpl) CreateNewRepair(c *gin.Context) {
 		return
 	}
 
-	for _, item := range reqBody.Repairinfo {
-		_, err := r.svc.RepairServ.NewRepairInfo(item)
+	for _, item := range reqBody.Gasinfo {
+		_, err := r.svc.GasServ.NewGasInfo(item)
 		if err != nil {
 			fmt.Println("err: ", err)
 			c.Status(http.StatusInternalServerError)

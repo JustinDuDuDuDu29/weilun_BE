@@ -98,6 +98,7 @@ func (u *JobsCtrlImpl) GetClaimedJobByDriverID(c *gin.Context) {
 		return
 	}
 }
+
 func (u *JobsCtrlImpl) GetClaimedJobByID(c *gin.Context) {
 
 	if c.Param("id") == "" {
@@ -124,6 +125,7 @@ func (u *JobsCtrlImpl) GetClaimedJobByID(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 
 }
+
 func (u *JobsCtrlImpl) GetUserWithPendingJob(c *gin.Context) {
 	// TODO: Finish This Part
 	role := c.MustGet("Role").(int16)
@@ -147,10 +149,11 @@ func (u *JobsCtrlImpl) GetUserWithPendingJob(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	fmt.Println(res)
+	// fmt.Println(res)
 
 	c.JSON(http.StatusOK, res)
 }
+
 func (u *JobsCtrlImpl) GetAllClaimedJobs(c *gin.Context) {
 	role := c.MustGet("Role").(int16)
 	id := c.MustGet("UserID")

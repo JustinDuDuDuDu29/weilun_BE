@@ -7,14 +7,14 @@ import (
 )
 
 type GasServ interface {
-	NewRepair(param db.CreateNewRepairParams) (int64, error)
-	NewRepairInfo(param db.CreateNewRepairInfoParams) (int64, error)
-	GetRepair(param db.GetRepairParams) ([]db.GetRepairRow, error)
-	DeleteRepair(param int64) error
-	ApproveRepair(param int64) error
+	NewGas(param db.CreateNewGasParams) (int64, error)
+	NewGasInfo(param db.CreateNewGasInfoParams) (int64, error)
+	GetGas(param db.GetGasParams) ([]db.GetGasRow, error)
+	DeleteGas(param int64) error
+	ApproveGas(param int64) error
 	// GetRepairById(param int64) ([]db.Repairt, error)
-	GetRepairInfoById(param int64) ([]db.Repairinfot, error)
-	GetRepairDate(param int64) ([]string, error)
+	GetGasInfoById(param int64) ([]db.Gasinfot, error)
+	GetGasDate(param int64) ([]string, error)
 }
 
 type GasServImpl struct {
@@ -22,41 +22,41 @@ type GasServImpl struct {
 	conn *sql.DB
 }
 
-func (s *GasServImpl) GetRepairDate(param int64) ([]string, error) {
-	res, err := s.q.GetRepairDate(context.Background(), param)
+func (s *GasServImpl) GetGasDate(param int64) ([]string, error) {
+	res, err := s.q.GetGasDate(context.Background(), param)
 	return res, err
 }
 
-func (r *GasServImpl) NewRepair(param db.CreateNewRepairParams) (int64, error) {
-	res, err := r.q.CreateNewRepair(context.Background(), param)
+func (r *GasServImpl) NewGas(param db.CreateNewGasParams) (int64, error) {
+	res, err := r.q.CreateNewGas(context.Background(), param)
 	return res, err
 }
 
-func (r *GasServImpl) NewRepairInfo(param db.CreateNewRepairInfoParams) (int64, error) {
-	res, err := r.q.CreateNewRepairInfo(context.Background(), param)
+func (r *GasServImpl) NewGasInfo(param db.CreateNewGasInfoParams) (int64, error) {
+	res, err := r.q.CreateNewGasInfo(context.Background(), param)
 	return res, err
 }
 
-func (r *GasServImpl) GetRepair(param db.GetRepairParams) ([]db.GetRepairRow, error) {
-	res, err := r.q.GetRepair(context.Background(), param)
+func (r *GasServImpl) GetGas(param db.GetGasParams) ([]db.GetGasRow, error) {
+	res, err := r.q.GetGas(context.Background(), param)
 	return res, err
 }
 
-func (r *GasServImpl) DeleteRepair(param int64) error {
-	err := r.q.DeleteRepair(context.Background(), param)
+func (r *GasServImpl) DeleteGas(param int64) error {
+	err := r.q.DeleteGasT(context.Background(), param)
 	return err
 }
 
-func (r *GasServImpl) ApproveRepair(param int64) error {
-	err := r.q.ApproveRepair(context.Background(), param)
+func (r *GasServImpl) ApproveGas(param int64) error {
+	err := r.q.ApproveGas(context.Background(), param)
 	return err
 }
 
-func (r *GasServImpl) GetRepairInfoById(param int64) ([]db.Repairinfot, error) {
-	res, err := r.q.GetRepairInfoById(context.Background(), param)
+func (r *GasServImpl) GetGasInfoById(param int64) ([]db.Gasinfot, error) {
+	res, err := r.q.GetGasInfoById(context.Background(), param)
 	if err == sql.ErrNoRows {
 
-		var r []db.Repairinfot
+		var r []db.Gasinfot
 		return r, nil
 	}
 	return res, err

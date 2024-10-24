@@ -2,12 +2,11 @@
 -- +goose StatementBegin
 Create Table GasInfoT(
   id BIGSERIAL PRIMARY KEY,
-  driverID BigInt references DriverT(id) NOT NULL,
-  pic varchar,
+  gasID BigInt references GasT(id) NOT NULL,
   gasType varchar NOT NULL,
-  price BigInt NOT NULL,
+  quantity int DEFAULT(1) NOT NULL,
+  totalPrice BigInt NOT NULL,
   create_date Timestamp NOT NULL DEFAULT NOW(),
-  approved_date Timestamp,
   deleted_date Timestamp,
   last_modified_date Timestamp NOT NULL DEFAULT NOW()
 );

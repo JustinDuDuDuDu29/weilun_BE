@@ -64,12 +64,11 @@ type Drivert struct {
 
 type Gasinfot struct {
 	ID               int64
-	Driverid         int64
-	Pic              sql.NullString
+	Gasid            int64
 	Gastype          string
-	Price            int64
+	Quantity         int32
+	Totalprice       int64
 	CreateDate       time.Time
-	ApprovedDate     sql.NullTime
 	DeletedDate      sql.NullTime
 	LastModifiedDate time.Time
 }
@@ -78,8 +77,6 @@ type Gast struct {
 	ID               int64
 	Driverid         int64
 	Pic              sql.NullString
-	Gastype          string
-	Price            int64
 	CreateDate       time.Time
 	ApprovedDate     sql.NullTime
 	DeletedDate      sql.NullTime
