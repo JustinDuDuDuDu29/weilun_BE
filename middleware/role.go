@@ -14,6 +14,8 @@ import (
 
 type RoleMid interface {
 	SuperAdminOnly(c *gin.Context)
+	CmpAdminOnly(c *gin.Context)
+	CmpSuperAdminOnly(c *gin.Context)
 	IsLoggedIn(c *gin.Context)
 	DriverOnly(c *gin.Context)
 }
@@ -127,6 +129,26 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 		return
 	}
 
+}
+
+func (m *RoleMidImpl) CmpAdminOnly(c *gin.Context) {
+	res := c.MustGet("Role").(int16)
+	if (res) > 200 || (res) < 100 {
+		c.Status(http.StatusForbidden)
+		c.Abort()
+		return
+	}
+	c.Next()
+}
+
+func (m *RoleMidImpl) CmpSuperAdminOnly(c *gin.Context) {
+	res := c.MustGet("Role").(int16)
+	if (res) > 200 {
+		c.Status(http.StatusForbidden)
+		c.Abort()
+		return
+	}
+	c.Next()
 }
 
 func (m *RoleMidImpl) SuperAdminOnly(c *gin.Context) {
