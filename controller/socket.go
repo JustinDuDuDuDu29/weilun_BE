@@ -3,7 +3,6 @@ package controller
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"main/service"
 	"net/http"
 	"os"
@@ -57,7 +56,7 @@ func SandByCmp(reciver int, msgType int, msg string) {
 		}
 
 		if err := c.wsc.WriteJSON(&msg); err != nil {
-			fmt.Println("err is ", err)
+			// fmt.Println("err is ", err)
 			continue
 		}
 	}
@@ -72,14 +71,14 @@ func SandMsg(reciver int, msgType int, msg string) {
 		}
 
 		if err := conn.wsc.WriteJSON(msg); err != nil {
-			fmt.Println("err is ", err)
+			// fmt.Println("err is ", err)
 		}
 	}
 }
 
 func getUD(m *SocketCtrlImpl, rtoken string) (int, int16, int64, error) {
 	if rtoken == "" {
-		fmt.Println("err: ", 1)
+		// fmt.Println("err: ", 1)
 		return 0, 0, 0, errors.New("1")
 
 	}
@@ -98,40 +97,40 @@ func getUD(m *SocketCtrlImpl, rtoken string) (int, int16, int64, error) {
 
 		if err != nil {
 
-			fmt.Println("err: ", 3)
+			// fmt.Println("err: ", 3)
 			return 0, 0, 0, errors.New("3")
 		}
 
 		id, err := strconv.Atoi(res[0])
 		if err != nil {
 
-			fmt.Println("err: ", 4)
+			// fmt.Println("err: ", 4)
 			return 0, 0, 0, errors.New("4")
 		}
 		info, err := m.svc.UserServ.GetSeed(int64(id))
 		if err != nil {
 
-			fmt.Println("err: ", 5)
-			fmt.Print("QQ")
+			// fmt.Println("err: ", 5)
+			// fmt.Print("QQ")
 			return 0, 0, 0, errors.New("5")
 		}
 
 		issuer, err := claims.GetIssuer()
 		if err != nil {
 
-			fmt.Println("err: ", 6)
+			// fmt.Println("err: ", 6)
 			return 0, 0, 0, errors.New("6")
 		}
 		if info.Seed.String != issuer {
 
-			fmt.Println("err: ", 7)
+			// fmt.Println("err: ", 7)
 			return 0, 0, 0, errors.New("7")
 		}
 
 		userInfo, err := m.svc.UserServ.GetUserById(int64(id))
 		if err != nil {
 
-			fmt.Println("err: ", 8)
+			// fmt.Println("err: ", 8)
 			return 0, 0, 0, errors.New("8")
 		}
 
@@ -139,17 +138,17 @@ func getUD(m *SocketCtrlImpl, rtoken string) (int, int16, int64, error) {
 
 	} else {
 
-		fmt.Println("err: ", 9)
+		// fmt.Println("err: ", 9)
 		return 0, 0, 0, errors.New("9")
 	}
 
 }
 
 func (s *SocketCtrlImpl) TestSocket(c *gin.Context) {
-	fmt.Println("PSING...")
+	// fmt.Println("PSING...")
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		fmt.Println(err)
+		// fmt.Println(err)
 		return
 	}
 
@@ -171,7 +170,7 @@ func (s *SocketCtrlImpl) TestSocket(c *gin.Context) {
 
 			id, _, cmp, err := getUD(s, string(msg))
 			if err != nil {
-				fmt.Print(err)
+				// fmt.Print(err)
 				return
 			}
 

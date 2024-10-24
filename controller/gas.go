@@ -2,7 +2,6 @@ package controller
 
 import (
 	"database/sql"
-	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -39,7 +38,7 @@ func (u *GasCtrlImpl) GetGasDate(c *gin.Context) {
 	res, err := u.svc.GasServ.GetGasDate(int64(id))
 
 	if err != nil {
-		fmt.Println(err)
+		// fmt.Println(err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
@@ -100,7 +99,7 @@ func (r *GasCtrlImpl) GetGas(c *gin.Context) {
 		d := c.Query("ym") + "-01"
 		dt, err := time.Parse(time.DateOnly, d)
 		if err != nil {
-			fmt.Println("err!! ", err)
+			// fmt.Println("err!! ", err)
 			c.Status(http.StatusInternalServerError)
 			c.Abort()
 			return
@@ -194,7 +193,7 @@ func (r *GasCtrlImpl) GetGas(c *gin.Context) {
 	repairRes, err := r.svc.GasServ.GetGas(param)
 
 	if err != nil && err != sql.ErrNoRows {
-		fmt.Print("err", err)
+		// fmt.Print("err", err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
@@ -319,7 +318,7 @@ func (r *GasCtrlImpl) CreateNewGas(c *gin.Context) {
 	rID, err := r.svc.GasServ.NewGas(param)
 
 	if err != nil {
-		fmt.Println("err: ", err)
+		// fmt.Println("err: ", err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
@@ -328,7 +327,7 @@ func (r *GasCtrlImpl) CreateNewGas(c *gin.Context) {
 	for _, item := range reqBody.Gasinfo {
 		_, err := r.svc.GasServ.NewGasInfo(item)
 		if err != nil {
-			fmt.Println("err: ", err)
+			// fmt.Println("err: ", err)
 			c.Status(http.StatusInternalServerError)
 			c.Abort()
 			return

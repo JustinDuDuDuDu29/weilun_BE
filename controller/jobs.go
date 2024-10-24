@@ -2,7 +2,6 @@ package controller
 
 import (
 	"database/sql"
-	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -76,7 +75,7 @@ func (u *JobsCtrlImpl) GetClaimedJobByDriverID(c *gin.Context) {
 
 		info, err := u.svc.UserServ.GetDriverInfo(int64(id))
 		if err != nil {
-			fmt.Println("it is: ", err)
+			// fmt.Println("it is: ", err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
@@ -89,7 +88,7 @@ func (u *JobsCtrlImpl) GetClaimedJobByDriverID(c *gin.Context) {
 		res, err := u.svc.JobsServ.GetClaimedJobByDriverID(int64(id))
 		if err != nil {
 
-			fmt.Println(err)
+			// fmt.Println(err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
@@ -117,7 +116,7 @@ func (u *JobsCtrlImpl) GetClaimedJobByID(c *gin.Context) {
 	res, err := u.svc.JobsServ.GetClaimedJobByID(int64(id))
 
 	if err != nil {
-		fmt.Println(err)
+		// fmt.Println(err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
@@ -144,7 +143,7 @@ func (u *JobsCtrlImpl) GetUserWithPendingJob(c *gin.Context) {
 	res, err := u.svc.JobsServ.GetUserWithPendingJob(CmpID)
 
 	if err != nil {
-		fmt.Println("err is ", err)
+		// fmt.Println("err is ", err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
@@ -188,7 +187,7 @@ func (u *JobsCtrlImpl) GetAllClaimedJobs(c *gin.Context) {
 		d := c.Query("ym") + "-01"
 		dt, err := time.Parse(time.DateOnly, d)
 		if err != nil {
-			fmt.Println("err!! ", err)
+			// fmt.Println("err!! ", err)
 			c.Status(http.StatusInternalServerError)
 			c.Abort()
 			return
@@ -215,12 +214,12 @@ func (u *JobsCtrlImpl) GetAllClaimedJobs(c *gin.Context) {
 	res, err := u.svc.JobsServ.GetAllClaimedJobs(param)
 
 	if err != nil {
-		fmt.Println("err is ", err)
+		// fmt.Println("err is ", err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
 	}
-	fmt.Println(res)
+	// fmt.Println(res)
 
 	c.JSON(http.StatusOK, res)
 }
@@ -237,7 +236,7 @@ func (u *JobsCtrlImpl) GetCJDate(c *gin.Context) {
 	res, err := u.svc.JobsServ.GetCJDate(int64(id))
 
 	if err != nil {
-		fmt.Println(err)
+		// fmt.Println(err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
@@ -494,7 +493,7 @@ func (u *JobsCtrlImpl) ClaimJob(c *gin.Context) {
 	res, err, _ := u.svc.JobsServ.ClaimJob(param)
 
 	if err != nil {
-		fmt.Print(err)
+		// fmt.Print(err)
 		if err.Error() == "already have ongoing job" {
 			res, err := u.svc.JobsServ.GetClaimedJobByID(res)
 			if err != nil {
@@ -543,7 +542,7 @@ func (u *JobsCtrlImpl) FinishClaimJob(c *gin.Context) {
 
 	var reqBody apptypes.FinishClaimJobBodyT
 	if err := c.Bind(&reqBody); err != nil {
-		fmt.Print("NOT OK")
+		// fmt.Print("NOT OK")
 		c.Abort()
 		return
 	}
@@ -574,7 +573,7 @@ func (u *JobsCtrlImpl) FinishClaimJob(c *gin.Context) {
 	if err != nil {
 		os.Remove(path)
 
-		fmt.Print(err)
+		// fmt.Print(err)
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
@@ -587,7 +586,7 @@ func (u *JobsCtrlImpl) ApproveClaimedJob(c *gin.Context) {
 
 	var reqBody apptypes.ApproveJob
 	if err := c.Bind(&reqBody); err != nil {
-		fmt.Print("NOT OK")
+		// fmt.Print("NOT OK")
 		c.Abort()
 		return
 	}
@@ -651,14 +650,14 @@ func (u *JobsCtrlImpl) CancelClaimJob(c *gin.Context) {
 
 	res, err := u.svc.UserServ.GetUserById(int64(UserID))
 	if err != nil {
-		fmt.Print(err)
+		// fmt.Print(err)
 		c.Abort()
 		return
 	}
 	cJobRes, err := u.svc.JobsServ.GetClaimedJobByID(int64(id))
 
 	if err != nil {
-		fmt.Print(err)
+		// fmt.Print(err)
 		c.Abort()
 		return
 	}
@@ -684,7 +683,7 @@ func (u *JobsCtrlImpl) CancelClaimJob(c *gin.Context) {
 	}
 
 	if err != nil {
-		fmt.Print(err)
+		// fmt.Print(err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
@@ -798,7 +797,7 @@ func (u *JobsCtrlImpl) UpdateJob(c *gin.Context) {
 	err := c.BindJSON(&reqBody)
 
 	if err != nil {
-		fmt.Print(err)
+		// fmt.Print(err)
 		c.Abort()
 		return
 	}

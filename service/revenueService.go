@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	db "main/sql"
 )
 
@@ -43,7 +42,7 @@ func (s *RevenueServImpl) GetRevenueByCmp(param db.GetDriverRevenueByCmpParams) 
 
 func (s *RevenueServImpl) GetRevenue(param db.GetDriverRevenueParams) ([]db.GetDriverRevenueRow, error) {
 	res, err := s.q.GetDriverRevenue(context.Background(), param)
-	fmt.Println("param: ", res)
+	// fmt.Println("param: ", res)
 
 	if len(res) == 0 {
 		res = []db.GetDriverRevenueRow{}

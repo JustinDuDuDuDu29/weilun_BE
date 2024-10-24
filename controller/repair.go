@@ -2,7 +2,6 @@ package controller
 
 import (
 	"database/sql"
-	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -39,7 +38,7 @@ func (u *RepairCtrlImpl) GetRepairDate(c *gin.Context) {
 	res, err := u.svc.RepairServ.GetRepairDate(int64(id))
 
 	if err != nil {
-		fmt.Println(err)
+		// fmt.Println(err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
@@ -101,7 +100,7 @@ func (r *RepairCtrlImpl) GetRepair(c *gin.Context) {
 		d := c.Query("ym") + "-01"
 		dt, err := time.Parse(time.DateOnly, d)
 		if err != nil {
-			fmt.Println("err!! ", err)
+			// fmt.Println("err!! ", err)
 			c.Status(http.StatusInternalServerError)
 			c.Abort()
 			return
@@ -195,7 +194,7 @@ func (r *RepairCtrlImpl) GetRepair(c *gin.Context) {
 	repairRes, err := r.svc.RepairServ.GetRepair(param)
 
 	if err != nil && err != sql.ErrNoRows {
-		fmt.Print("err", err)
+		// fmt.Print("err", err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
@@ -320,7 +319,7 @@ func (r *RepairCtrlImpl) CreateNewRepair(c *gin.Context) {
 	rID, err := r.svc.RepairServ.NewRepair(param)
 
 	if err != nil {
-		fmt.Println("err: ", err)
+		// fmt.Println("err: ", err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
@@ -329,7 +328,7 @@ func (r *RepairCtrlImpl) CreateNewRepair(c *gin.Context) {
 	for _, item := range reqBody.Repairinfo {
 		_, err := r.svc.RepairServ.NewRepairInfo(item)
 		if err != nil {
-			fmt.Println("err: ", err)
+			// fmt.Println("err: ", err)
 			c.Status(http.StatusInternalServerError)
 			c.Abort()
 			return

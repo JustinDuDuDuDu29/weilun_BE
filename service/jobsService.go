@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	db "main/sql"
 )
 
@@ -158,7 +157,7 @@ func (s *JobsServImpl) GetAllClaimedJobs(param db.GetAllClaimedJobsParams) ([]db
 
 func (s *JobsServImpl) FinishClaimedJob(param db.FinishClaimedJobParams) error {
 	err := s.q.FinishClaimedJob(context.Background(), param)
-	fmt.Println("it is: ", err)
+	// fmt.Println("it is: ", err)
 	return err
 }
 func (s *JobsServImpl) GetCJDate(param int64) ([]string, error) {

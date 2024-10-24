@@ -2,7 +2,6 @@ package controller
 
 import (
 	"database/sql"
-	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -123,7 +122,7 @@ func (a *AlertCtrlImpl) GetAlert(c *gin.Context) {
 	res, err := a.svc.AlertServ.GetAlert(param)
 
 	if err != nil && err != sql.ErrNoRows {
-		fmt.Print(err)
+		// fmt.Print(err)
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}

@@ -26,7 +26,6 @@ type AuthCtrlImpl struct {
 }
 
 func (a *AuthCtrlImpl) Login(c *gin.Context) {
-
 	var reqBody apptypes.LoginBodyT
 
 	err := c.BindJSON(&reqBody)

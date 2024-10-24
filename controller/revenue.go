@@ -3,7 +3,6 @@ package controller
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -52,11 +51,11 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 
 	me, err := time.Parse(time.DateOnly, strings.Split(time.Date(year, time.Month(month)+1, 1, 0, 0, 0, 0, tDate.Location()).String(), " ")[0])
 	if err != nil {
-		fmt.Println(err)
+		// fmt.Println(err)
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-	fmt.Println("param = ", me)
+	// fmt.Println("param = ", me)
 
 	AppEnd.Scan(me)
 
@@ -64,12 +63,12 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 		ApprovedDate:   AppFrom,
 		ApprovedDate_2: AppEnd,
 	}
-	fmt.Println("param = ", param)
+	// fmt.Println("param = ", param)
 
 	res, err := a.svc.RevenueServ.GetExcel(param)
 
 	if err != nil {
-		fmt.Println("err: ", err)
+		// fmt.Println("err: ", err)
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -77,7 +76,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 	f := excelize.NewFile()
 	defer func() {
 		if err := f.Close(); err != nil {
-			fmt.Println(err)
+			// fmt.Println(err)
 
 			c.AbortWithStatus(http.StatusBadRequest)
 		}
@@ -89,7 +88,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 		json.Unmarshal(userRecord, &record)
 		date, err := time.Parse(time.DateOnly, record.List[0].Date)
 		if err != nil {
-			fmt.Println(err)
+			// fmt.Println(err)
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
@@ -97,7 +96,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 
 		_, err = f.NewSheet(sheetname)
 		if err != nil {
-			fmt.Println(err)
+			// fmt.Println(err)
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
@@ -107,7 +106,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 		} {
 			cell, err := excelize.CoordinatesToCellName(1, 1)
 			if err != nil {
-				fmt.Println(err)
+				// fmt.Println(err)
 				c.AbortWithStatus(http.StatusBadRequest)
 				return
 			}
@@ -119,7 +118,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 
 			date, err := time.Parse(time.DateOnly, ls.Date)
 			if err != nil {
-				fmt.Println(err)
+				// fmt.Println(err)
 				c.AbortWithStatus(http.StatusBadRequest)
 				return
 			}
@@ -130,10 +129,10 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 
 			for ids, row := range ls.Data {
 				// month
-				fmt.Println(row, " ", rr)
+				// fmt.Println(row, " ", rr)
 				cell, err := excelize.CoordinatesToCellName(1, rr+2)
 				if err != nil {
-					fmt.Println(err)
+					// fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
 					return
 				}
@@ -142,7 +141,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				// platenum
 				cell, err = excelize.CoordinatesToCellName(2, rr+2)
 				if err != nil {
-					fmt.Println(err)
+					// fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
 					return
 				}
@@ -151,7 +150,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				// 駕駛
 				cell, err = excelize.CoordinatesToCellName(3, rr+2)
 				if err != nil {
-					fmt.Println(err)
+					// fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
 					return
 				}
@@ -160,7 +159,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				// 發貨地
 				cell, err = excelize.CoordinatesToCellName(4, rr+2)
 				if err != nil {
-					fmt.Println(err)
+					// fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
 					return
 				}
@@ -169,7 +168,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				// 中轉
 				cell, err = excelize.CoordinatesToCellName(5, rr+2)
 				if err != nil {
-					fmt.Println(err)
+					// fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
 					return
 				}
@@ -178,7 +177,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				// 卸貨地
 				cell, err = excelize.CoordinatesToCellName(6, rr+2)
 				if err != nil {
-					fmt.Println(err)
+					// fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
 					return
 				}
@@ -187,7 +186,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				// 趟次
 				cell, err = excelize.CoordinatesToCellName(7, rr+2)
 				if err != nil {
-					fmt.Println(err)
+					// fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
 					return
 				}
@@ -196,7 +195,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				// 運費
 				cell, err = excelize.CoordinatesToCellName(8, rr+2)
 				if err != nil {
-					fmt.Println(err)
+					// fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
 					return
 				}
@@ -205,7 +204,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				// 應收款
 				cell, err = excelize.CoordinatesToCellName(9, rr+2)
 				if err != nil {
-					fmt.Println(err)
+					// fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
 					return
 				}
@@ -214,7 +213,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				// 甲方
 				cell, err = excelize.CoordinatesToCellName(10, rr+2)
 				if err != nil {
-					fmt.Println(err)
+					// fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
 					return
 				}
@@ -223,7 +222,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				// 司機運費
 				cell, err = excelize.CoordinatesToCellName(11, rr+2)
 				if err != nil {
-					fmt.Println(err)
+					// fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
 					return
 				}
@@ -232,11 +231,11 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				// 油資
 				cell, err = excelize.CoordinatesToCellName(12, rr+2)
 				if err != nil {
-					fmt.Println(err)
+					// fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
 					return
 				}
-				fmt.Println(ids, " ", len(ls.Data)-1)
+				// fmt.Println(ids, " ", len(ls.Data)-1)
 				if ids == len(ls.Data)-1 {
 					f.SetCellValue(sheetname, cell, ls.Gas)
 				} else {
@@ -246,7 +245,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				// 備註
 				cell, err = excelize.CoordinatesToCellName(13, rr+2)
 				if err != nil {
-					fmt.Println(err)
+					// fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
 					return
 				}
@@ -255,7 +254,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				// 業主
 				cell, err = excelize.CoordinatesToCellName(14, rr+2)
 				if err != nil {
-					fmt.Println(err)
+					// fmt.Println(err)
 					c.AbortWithStatus(http.StatusBadRequest)
 					return
 				}
@@ -268,7 +267,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 	}
 	targetPath := time.DateOnly + ".xlsx"
 	if err := f.SaveAs("./excel/" + targetPath); err != nil {
-		fmt.Println(err)
+		// fmt.Println(err)
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -310,14 +309,14 @@ func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 		y, m, _ := tDate.Date()
 		today, err := time.Parse(time.DateOnly, strings.Split(tDate.String(), " ")[0])
 		if err != nil {
-			fmt.Println(err)
+			// fmt.Println(err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
 
 		fom, err := time.Parse(time.DateOnly, strings.Split(time.Date(y, m, 1, 0, 0, 0, 0, tDate.Location()).String(), " ")[0])
 		if err != nil {
-			fmt.Println(err)
+			// fmt.Println(err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
@@ -336,7 +335,7 @@ func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 		res, err := a.svc.RevenueServ.GetRevenue(param)
 
 		if err != nil {
-			fmt.Print(err)
+			// fmt.Print(err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
@@ -356,7 +355,7 @@ func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 		resp1, err := a.svc.RevenueServ.GetRevenue(param)
 
 		if err != nil {
-			fmt.Print(err)
+			// fmt.Print(err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
@@ -376,7 +375,7 @@ func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 		resp2, err := a.svc.RevenueServ.GetRevenue(param)
 
 		if err != nil {
-			fmt.Print(err)
+			// fmt.Print(err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
@@ -404,14 +403,14 @@ func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 		y, m, _ := tDate.Date()
 		today, err := time.Parse(time.DateOnly, strings.Split(tDate.String(), " ")[0])
 		if err != nil {
-			fmt.Println(err)
+			// fmt.Println(err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
 
 		fom, err := time.Parse(time.DateOnly, strings.Split(time.Date(y, m, 1, 0, 0, 0, 0, tDate.Location()).String(), " ")[0])
 		if err != nil {
-			fmt.Println(err)
+			// fmt.Println(err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
@@ -430,7 +429,7 @@ func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 		res, err := a.svc.RevenueServ.GetRevenueByCmp(param)
 
 		if err != nil {
-			fmt.Print(err)
+			// fmt.Print(err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
@@ -451,7 +450,7 @@ func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 		resp1, err := a.svc.RevenueServ.GetRevenueByCmp(param)
 
 		if err != nil {
-			fmt.Print(err)
+			// fmt.Print(err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
@@ -472,7 +471,7 @@ func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 		resp2, err := a.svc.RevenueServ.GetRevenueByCmp(param)
 
 		if err != nil {
-			fmt.Print(err)
+			// fmt.Print(err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}

@@ -2,7 +2,6 @@ package controller
 
 import (
 	"database/sql"
-	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -73,7 +72,7 @@ func (u *UserCtrlImpl) ApproveUser(c *gin.Context) {
 	err = u.svc.UserServ.ApproveDriver(int64(id))
 
 	if err != nil {
-		fmt.Println(err)
+		// fmt.Println(err)
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -352,6 +351,7 @@ func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
 			return
 		}
 		hash, err := bcrypt.GenerateFromPassword([]byte(reqBody.PhoneNum), bcrypt.MinCost)
+
 		if err != nil {
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
@@ -378,7 +378,7 @@ func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
 		var reqBody apptypes.RegisterDriverBodyT
 
 		if err := c.BindJSON(&reqBody); err != nil {
-			fmt.Println(err)
+			// fmt.Println(err)
 			return
 		}
 		hash, err := bcrypt.GenerateFromPassword([]byte(reqBody.PhoneNum), bcrypt.MinCost)
@@ -397,7 +397,7 @@ func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
 
 		newid, err = u.svc.UserServ.RegisterDriver(param, reqBody.DriverInfo.NationalIdNumber, reqBody.DriverInfo.PlateNum)
 		if err != nil {
-			fmt.Println(err)
+			// fmt.Println(err)
 			c.Status(http.StatusConflict)
 			c.Abort()
 			return
