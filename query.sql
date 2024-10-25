@@ -846,11 +846,12 @@ FROM (
           LEFT JOIN (
             SELECT DRIVERID,
               SUM(
-                ((REPAIRINFO->>0)::JSON->>'price')::INT --* ((REPAIRINFO->>0)::JSON->>'quantity')::INT
-              ) AS GAS,
+                GasInfoT.totalPrice
+                ) AS GAS,
               DATE (CREATE_DATE)
-            FROM REPAIRT
-            GROUP BY DRIVERID,
+            FROM GasT
+            LEFT JOIN GasInfoT ON GasInfoT.id = GasT.id
+            GROUP BY GasT.DRIVERID,
               DATE (CREATE_DATE)
           ) RT ON RT.DRIVERID = DRIVERT.ID
           AND DATE (RT.DATE) = DATE (CLAIMJOBT.APPROVED_DATE)

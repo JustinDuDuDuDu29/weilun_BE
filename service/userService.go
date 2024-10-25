@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	db "main/sql"
 )
 
@@ -168,7 +169,9 @@ func (u *UserServImpl) GetDriverInfo(id int64) (db.GetDriverRow, error) {
 }
 
 func (u *UserServImpl) HaveUser(phonenum interface{}) (db.GetUserRow, error) {
+	fmt.Print(123)
 	res, err := u.q.GetUser(context.Background(), phonenum)
+	fmt.Print(err)
 	return res, err
 }
 

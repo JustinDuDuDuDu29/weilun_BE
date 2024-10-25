@@ -2,6 +2,7 @@ package controller
 
 import (
 	"database/sql"
+	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -35,6 +36,7 @@ func (a *AuthCtrlImpl) Login(c *gin.Context) {
 	}
 
 	res, err := a.svc.UserServ.HaveUser(reqBody.Phonenum)
+	fmt.Print("ININ")
 
 	if err != nil {
 		c.Status(http.StatusNotFound)

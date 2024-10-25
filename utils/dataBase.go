@@ -2,6 +2,7 @@ package utils
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"os"
 
@@ -15,6 +16,7 @@ func InitDatabase() (*db.Queries, *sql.DB) {
 	dsn := os.Getenv("dbType") + "://" + os.Getenv("dbUser") + ":" + os.Getenv("dbPwd") + "@" + os.Getenv("dbIP") + ":" + os.Getenv("dbPort") + "/" + os.Getenv("dbName") + "?sslmode=disable"
 
 	conn, err := sql.Open("postgres", dsn)
+	fmt.Print("err:" + dsn)
 
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v\n", err)
