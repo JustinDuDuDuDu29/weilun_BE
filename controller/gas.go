@@ -2,6 +2,8 @@ package controller
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -324,7 +326,20 @@ func (r *GasCtrlImpl) CreateNewGas(c *gin.Context) {
 		return
 	}
 
-	for _, item := range reqBody.Gasinfo {
+	data := []db.CreateNewGasInfoParams{}
+	err = json.Unmarshal([]byte(reqBody.Gasinfo), &data)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for _, item := range data {
+		// subdata := db.CreateDriverInfoParams{}
+
+		// err = json.Unmarshal(([]byte(item)), &subdata)
+
+		item.Gasid = rID
 		_, err := r.svc.GasServ.NewGasInfo(item)
 		if err != nil {
 			// fmt.Println("err: ", err)

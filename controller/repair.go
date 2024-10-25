@@ -2,6 +2,8 @@ package controller
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -286,6 +288,7 @@ func (r *RepairCtrlImpl) CreateNewRepair(c *gin.Context) {
 	err := c.Bind(&reqBody)
 
 	if err != nil {
+		// fmt.Print("out here")
 		c.Abort()
 		return
 	}
@@ -324,11 +327,23 @@ func (r *RepairCtrlImpl) CreateNewRepair(c *gin.Context) {
 		c.Abort()
 		return
 	}
+	data := []db.CreateNewRepairInfoParams{}
+	err = json.Unmarshal([]byte(reqBody.Repairinfo), &data)
 
-	for _, item := range reqBody.Repairinfo {
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for _, item := range data {
+		// subdata := db.CreateDriverInfoParams{}
+
+		// err = json.Unmarshal(([]byte(item)), &subdata)
+
+		item.Repairid = rID
 		_, err := r.svc.RepairServ.NewRepairInfo(item)
 		if err != nil {
-			// fmt.Println("err: ", err)
+			fmt.Println("1err: ", err)
 			c.Status(http.StatusInternalServerError)
 			c.Abort()
 			return
