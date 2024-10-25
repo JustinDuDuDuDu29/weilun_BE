@@ -2,6 +2,7 @@ package apptypes
 
 import (
 	// "encoding/json"
+	db "main/sql"
 	"mime/multipart"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -92,9 +93,15 @@ type UpdateJobBodyT struct {
 }
 
 type NewRepairBodyT struct {
-	Place      string                `form:"place" binding:"required"`
-	Repairinfo string                `form:"repairInfo" binding:"required"`
-	RepairPic  *multipart.FileHeader `form:"repairPic"`
+	Place      string                         `form:"place" binding:"required"`
+	Repairinfo []db.CreateNewRepairInfoParams `form:"repairInfo" binding:"required"`
+	RepairPic  *multipart.FileHeader          `form:"repairPic"`
+}
+
+type NewGasBodyT struct {
+	Place   string                      `form:"place" binding:"required"`
+	Gasinfo []db.CreateNewGasInfoParams `form:"gasInfo" binding:"required"`
+	GasPic  *multipart.FileHeader       `form:"gasPic"`
 }
 
 type CreateAlertBodyT struct {

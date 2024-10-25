@@ -56,10 +56,12 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		jobs.DELETE(":id", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.DeleteJob)
 
 		claimed := api.Group("/claimed")
-		// claimed.GET("", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.GetAllClaimedJobs)
+		// sec?
 		claimed.GET("", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetAllClaimedJobs)
 		claimed.GET("/cj", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetCJDate)
 		claimed.GET("/list", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetClaimedJobByDriverID)
+		claimed.GET("/pending", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetClaimedJobByDriverID)
+		claimed.GET("/userwitpendingjob", m.RoleMid.IsLoggedIn, m.RoleMid.CmpAdminOnly, c.JobsCtrl.GetUserWithPendingJob)
 		claimed.POST("/current", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetCurrentClaimedJob)
 		claimed.POST(":id", m.RoleMid.IsLoggedIn, c.JobsCtrl.ClaimJob)
 		claimed.POST("/finish/:id", m.RoleMid.IsLoggedIn, c.JobsCtrl.FinishClaimJob)
@@ -69,10 +71,16 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		repair := api.Group("/repair")
 		repair.GET("", m.RoleMid.IsLoggedIn, c.RepairCtrl.GetRepair)
 		repair.GET("/cj", m.RoleMid.IsLoggedIn, c.RepairCtrl.GetRepairDate)
-		// repair.GET(":id", m.RoleMid.IsLoggedIn, c.RepairCtrl.GetRepairByID)
 		repair.POST("", m.RoleMid.IsLoggedIn, c.RepairCtrl.CreateNewRepair)
 		repair.POST("/approve/:id", m.RoleMid.IsLoggedIn, c.RepairCtrl.ApproveRepair)
 		repair.DELETE(":id", m.RoleMid.IsLoggedIn, c.RepairCtrl.DeleteRepair)
+
+		gas := api.Group("/gas")
+		gas.GET("", m.RoleMid.IsLoggedIn, c.GasCtrl.GetGas)
+		gas.GET("/cj", m.RoleMid.IsLoggedIn, c.GasCtrl.GetGasDate)
+		gas.POST("", m.RoleMid.IsLoggedIn, c.GasCtrl.CreateNewGas)
+		gas.POST("/approve/:id", m.RoleMid.IsLoggedIn, c.GasCtrl.ApproveGas)
+		gas.DELETE(":id", m.RoleMid.IsLoggedIn, c.GasCtrl.DeleteGas)
 
 		alert := api.Group("/alert")
 		alert.GET("", m.RoleMid.IsLoggedIn, c.AlertCtrl.GetAlert)

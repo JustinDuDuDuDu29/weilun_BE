@@ -2,7 +2,6 @@ package controller
 
 import (
 	"database/sql"
-	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -25,6 +24,7 @@ type JobsCtrl interface {
 	FinishClaimJob(c *gin.Context)
 	CancelClaimJob(c *gin.Context)
 	GetAllClaimedJobs(c *gin.Context)
+	GetUserWithPendingJob(c *gin.Context)
 	GetCurrentClaimedJob(c *gin.Context)
 	ApproveClaimedJob(c *gin.Context)
 	GetClaimedJobByDriverID(c *gin.Context)
@@ -75,7 +75,7 @@ func (u *JobsCtrlImpl) GetClaimedJobByDriverID(c *gin.Context) {
 
 		info, err := u.svc.UserServ.GetDriverInfo(int64(id))
 		if err != nil {
-			fmt.Println("it is: ", err)
+			// fmt.Println("it is: ", err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
@@ -88,7 +88,7 @@ func (u *JobsCtrlImpl) GetClaimedJobByDriverID(c *gin.Context) {
 		res, err := u.svc.JobsServ.GetClaimedJobByDriverID(int64(id))
 		if err != nil {
 
-			fmt.Println(err)
+			// fmt.Println(err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
@@ -97,6 +97,7 @@ func (u *JobsCtrlImpl) GetClaimedJobByDriverID(c *gin.Context) {
 		return
 	}
 }
+
 func (u *JobsCtrlImpl) GetClaimedJobByID(c *gin.Context) {
 
 	if c.Param("id") == "" {
@@ -115,7 +116,7 @@ func (u *JobsCtrlImpl) GetClaimedJobByID(c *gin.Context) {
 	res, err := u.svc.JobsServ.GetClaimedJobByID(int64(id))
 
 	if err != nil {
-		fmt.Println(err)
+		// fmt.Println(err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
@@ -123,6 +124,35 @@ func (u *JobsCtrlImpl) GetClaimedJobByID(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 
 }
+
+func (u *JobsCtrlImpl) GetUserWithPendingJob(c *gin.Context) {
+	// TODO: Finish This Part
+	role := c.MustGet("Role").(int16)
+	// id := c.MustGet("UserID")
+	belongCmp := c.MustGet("belongCmp")
+
+	var CmpID sql.NullInt64
+	if role >= 200 {
+		CmpID.Scan(belongCmp)
+	} else {
+		if c.Query("cmpID") != "" {
+			CmpID.Scan(c.Query("cmpID"))
+		}
+	}
+
+	res, err := u.svc.JobsServ.GetUserWithPendingJob(CmpID)
+
+	if err != nil {
+		// fmt.Println("err is ", err)
+		c.Status(http.StatusInternalServerError)
+		c.Abort()
+		return
+	}
+	// fmt.Println(res)
+
+	c.JSON(http.StatusOK, res)
+}
+
 func (u *JobsCtrlImpl) GetAllClaimedJobs(c *gin.Context) {
 	role := c.MustGet("Role").(int16)
 	id := c.MustGet("UserID")
@@ -157,7 +187,7 @@ func (u *JobsCtrlImpl) GetAllClaimedJobs(c *gin.Context) {
 		d := c.Query("ym") + "-01"
 		dt, err := time.Parse(time.DateOnly, d)
 		if err != nil {
-			fmt.Println("err!! ", err)
+			// fmt.Println("err!! ", err)
 			c.Status(http.StatusInternalServerError)
 			c.Abort()
 			return
@@ -184,12 +214,12 @@ func (u *JobsCtrlImpl) GetAllClaimedJobs(c *gin.Context) {
 	res, err := u.svc.JobsServ.GetAllClaimedJobs(param)
 
 	if err != nil {
-		fmt.Println("err is ", err)
+		// fmt.Println("err is ", err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
 	}
-	fmt.Println(res)
+	// fmt.Println(res)
 
 	c.JSON(http.StatusOK, res)
 }
@@ -206,7 +236,7 @@ func (u *JobsCtrlImpl) GetCJDate(c *gin.Context) {
 	res, err := u.svc.JobsServ.GetCJDate(int64(id))
 
 	if err != nil {
-		fmt.Println(err)
+		// fmt.Println(err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
@@ -440,121 +470,6 @@ func (u *JobsCtrlImpl) GetAllJob(c *gin.Context) {
 
 }
 
-func (u *JobsCtrlImpl) GetAllJobN(c *gin.Context) {
-
-	role := c.MustGet("Role").(int16)
-	cuid := c.MustGet("UserID").(int)
-	belongCmp := c.MustGet("belongCmp").(int64)
-	var ID sql.NullInt64
-	if role >= 200 {
-		ID.Valid = false
-	} else {
-		if c.Query("Id") == "" {
-			ID.Valid = false
-		} else {
-			ID.Scan(c.Query("Id"))
-		}
-	}
-
-	var BelongCMP sql.NullInt64
-	if role >= 200 {
-		BelongCMP.Scan(belongCmp)
-	} else {
-		if c.Query("belongCMP") == "" {
-			BelongCMP.Valid = false
-		} else {
-			BelongCMP.Scan(c.Query("belongCMP"))
-		}
-	}
-
-	var Alert sql.NullString
-	if c.Query("alert") == "" {
-		Alert.Valid = false
-	} else {
-		Alert.Scan(c.Query("alert"))
-	}
-
-	var CreateDateStart sql.NullTime
-	if c.Query("CreateDateStart") == "" {
-		CreateDateStart.Valid = false
-	} else {
-		CreateDateStart.Scan(c.Query("CreateDateStart"))
-	}
-
-	var CreateDateEnd sql.NullTime
-	if c.Query("CreateDateEnd") == "" {
-		CreateDateEnd.Valid = false
-	} else {
-		CreateDateEnd.Scan(c.Query("CreateDateEnd"))
-	}
-
-	var DeletedDateStart sql.NullTime
-	if c.Query("DeletedDateStart") == "" {
-		DeletedDateStart.Valid = false
-	} else {
-		DeletedDateStart.Scan(c.Query("DeletedDateStart"))
-	}
-
-	var DeletedDateEnd sql.NullTime
-	if c.Query("DeletedDateEnd") == "" {
-		DeletedDateEnd.Valid = false
-	} else {
-		DeletedDateEnd.Scan(c.Query("DeletedDateEnd"))
-	}
-
-	var LastModifiedDateStart sql.NullTime
-	if c.Query("LastModifiedDateStart") == "" {
-		LastModifiedDateStart.Valid = false
-	} else {
-		LastModifiedDateStart.Scan(c.Query("LastModifiedDateStart"))
-	}
-
-	var LastModifiedDateEnd sql.NullTime
-	if c.Query("LastModifiedDateEnd") == "" {
-		LastModifiedDateEnd.Valid = false
-	} else {
-		LastModifiedDateEnd.Scan(c.Query("LastModifiedDateEnd"))
-	}
-
-	param := db.GetAlertParams{
-		ID:                    ID,
-		BelongCMP:             BelongCMP,
-		Alert:                 Alert,
-		CreateDateStart:       CreateDateStart,
-		CreateDateEnd:         CreateDateEnd,
-		DeletedDateStart:      DeletedDateStart,
-		DeletedDateEnd:        DeletedDateEnd,
-		LastModifiedDateStart: LastModifiedDateStart,
-		LastModifiedDateEnd:   LastModifiedDateEnd,
-	}
-	res, err := u.svc.AlertServ.GetAlert(param)
-
-	if err != nil && err != sql.ErrNoRows {
-		c.AbortWithStatus(http.StatusBadRequest)
-		return
-	}
-
-	if err == sql.ErrNoRows || len(res) == 0 {
-		c.JSON(http.StatusOK, gin.H{})
-		c.Abort()
-		return
-	}
-
-	var Lastalert sql.NullInt64
-	Lastalert.Scan(res[0].ID)
-
-	updateParam := db.UpdateLastAlertParams{
-		ID:        int64(cuid),
-		Lastalert: Lastalert,
-	}
-
-	if role >= 300 {
-		u.svc.AlertServ.UpdateLastAlert(updateParam)
-	}
-
-	c.JSON(http.StatusOK, gin.H{"res": res})
-}
-
 func (u *JobsCtrlImpl) ClaimJob(c *gin.Context) {
 
 	if c.Param("id") == "" {
@@ -578,7 +493,7 @@ func (u *JobsCtrlImpl) ClaimJob(c *gin.Context) {
 	res, err, _ := u.svc.JobsServ.ClaimJob(param)
 
 	if err != nil {
-		fmt.Print(err)
+		// fmt.Print(err)
 		if err.Error() == "already have ongoing job" {
 			res, err := u.svc.JobsServ.GetClaimedJobByID(res)
 			if err != nil {
@@ -627,7 +542,7 @@ func (u *JobsCtrlImpl) FinishClaimJob(c *gin.Context) {
 
 	var reqBody apptypes.FinishClaimJobBodyT
 	if err := c.Bind(&reqBody); err != nil {
-		fmt.Print("NOT OK")
+		// fmt.Print("NOT OK")
 		c.Abort()
 		return
 	}
@@ -658,7 +573,7 @@ func (u *JobsCtrlImpl) FinishClaimJob(c *gin.Context) {
 	if err != nil {
 		os.Remove(path)
 
-		fmt.Print(err)
+		// fmt.Print(err)
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
@@ -671,7 +586,7 @@ func (u *JobsCtrlImpl) ApproveClaimedJob(c *gin.Context) {
 
 	var reqBody apptypes.ApproveJob
 	if err := c.Bind(&reqBody); err != nil {
-		fmt.Print("NOT OK")
+		// fmt.Print("NOT OK")
 		c.Abort()
 		return
 	}
@@ -735,14 +650,14 @@ func (u *JobsCtrlImpl) CancelClaimJob(c *gin.Context) {
 
 	res, err := u.svc.UserServ.GetUserById(int64(UserID))
 	if err != nil {
-		fmt.Print(err)
+		// fmt.Print(err)
 		c.Abort()
 		return
 	}
 	cJobRes, err := u.svc.JobsServ.GetClaimedJobByID(int64(id))
 
 	if err != nil {
-		fmt.Print(err)
+		// fmt.Print(err)
 		c.Abort()
 		return
 	}
@@ -768,7 +683,7 @@ func (u *JobsCtrlImpl) CancelClaimJob(c *gin.Context) {
 	}
 
 	if err != nil {
-		fmt.Print(err)
+		// fmt.Print(err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
@@ -828,9 +743,9 @@ func (u *JobsCtrlImpl) CreateJob(c *gin.Context) {
 	}
 
 	param := db.CreateJobParams{
-		FromLoc:   reqBody.FromLoc,
+		Fromloc:   reqBody.FromLoc,
 		Mid:       Mid,
-		ToLoc:     reqBody.ToLoc,
+		Toloc:     reqBody.ToLoc,
 		Price:     int32(reqBody.Price),
 		Estimated: int32(estimatedN),
 		Belongcmp: int64(reqBody.Belongcmp),
@@ -882,7 +797,7 @@ func (u *JobsCtrlImpl) UpdateJob(c *gin.Context) {
 	err := c.BindJSON(&reqBody)
 
 	if err != nil {
-		fmt.Print(err)
+		// fmt.Print(err)
 		c.Abort()
 		return
 	}
@@ -941,9 +856,9 @@ func (u *JobsCtrlImpl) UpdateJob(c *gin.Context) {
 
 	param := db.UpdateJobParams{
 		ID:        int64(reqBody.ID),
-		FromLoc:   reqBody.FromLoc,
+		Fromloc:   reqBody.FromLoc,
 		Mid:       Mid,
-		ToLoc:     reqBody.ToLoc,
+		Toloc:     reqBody.ToLoc,
 		Price:     int32(reqBody.Price),
 		Belongcmp: int64(reqBody.Belongcmp),
 		Source:    reqBody.Source,

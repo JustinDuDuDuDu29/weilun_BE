@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"errors"
-	"fmt"
 	"main/service"
 	"net/http"
 	"os"
@@ -15,6 +14,8 @@ import (
 
 type RoleMid interface {
 	SuperAdminOnly(c *gin.Context)
+	CmpAdminOnly(c *gin.Context)
+	CmpSuperAdminOnly(c *gin.Context)
 	IsLoggedIn(c *gin.Context)
 	DriverOnly(c *gin.Context)
 }
@@ -69,7 +70,7 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 
 		if err != nil {
 
-			fmt.Println(err)
+			// fmt.Println(err)
 			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
@@ -78,7 +79,7 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 		id, err := strconv.Atoi(res[0])
 		if err != nil {
 
-			fmt.Println(err)
+			// fmt.Println(err)
 			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
@@ -87,7 +88,7 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 		info, err := m.svc.UserServ.GetSeed(int64(id))
 		if err != nil {
 
-			fmt.Println(err)
+			// fmt.Println(err)
 			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
@@ -96,7 +97,7 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 		issuer, err := claims.GetIssuer()
 		if err != nil {
 
-			fmt.Println(err)
+			// fmt.Println(err)
 			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
@@ -110,7 +111,7 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 
 		if err != nil {
 
-			fmt.Println(err)
+			// fmt.Println(err)
 			c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 			c.Abort()
 			return
@@ -122,12 +123,32 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 		return
 
 	} else {
-		fmt.Println(err)
+		// fmt.Println(err)
 		c.JSON(http.StatusUnauthorized, gin.H{"err": "grow up, K? get a real job or something..."})
 		c.Abort()
 		return
 	}
 
+}
+
+func (m *RoleMidImpl) CmpAdminOnly(c *gin.Context) {
+	res := c.MustGet("Role").(int16)
+	if (res) > 200 || (res) < 100 {
+		c.Status(http.StatusForbidden)
+		c.Abort()
+		return
+	}
+	c.Next()
+}
+
+func (m *RoleMidImpl) CmpSuperAdminOnly(c *gin.Context) {
+	res := c.MustGet("Role").(int16)
+	if (res) > 200 {
+		c.Status(http.StatusForbidden)
+		c.Abort()
+		return
+	}
+	c.Next()
 }
 
 func (m *RoleMidImpl) SuperAdminOnly(c *gin.Context) {

@@ -2,9 +2,9 @@
 -- +goose StatementBegin
 CREATE TABLE JobsT(
     id BIGSERIAL PRIMARY KEY,
-    from_loc varchar(40) NOT NULL,
+    fromLoc varchar(40) NOT NULL,
     mid varchar(40),
-    to_loc varchar(40) NOT NULL,
+    toLoc varchar(40) NOT NULL,
     
     price  integer NOT NULL,
     estimated integer NOT NULL,

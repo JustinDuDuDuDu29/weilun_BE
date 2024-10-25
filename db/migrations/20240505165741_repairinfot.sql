@@ -1,11 +1,12 @@
 -- +goose Up
 -- +goose StatementBegin
-Create Table RepairPicT(
+Create Table RepairInfoT(
     id BIGSERIAL PRIMARY KEY,
-    repair_id BigInt references repairT(id) NOT NULL,
-    pic varchar,
+    repairID BigInt references RepairT(id) NOT NULL,
+    itemName varchar(20) NOT NULL,
+    quantity int DEFAULT(1) NOT NULL,
+    totalPrice BigInt DEFAULT(0) NOT NULL,
     create_date Timestamp NOT NULL DEFAULT NOW(),
-    approved_date Timestamp,
     deleted_date Timestamp,
     last_modified_date Timestamp NOT NULL DEFAULT NOW() 
 );
@@ -13,5 +14,5 @@ Create Table RepairPicT(
 
 -- +goose Down
 -- +goose StatementBegin
-Drop Table if exists RepairPicT;
+Drop Table if exists RepairInfoT;
 -- +goose StatementEnd
