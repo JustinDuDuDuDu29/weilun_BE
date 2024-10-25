@@ -2365,7 +2365,7 @@ SELECT
   CMPT.name  as cmpName
 from UserT
   left join ClaimJobT on UserT.id = ClaimJobT.driverID 
-  left join CMPT on CMPT.id = serT.Belongcmp 
+  left join CMPT on CMPT.id = userT.Belongcmp 
 where (ClaimJobT.approved_date = NULL) 
   and
     (CMPT.id =  $1
