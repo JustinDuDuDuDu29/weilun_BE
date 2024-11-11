@@ -10,6 +10,7 @@ type CmpServ interface {
 	GetCmp(cmpId int64) (db.GetCmpRow, error)
 	NewCmp(name string) (int64, error)
 	GetAllCmp() ([]db.Cmpt, error)
+	GetJobCmp(queryParam db.GetJobCmpParams) ([]db.GetJobCmpRow, error)
 	UpdateCmp(queryParam db.UpdateCmpParams) error
 	DeleteCmp(queryParam int64) error
 }
@@ -21,6 +22,11 @@ type CmpServImpl struct {
 
 func (u *CmpServImpl) GetCmp(cmpId int64) (db.GetCmpRow, error) {
 	res, err := u.q.GetCmp(context.Background(), cmpId)
+	return res, err
+}
+
+func (u *CmpServImpl) GetJobCmp(queryParam db.GetJobCmpParams) ([]db.GetJobCmpRow, error) {
+	res, err := u.q.GetJobCmp(context.Background(), queryParam)
 	return res, err
 }
 

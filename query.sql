@@ -243,6 +243,15 @@ where cmpt.id = $1;
 SELECT *
 from cmpt;
 
+-- name: GetJobCmp :many
+SELECT cmpt.id, cmpt.name, COUNT(*) as count, sum(price) as total
+FROM cmpt
+LEFT JOIN userT ON userT.belongCMP = cmpt.id 
+LEFT JOIN claimjobt ON claimjobt.driverID = userT.id
+LEFT JOIN JobsT on claimjobt.jobID = JobsT.id
+WHERE claimjobt.Approved_date BETWEEN $1 AND $2
+GROUP BY cmpt.id, cmpt.name;
+
 -- name: NewCmp :one
 INSERT INTO cmpt (name)
 values ($1)
@@ -729,6 +738,7 @@ from repairT
   inner join UserT on UserT.id = repairT.driverID
   inner join driverT on UserT.id = driverT.id
   inner join cmpt on cmpT.id = UserT.belongCMP
+  inner join cmpt on cmpT.id = UserT.belongCMP -- TODO change to repairinfoT
 where (
     repairT.id = sqlc.narg('id')
     OR sqlc.narg('id') IS NULL

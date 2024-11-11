@@ -45,6 +45,7 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		cmp := api.Group("/cmp")
 		cmp.GET("", m.RoleMid.IsLoggedIn, c.CmpCtrl.GetCmp)
 		cmp.GET("/all", m.RoleMid.IsLoggedIn, c.CmpCtrl.GetAllCmp)
+		cmp.GET("/job", m.RoleMid.IsLoggedIn, c.CmpCtrl.GetJobCmp)
 		cmp.POST("", m.RoleMid.IsLoggedIn, c.CmpCtrl.RegisterCmp)
 		cmp.PUT("", m.RoleMid.IsLoggedIn, c.CmpCtrl.UpdateCmp)
 		cmp.DELETE("", m.RoleMid.IsLoggedIn, c.CmpCtrl.DeleteCmp)

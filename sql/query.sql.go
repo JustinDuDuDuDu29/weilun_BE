@@ -1789,6 +1789,56 @@ func (q *Queries) GetJobById(ctx context.Context, id int64) (Jobst, error) {
 	return i, err
 }
 
+const getJobCmp = `-- name: GetJobCmp :many
+SELECT cmpt.id, cmpt.name, COUNT(*) as count, sum(price) as total
+FROM cmpt
+LEFT JOIN userT ON userT.belongCMP = cmpt.id 
+LEFT JOIN claimjobt ON claimjobt.driverID = userT.id
+LEFT JOIN JobsT on claimjobt.jobID = JobsT.id
+WHERE claimjobt.Approved_date BETWEEN $1 AND $2
+GROUP BY cmpt.id, cmpt.name
+`
+
+type GetJobCmpParams struct {
+	ApprovedDate   sql.NullTime
+	ApprovedDate_2 sql.NullTime
+}
+
+type GetJobCmpRow struct {
+	ID    int64
+	Name  string
+	Count int64
+	Total int64
+}
+
+func (q *Queries) GetJobCmp(ctx context.Context, arg GetJobCmpParams) ([]GetJobCmpRow, error) {
+	rows, err := q.db.QueryContext(ctx, getJobCmp, arg.ApprovedDate, arg.ApprovedDate_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetJobCmpRow
+	for rows.Next() {
+		var i GetJobCmpRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Count,
+			&i.Total,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getLastAlert = `-- name: GetLastAlert :one
 SELECT lastAlert
 from driverT

@@ -341,6 +341,7 @@ func (r *RepairCtrlImpl) CreateNewRepair(c *gin.Context) {
 		// err = json.Unmarshal(([]byte(item)), &subdata)
 
 		item.Repairid = rID
+		fmt.Println(item)
 		_, err := r.svc.RepairServ.NewRepairInfo(item)
 		if err != nil {
 			fmt.Println("1err: ", err)

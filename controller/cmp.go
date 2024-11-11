@@ -1,10 +1,14 @@
 package controller
 
 import (
+	"database/sql"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
 	"net/http"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,6 +19,7 @@ type CmpCtrl interface {
 	UpdateCmp(c *gin.Context)
 	GetCmp(c *gin.Context)
 	GetAllCmp(c *gin.Context)
+	GetJobCmp(c *gin.Context)
 }
 
 type CmpCtrlImpl struct {
@@ -55,6 +60,59 @@ func (u *CmpCtrlImpl) GetAllCmp(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, cmpList)
+}
+
+func (u *CmpCtrlImpl) GetJobCmp(c *gin.Context) {
+	year, err := strconv.Atoi(c.Query("year"))
+
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	month, err := strconv.Atoi(c.Query("month"))
+
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	tDate := time.Now()
+
+	var AppFrom sql.NullTime
+	var AppEnd sql.NullTime
+	fm, err := time.Parse(time.DateOnly, strings.Split(time.Date(year, time.Month(month), 1, 0, 0, 0, 0, tDate.Location()).String(), " ")[0])
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	AppFrom.Scan(fm)
+
+	me, err := time.Parse(time.DateOnly, strings.Split(time.Date(year, time.Month(month)+1, 1, 0, 0, 0, 0, tDate.Location()).String(), " ")[0])
+	if err != nil {
+		// fmt.Println(err)
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	// fmt.Println("param = ", me)
+
+	AppEnd.Scan(me)
+
+	param := db.GetJobCmpParams{
+		ApprovedDate:   AppFrom,
+		ApprovedDate_2: AppEnd,
+	}
+	// fmt.Println("param = ", param)
+
+	res, err := u.svc.CmpServ.GetJobCmp(param)
+
+	// cmpList, err := u.svc.CmpServ.GetAllCmp()
+
+	if err != nil {
+		c.Status(http.StatusConflict)
+		c.Abort()
+		return
+	}
+
+	c.JSON(http.StatusOK, res)
 }
 
 func (u *CmpCtrlImpl) UpdateCmp(c *gin.Context) {
