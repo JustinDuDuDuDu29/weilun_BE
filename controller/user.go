@@ -458,9 +458,13 @@ func (u *UserCtrlImpl) GetUserList(c *gin.Context) {
 	}
 
 	var BelongCmp sql.NullInt64
-	if c.Query("BelongCmp") == "" {
-		BelongCmp.Valid = false
+	if c.MustGet("Role").(int) >= 200 {
+		BelongCmp.Scan(c.MustGet("belongCmp"))
+
 	} else {
+		if c.Query("BelongCmp") == "" {
+			BelongCmp.Valid = false
+		}
 		BelongCmp.Scan(c.Query("BelongCmp"))
 	}
 

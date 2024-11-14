@@ -195,7 +195,7 @@ func (r *GasCtrlImpl) GetGas(c *gin.Context) {
 	repairRes, err := r.svc.GasServ.GetGas(param)
 
 	if err != nil && err != sql.ErrNoRows {
-		// fmt.Print("err", err)
+		fmt.Print("err", err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return

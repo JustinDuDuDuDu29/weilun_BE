@@ -930,48 +930,50 @@ values ($1, $2, $3, $4)
 RETURNING id;
 
 -- name: GetGas :many
-SELECT GasT.id as ID,
+SELECT 
+  gasT.id as ID,
   UserT.id as Driverid,
   UserT.Name as Drivername,
   cmpt.name as cmpName,
-  cmpt.id as cmpName,
-  GasT.id as Repairinfo,
-  GasT.Create_Date as CreateDate,
-  GasT.Approved_Date as ApprovedDate,
-  GasT.pic as pic,
-  driverT.plateNum as plateNum
-from GasT
-  inner join UserT on UserT.id = GasT.driverID
-  inner join driverT on UserT.id = driverT.id
-  inner join cmpt on cmpT.id = UserT.belongCMP
-where (
-    GasT.id = sqlc.narg('id')
-    OR sqlc.narg('id') IS NULL
-  )
-  AND (
-    GasT.driverID = sqlc.narg('driverID')
-    OR sqlc.narg('driverID') IS NULL
-  )
-  AND (
-    UserT.name = sqlc.narg('name')
-    OR sqlc.narg('name') IS NULL
-  )
-  AND (
-    UserT.belongcmp = sqlc.narg('belongcmp')
-    OR sqlc.narg('belongcmp') IS NULL
-  ) 
-  AND GasT.deleted_date is null 
-  and (
-    (
-      sqlc.arg('cat') = 'pending'
-      AND GasT.Approved_date IS NULL
+  cmpt.id as cmpID,
+  -- Include repair information as JSON
+  (
+    SELECT json_agg(
+      json_build_object(
+        'id', GasInfoT.id,
+        'itemName', GasInfoT.gasType,
+        'quantity', GasInfoT.quantity,
+        'totalPrice', GasInfoT.totalPrice,
+        'create_date', GasInfoT.create_date
+      )
     )
+    FROM GasInfoT 
+    WHERE GasInfoT.gasID = gasT.id
+  ) as Repairinfo,
+  gasT.Create_Date as CreateDate,
+  gasT.Approved_Date as ApprovedDate,
+  gasT.pic as pic,
+  -- gasT.place as place,
+  driverT.plateNum as plateNum
+FROM gasT
+INNER JOIN UserT ON UserT.id = gasT.driverID
+INNER JOIN driverT ON UserT.id = driverT.id
+INNER JOIN cmpt ON cmpt.id = UserT.belongCMP
+WHERE 
+  (gasT.id = sqlc.narg('id') OR sqlc.narg('id') IS NULL)
+  AND (gasT.driverID = sqlc.narg('driverID') OR sqlc.narg('driverID') IS NULL)
+  AND (UserT.name = sqlc.narg('name') OR sqlc.narg('name') IS NULL)
+  AND (UserT.belongcmp = sqlc.narg('belongcmp') OR sqlc.narg('belongcmp') IS NULL)
+  AND gasT.deleted_date IS NULL
+  AND (
+    (sqlc.arg('cat') = 'pending' AND gasT.Approved_date IS NULL)
     OR (sqlc.narg('cat') IS NULL)
   )
-  and (
-    to_char(date(GasT.create_date), 'YYYY-MM') = to_char(date(sqlc.narg('ym')), 'YYYY-MM')
+  AND (
+    to_char(date(gasT.create_date), 'YYYY-MM') = to_char(date(sqlc.narg('ym')), 'YYYY-MM')
     OR sqlc.narg('ym') IS NULL
   );
+
 
 -- name: ApproveGas :exec
 Update GasT

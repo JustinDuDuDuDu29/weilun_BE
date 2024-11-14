@@ -1602,46 +1602,47 @@ func (q *Queries) GetDriverRevenueByCmp(ctx context.Context, arg GetDriverRevenu
 }
 
 const getGas = `-- name: GetGas :many
-SELECT GasT.id as ID,
+SELECT 
+  gasT.id as ID,
   UserT.id as Driverid,
   UserT.Name as Drivername,
   cmpt.name as cmpName,
-  cmpt.id as cmpName,
-  GasT.id as Repairinfo,
-  GasT.Create_Date as CreateDate,
-  GasT.Approved_Date as ApprovedDate,
-  GasT.pic as pic,
-  driverT.plateNum as plateNum
-from GasT
-  inner join UserT on UserT.id = GasT.driverID
-  inner join driverT on UserT.id = driverT.id
-  inner join cmpt on cmpT.id = UserT.belongCMP
-where (
-    GasT.id = $1
-    OR $1 IS NULL
-  )
-  AND (
-    GasT.driverID = $2
-    OR $2 IS NULL
-  )
-  AND (
-    UserT.name = $3
-    OR $3 IS NULL
-  )
-  AND (
-    UserT.belongcmp = $4
-    OR $4 IS NULL
-  ) 
-  AND GasT.deleted_date is null 
-  and (
-    (
-      $5 = 'pending'
-      AND GasT.Approved_date IS NULL
+  cmpt.id as cmpID,
+  -- Include repair information as JSON
+  (
+    SELECT json_agg(
+      json_build_object(
+        'id', GasInfoT.id,
+        'itemName', GasInfoT.gasType,
+        'quantity', GasInfoT.quantity,
+        'totalPrice', GasInfoT.totalPrice,
+        'create_date', GasInfoT.create_date
+      )
     )
+    FROM GasInfoT 
+    WHERE GasInfoT.gasID = gasT.id
+  ) as Repairinfo,
+  gasT.Create_Date as CreateDate,
+  gasT.Approved_Date as ApprovedDate,
+  gasT.pic as pic,
+  -- gasT.place as place,
+  driverT.plateNum as plateNum
+FROM gasT
+INNER JOIN UserT ON UserT.id = gasT.driverID
+INNER JOIN driverT ON UserT.id = driverT.id
+INNER JOIN cmpt ON cmpt.id = UserT.belongCMP
+WHERE 
+  (gasT.id = $1 OR $1 IS NULL)
+  AND (gasT.driverID = $2 OR $2 IS NULL)
+  AND (UserT.name = $3 OR $3 IS NULL)
+  AND (UserT.belongcmp = $4 OR $4 IS NULL)
+  AND gasT.deleted_date IS NULL
+  AND (
+    ($5 = 'pending' AND gasT.Approved_date IS NULL)
     OR ($5 IS NULL)
   )
-  and (
-    to_char(date(GasT.create_date), 'YYYY-MM') = to_char(date($6), 'YYYY-MM')
+  AND (
+    to_char(date(gasT.create_date), 'YYYY-MM') = to_char(date($6), 'YYYY-MM')
     OR $6 IS NULL
   )
 `
@@ -1660,8 +1661,8 @@ type GetGasRow struct {
 	Driverid     int64
 	Drivername   string
 	Cmpname      string
-	Cmpname_2    int64
-	Repairinfo   int64
+	Cmpid        int64
+	Repairinfo   json.RawMessage
 	Createdate   time.Time
 	Approveddate sql.NullTime
 	Pic          sql.NullString
@@ -1689,7 +1690,7 @@ func (q *Queries) GetGas(ctx context.Context, arg GetGasParams) ([]GetGasRow, er
 			&i.Driverid,
 			&i.Drivername,
 			&i.Cmpname,
-			&i.Cmpname_2,
+			&i.Cmpid,
 			&i.Repairinfo,
 			&i.Createdate,
 			&i.Approveddate,
