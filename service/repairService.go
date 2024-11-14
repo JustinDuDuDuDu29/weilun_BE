@@ -15,6 +15,7 @@ type RepairServ interface {
 	// GetRepairById(param int64) ([]db.Repairt, error)
 	GetRepairInfoById(param int64) ([]db.Repairinfot, error)
 	GetRepairDate(param int64) ([]string, error)
+	UpdateItem(param db.UpdateItemParams) error
 }
 
 type RepairServImpl struct {
@@ -62,10 +63,10 @@ func (r *RepairServImpl) GetRepairInfoById(param int64) ([]db.Repairinfot, error
 	return res, err
 }
 
-// func (r *RepairServImpl) GetRepairById(param int64) ([]db.Repairinfot, error) {
-// 	res, err := r.q.GetRepairById(context.Background(), param)
-// 	return res, err
-// }
+func (r *RepairServImpl) UpdateItem(param db.UpdateItemParams) error {
+	err := r.q.UpdateItem(context.Background(), param)
+	return err
+}
 
 func RepairServInit(q *db.Queries, conn *sql.DB) *RepairServImpl {
 	return &RepairServImpl{

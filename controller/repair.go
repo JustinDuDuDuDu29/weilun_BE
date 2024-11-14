@@ -22,6 +22,7 @@ type RepairCtrl interface {
 	GetRepair(c *gin.Context)
 	GetRepairByID(c *gin.Context)
 	GetRepairDate(c *gin.Context)
+	UpdateItem(c *gin.Context)
 }
 
 type RepairCtrlImpl struct {
@@ -196,7 +197,7 @@ func (r *RepairCtrlImpl) GetRepair(c *gin.Context) {
 	repairRes, err := r.svc.RepairServ.GetRepair(param)
 
 	if err != nil && err != sql.ErrNoRows {
-		// fmt.Print("err", err)
+		fmt.Print("err", err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
@@ -277,6 +278,48 @@ func (r *RepairCtrlImpl) DeleteRepair(c *gin.Context) {
 		c.Abort()
 		return
 	}
+	c.Status(http.StatusOK)
+	c.Abort()
+}
+
+func (r *RepairCtrlImpl) UpdateItem(c *gin.Context) {
+	// bodyBytes, _ := io.ReadAll(c.Request.Body)
+	// fmt.Printf("Body: %s\n", string(bodyBytes))
+	var reqBody apptypes.UpdatedItems
+	err := c.BindJSON(&reqBody)
+
+	if err != nil {
+		fmt.Println("out here: ", err)
+		c.Abort()
+		return
+	}
+	// err = json.Unmarshal([]byte(reqBody.UpdatedItems), &data)
+
+	//danger???
+	//TODO: check this part
+	for _, item := range reqBody.UpdatedItems {
+		price, err := strconv.Atoi(item.Price)
+		if err != nil {
+			fmt.Println(err)
+			c.Status(http.StatusBadRequest)
+			c.Abort()
+			return
+		}
+
+		data := db.UpdateItemParams{
+			ID:         int64(item.Id),
+			Totalprice: int64(price),
+		}
+		// fmt.Println(data)
+		err = r.svc.RepairServ.UpdateItem(data)
+		if err != nil {
+			fmt.Println(err)
+			c.Status(http.StatusBadRequest)
+			c.Abort()
+			return
+		}
+	}
+
 	c.Status(http.StatusOK)
 	c.Abort()
 }

@@ -1130,7 +1130,14 @@ from ClaimJobT
   inner join Cmpt on UserT.belongCMP = cmpt.id
 WHERE ClaimJobT.Deleted_date is null
   and UserT.belongCMP = $1
+  and ClaimJobT.Approved_date between $2 and $3
 `
+
+type GetClaimedJobByCmpParams struct {
+	Belongcmp      int64
+	ApprovedDate   sql.NullTime
+	ApprovedDate_2 sql.NullTime
+}
 
 type GetClaimedJobByCmpRow struct {
 	ID           int64
@@ -1147,8 +1154,8 @@ type GetClaimedJobByCmpRow struct {
 	Finishdate   sql.NullTime
 }
 
-func (q *Queries) GetClaimedJobByCmp(ctx context.Context, belongcmp int64) ([]GetClaimedJobByCmpRow, error) {
-	rows, err := q.db.QueryContext(ctx, getClaimedJobByCmp, belongcmp)
+func (q *Queries) GetClaimedJobByCmp(ctx context.Context, arg GetClaimedJobByCmpParams) ([]GetClaimedJobByCmpRow, error) {
+	rows, err := q.db.QueryContext(ctx, getClaimedJobByCmp, arg.Belongcmp, arg.ApprovedDate, arg.ApprovedDate_2)
 	if err != nil {
 		return nil, err
 	}
@@ -1202,7 +1209,14 @@ from ClaimJobT
   inner join Cmpt on UserT.belongCMP = cmpt.id
 WHERE ClaimJobT.Deleted_date is null
   and UserT.id = $1
+  and ClaimJobT.Approved_date between $2 and $3
 `
+
+type GetClaimedJobByDriverIDParams struct {
+	ID             int64
+	ApprovedDate   sql.NullTime
+	ApprovedDate_2 sql.NullTime
+}
 
 type GetClaimedJobByDriverIDRow struct {
 	ID           int64
@@ -1219,8 +1233,8 @@ type GetClaimedJobByDriverIDRow struct {
 	Finishdate   sql.NullTime
 }
 
-func (q *Queries) GetClaimedJobByDriverID(ctx context.Context, id int64) ([]GetClaimedJobByDriverIDRow, error) {
-	rows, err := q.db.QueryContext(ctx, getClaimedJobByDriverID, id)
+func (q *Queries) GetClaimedJobByDriverID(ctx context.Context, arg GetClaimedJobByDriverIDParams) ([]GetClaimedJobByDriverIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, getClaimedJobByDriverID, arg.ID, arg.ApprovedDate, arg.ApprovedDate_2)
 	if err != nil {
 		return nil, err
 	}
@@ -1796,12 +1810,17 @@ LEFT JOIN userT ON userT.belongCMP = cmpt.id
 LEFT JOIN claimjobt ON claimjobt.driverID = userT.id
 LEFT JOIN JobsT on claimjobt.jobID = JobsT.id
 WHERE claimjobt.Approved_date BETWEEN $1 AND $2
+AND (
+    cmpt.id = $3
+    OR $3 IS NULL
+  )
 GROUP BY cmpt.id, cmpt.name
 `
 
 type GetJobCmpParams struct {
 	ApprovedDate   sql.NullTime
 	ApprovedDate_2 sql.NullTime
+	CmpId          sql.NullInt64
 }
 
 type GetJobCmpRow struct {
@@ -1812,7 +1831,7 @@ type GetJobCmpRow struct {
 }
 
 func (q *Queries) GetJobCmp(ctx context.Context, arg GetJobCmpParams) ([]GetJobCmpRow, error) {
-	rows, err := q.db.QueryContext(ctx, getJobCmp, arg.ApprovedDate, arg.ApprovedDate_2)
+	rows, err := q.db.QueryContext(ctx, getJobCmp, arg.ApprovedDate, arg.ApprovedDate_2, arg.CmpId)
 	if err != nil {
 		return nil, err
 	}
@@ -1853,46 +1872,46 @@ func (q *Queries) GetLastAlert(ctx context.Context, id int64) (sql.NullInt64, er
 }
 
 const getRepair = `-- name: GetRepair :many
-SELECT repairT.id as ID,
+SELECT 
+  repairT.id as ID,
   UserT.id as Driverid,
   UserT.Name as Drivername,
   cmpt.name as cmpName,
-  cmpt.id as cmpName,
-  repairT.id as Repairinfo,
+  cmpt.id as cmpID,
+  -- Include repair information as JSON
+  (
+    SELECT json_agg(
+      json_build_object(
+        'id', repairinfoT.id,
+        'itemName', repairinfoT.itemName,
+        'quantity', repairinfoT.quantity,
+        'totalPrice', repairinfoT.totalPrice,
+        'create_date', repairinfoT.create_date
+      )
+    )
+    FROM repairinfoT 
+    WHERE repairinfoT.repairID = repairT.id
+  ) as Repairinfo,
   repairT.Create_Date as CreateDate,
   repairT.Approved_Date as ApprovedDate,
   repairT.pic as pic,
   repairT.place as place,
   driverT.plateNum as plateNum
-from repairT
-  inner join UserT on UserT.id = repairT.driverID
-  inner join driverT on UserT.id = driverT.id
-  inner join cmpt on cmpT.id = UserT.belongCMP
-where (
-    repairT.id = $1
-    OR $1 IS NULL
-  )
+FROM repairT
+INNER JOIN UserT ON UserT.id = repairT.driverID
+INNER JOIN driverT ON UserT.id = driverT.id
+INNER JOIN cmpt ON cmpt.id = UserT.belongCMP
+WHERE 
+  (repairT.id = $1 OR $1 IS NULL)
+  AND (repairT.driverID = $2 OR $2 IS NULL)
+  AND (UserT.name = $3 OR $3 IS NULL)
+  AND (UserT.belongcmp = $4 OR $4 IS NULL)
+  AND repairT.deleted_date IS NULL
   AND (
-    repairT.driverID = $2
-    OR $2 IS NULL
-  )
-  AND (
-    UserT.name = $3
-    OR $3 IS NULL
-  )
-  AND (
-    UserT.belongcmp = $4
-    OR $4 IS NULL
-  ) 
-  AND repairT.deleted_date is null 
-  and (
-    (
-      $5 = 'pending'
-      AND repairT.Approved_date IS NULL
-    )
+    ($5 = 'pending' AND repairT.Approved_date IS NULL)
     OR ($5 IS NULL)
   )
-  and (
+  AND (
     to_char(date(repairT.create_date), 'YYYY-MM') = to_char(date($6), 'YYYY-MM')
     OR $6 IS NULL
   )
@@ -1912,8 +1931,8 @@ type GetRepairRow struct {
 	Driverid     int64
 	Drivername   string
 	Cmpname      string
-	Cmpname_2    int64
-	Repairinfo   int64
+	Cmpid        int64
+	Repairinfo   json.RawMessage
 	Createdate   time.Time
 	Approveddate sql.NullTime
 	Pic          sql.NullString
@@ -1942,7 +1961,7 @@ func (q *Queries) GetRepair(ctx context.Context, arg GetRepairParams) ([]GetRepa
 			&i.Driverid,
 			&i.Drivername,
 			&i.Cmpname,
-			&i.Cmpname_2,
+			&i.Cmpid,
 			&i.Repairinfo,
 			&i.Createdate,
 			&i.Approveddate,
@@ -2587,6 +2606,22 @@ func (q *Queries) UpdateDriverPic(ctx context.Context, arg UpdateDriverPicParams
 		arg.Driverlicense,
 		arg.Trucklicense,
 	)
+	return err
+}
+
+const updateItem = `-- name: UpdateItem :exec
+UPDATE RepairInfoT
+SET totalPrice = $2, last_modified_date = NOW()
+WHERE RepairInfoT.id = $1
+`
+
+type UpdateItemParams struct {
+	ID         int64
+	Totalprice int64
+}
+
+func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) error {
+	_, err := q.db.ExecContext(ctx, updateItem, arg.ID, arg.Totalprice)
 	return err
 }
 

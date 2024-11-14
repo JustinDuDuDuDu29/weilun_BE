@@ -73,6 +73,7 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		repair.GET("", m.RoleMid.IsLoggedIn, c.RepairCtrl.GetRepair)
 		repair.GET("/cj", m.RoleMid.IsLoggedIn, c.RepairCtrl.GetRepairDate)
 		repair.POST("", m.RoleMid.IsLoggedIn, c.RepairCtrl.CreateNewRepair)
+		repair.PUT("/updateItem/", m.RoleMid.IsLoggedIn, c.RepairCtrl.UpdateItem)
 		repair.POST("/approve/:id", m.RoleMid.IsLoggedIn, c.RepairCtrl.ApproveRepair)
 		repair.DELETE(":id", m.RoleMid.IsLoggedIn, c.RepairCtrl.DeleteRepair)
 

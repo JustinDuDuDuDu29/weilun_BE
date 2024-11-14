@@ -98,6 +98,15 @@ type NewRepairBodyT struct {
 	RepairPic  *multipart.FileHeader `form:"repairPic"`
 }
 
+type UpdatedItems struct {
+	UpdatedItems []UpdateItemT `form:"UpdatedItems" binding:"required"`
+}
+
+type UpdateItemT struct {
+	Id    int    `form:"id" binding:"required"`
+	Price string `form:"price" binding:"required"`
+}
+
 type NewGasBodyT struct {
 	Place   string                `form:"place" binding:"required"`
 	Gasinfo string                `form:"gasInfo" binding:"required"`

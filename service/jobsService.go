@@ -25,8 +25,8 @@ type JobsServ interface {
 	SetJobNoMore(id int64) error
 	GetUserWithPendingJob(id sql.NullInt64) ([]db.GetUserWithPendingJobRow, error)
 	GetAllClaimedJobs(param db.GetAllClaimedJobsParams) ([]db.GetAllClaimedJobsRow, error)
-	GetClaimedJobByCmp(id int64) ([]db.GetClaimedJobByCmpRow, error)
-	GetClaimedJobByDriverID(id int64) ([]db.GetClaimedJobByDriverIDRow, error)
+	GetClaimedJobByCmp(param db.GetClaimedJobByCmpParams) ([]db.GetClaimedJobByCmpRow, error)
+	GetClaimedJobByDriverID(param db.GetClaimedJobByDriverIDParams) ([]db.GetClaimedJobByDriverIDRow, error)
 }
 
 type JobsServImpl struct {
@@ -34,8 +34,8 @@ type JobsServImpl struct {
 	conn *sql.DB
 }
 
-func (s *JobsServImpl) GetClaimedJobByCmp(id int64) ([]db.GetClaimedJobByCmpRow, error) {
-	res, err := s.q.GetClaimedJobByCmp(context.Background(), id)
+func (s *JobsServImpl) GetClaimedJobByCmp(param db.GetClaimedJobByCmpParams) ([]db.GetClaimedJobByCmpRow, error) {
+	res, err := s.q.GetClaimedJobByCmp(context.Background(), param)
 	// res, err := s.q.GetClaimedJobByCmp(context.Background(), id)
 
 	if err == sql.ErrNoRows {
@@ -46,8 +46,8 @@ func (s *JobsServImpl) GetClaimedJobByCmp(id int64) ([]db.GetClaimedJobByCmpRow,
 
 	return res, err
 }
-func (s *JobsServImpl) GetClaimedJobByDriverID(id int64) ([]db.GetClaimedJobByDriverIDRow, error) {
-	res, err := s.q.GetClaimedJobByDriverID(context.Background(), id)
+func (s *JobsServImpl) GetClaimedJobByDriverID(param db.GetClaimedJobByDriverIDParams) ([]db.GetClaimedJobByDriverIDRow, error) {
+	res, err := s.q.GetClaimedJobByDriverID(context.Background(), param)
 
 	if err == sql.ErrNoRows {
 

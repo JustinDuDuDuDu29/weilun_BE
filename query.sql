@@ -250,6 +250,10 @@ LEFT JOIN userT ON userT.belongCMP = cmpt.id
 LEFT JOIN claimjobt ON claimjobt.driverID = userT.id
 LEFT JOIN JobsT on claimjobt.jobID = JobsT.id
 WHERE claimjobt.Approved_date BETWEEN $1 AND $2
+AND (
+    cmpt.id = sqlc.narg('cmpId')
+    OR sqlc.narg('cmpId') IS NULL
+  )
 GROUP BY cmpt.id, cmpt.name;
 
 -- name: NewCmp :one
@@ -491,7 +495,9 @@ from ClaimJobT
   inner join UserT on UserT.id = ClaimJobT.Driverid
   inner join Cmpt on UserT.belongCMP = cmpt.id
 WHERE ClaimJobT.Deleted_date is null
-  and UserT.id = $1;
+  and UserT.id = $1
+  and ClaimJobT.Approved_date between $2 and $3
+  ;
 
 -- name: GetClaimedJobByCmp :many
 SELECT ClaimJobT.id as id,
@@ -511,7 +517,8 @@ from ClaimJobT
   inner join UserT on UserT.id = ClaimJobT.Driverid
   inner join Cmpt on UserT.belongCMP = cmpt.id
 WHERE ClaimJobT.Deleted_date is null
-  and UserT.belongCMP = $1;
+  and UserT.belongCMP = $1
+  and ClaimJobT.Approved_date between $2 and $3;
 
 -- name: GetClaimedJobByID :one
 SELECT ClaimJobT.id as id,
@@ -723,50 +730,50 @@ values ($1, $2, $3, $4)
 RETURNING id;
 
 -- name: GetRepair :many
-SELECT repairT.id as ID,
+SELECT 
+  repairT.id as ID,
   UserT.id as Driverid,
   UserT.Name as Drivername,
   cmpt.name as cmpName,
-  cmpt.id as cmpName,
-  repairT.id as Repairinfo,
+  cmpt.id as cmpID,
+  -- Include repair information as JSON
+  (
+    SELECT json_agg(
+      json_build_object(
+        'id', repairinfoT.id,
+        'itemName', repairinfoT.itemName,
+        'quantity', repairinfoT.quantity,
+        'totalPrice', repairinfoT.totalPrice,
+        'create_date', repairinfoT.create_date
+      )
+    )
+    FROM repairinfoT 
+    WHERE repairinfoT.repairID = repairT.id
+  ) as Repairinfo,
   repairT.Create_Date as CreateDate,
   repairT.Approved_Date as ApprovedDate,
   repairT.pic as pic,
   repairT.place as place,
   driverT.plateNum as plateNum
-from repairT
-  inner join UserT on UserT.id = repairT.driverID
-  inner join driverT on UserT.id = driverT.id
-  inner join cmpt on cmpT.id = UserT.belongCMP
-  inner join cmpt on cmpT.id = UserT.belongCMP -- TODO change to repairinfoT
-where (
-    repairT.id = sqlc.narg('id')
-    OR sqlc.narg('id') IS NULL
-  )
+FROM repairT
+INNER JOIN UserT ON UserT.id = repairT.driverID
+INNER JOIN driverT ON UserT.id = driverT.id
+INNER JOIN cmpt ON cmpt.id = UserT.belongCMP
+WHERE 
+  (repairT.id = sqlc.narg('id') OR sqlc.narg('id') IS NULL)
+  AND (repairT.driverID = sqlc.narg('driverID') OR sqlc.narg('driverID') IS NULL)
+  AND (UserT.name = sqlc.narg('name') OR sqlc.narg('name') IS NULL)
+  AND (UserT.belongcmp = sqlc.narg('belongcmp') OR sqlc.narg('belongcmp') IS NULL)
+  AND repairT.deleted_date IS NULL
   AND (
-    repairT.driverID = sqlc.narg('driverID')
-    OR sqlc.narg('driverID') IS NULL
-  )
-  AND (
-    UserT.name = sqlc.narg('name')
-    OR sqlc.narg('name') IS NULL
-  )
-  AND (
-    UserT.belongcmp = sqlc.narg('belongcmp')
-    OR sqlc.narg('belongcmp') IS NULL
-  ) 
-  AND repairT.deleted_date is null 
-  and (
-    (
-      sqlc.arg('cat') = 'pending'
-      AND repairT.Approved_date IS NULL
-    )
+    (sqlc.arg('cat') = 'pending' AND repairT.Approved_date IS NULL)
     OR (sqlc.narg('cat') IS NULL)
   )
-  and (
+  AND (
     to_char(date(repairT.create_date), 'YYYY-MM') = to_char(date(sqlc.narg('ym')), 'YYYY-MM')
     OR sqlc.narg('ym') IS NULL
   );
+
 
 -- name: ApproveRepair :exec
 Update repairT
@@ -986,3 +993,8 @@ group by to_char(create_date, 'YYYY-MM');
 
 -- name: GetGasInfoById :many
 SELECT * from GasInfoT where gasID = $1;
+
+-- name: UpdateItem :exec
+UPDATE RepairInfoT
+SET totalPrice = $2, last_modified_date = NOW()
+WHERE RepairInfoT.id = $1;

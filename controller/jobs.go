@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -36,7 +37,7 @@ type JobsCtrlImpl struct {
 }
 
 func (u *JobsCtrlImpl) GetClaimedJobByDriverID(c *gin.Context) {
-	uid := c.MustGet("UserID")
+	uid := c.MustGet("UserID").(int)
 	role := c.MustGet("Role")
 	bcmp := c.MustGet("belongCmp")
 
@@ -44,6 +45,7 @@ func (u *JobsCtrlImpl) GetClaimedJobByDriverID(c *gin.Context) {
 	qcmp := c.Query("cmp")
 
 	if qcmp != "" {
+
 		cmp, err := strconv.Atoi(qcmp)
 		if err != nil {
 			c.AbortWithStatus(http.StatusInternalServerError)
@@ -51,41 +53,123 @@ func (u *JobsCtrlImpl) GetClaimedJobByDriverID(c *gin.Context) {
 		}
 
 		if role.(int16) >= 300 || (role == 200 && bcmp != cmp) {
+			// ???
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
-		res, err := u.svc.JobsServ.GetClaimedJobByCmp(int64(cmp))
+		//start
+		year, err := strconv.Atoi(c.Query("year"))
+
+		if err != nil {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		month, err := strconv.Atoi(c.Query("month"))
+
+		if err != nil {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		tDate := time.Now()
+
+		var AppFrom sql.NullTime
+		var AppEnd sql.NullTime
+		fm, err := time.Parse(time.DateOnly, strings.Split(time.Date(year, time.Month(month), 1, 0, 0, 0, 0, tDate.Location()).String(), " ")[0])
+		if err != nil {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		AppFrom.Scan(fm)
+
+		me, err := time.Parse(time.DateOnly, strings.Split(time.Date(year, time.Month(month)+1, 1, 0, 0, 0, 0, tDate.Location()).String(), " ")[0])
+		if err != nil {
+			// fmt.Println(err)
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		// fmt.Println("param = ", me)
+
+		AppEnd.Scan(me)
+
+		param := db.GetClaimedJobByCmpParams{
+			Belongcmp:      bcmp.(int64),
+			ApprovedDate:   AppFrom,
+			ApprovedDate_2: AppEnd,
+		}
+
+		//endstart
+		res, err := u.svc.JobsServ.GetClaimedJobByCmp(param)
 		if err != nil {
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
-
 		c.JSON(http.StatusOK, res)
 		return
 
-	}
+	} else {
+		var info db.GetDriverRow
+		if qid != "" {
+			id, err := strconv.Atoi(qid)
+			if err != nil {
+				c.AbortWithStatus(http.StatusInternalServerError)
+				return
+			}
+			info, err = u.svc.UserServ.GetDriverInfo(int64(id))
 
-	if qid != "" {
-		id, err := strconv.Atoi(qid)
-		if err != nil {
-			c.AbortWithStatus(http.StatusInternalServerError)
-			return
+			if err != nil {
+				// fmt.Println("it is: ", err)
+				c.AbortWithStatus(http.StatusInternalServerError)
+				return
+			}
 		}
-
-		info, err := u.svc.UserServ.GetDriverInfo(int64(id))
-		if err != nil {
-			// fmt.Println("it is: ", err)
-			c.AbortWithStatus(http.StatusInternalServerError)
-			return
-		}
-
-		if (role == 300 && qid != uid) || (role == 200 && info.Belongcmp == bcmp) {
+		if (role == 300) || (role == 200 && info.Belongcmp == bcmp) {
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
-		res, err := u.svc.JobsServ.GetClaimedJobByDriverID(int64(id))
+		//start
+		year, err := strconv.Atoi(c.Query("year"))
+
+		if err != nil {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		month, err := strconv.Atoi(c.Query("month"))
+
+		if err != nil {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		tDate := time.Now()
+
+		var AppFrom sql.NullTime
+		var AppEnd sql.NullTime
+		fm, err := time.Parse(time.DateOnly, strings.Split(time.Date(year, time.Month(month), 1, 0, 0, 0, 0, tDate.Location()).String(), " ")[0])
+		if err != nil {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		AppFrom.Scan(fm)
+
+		me, err := time.Parse(time.DateOnly, strings.Split(time.Date(year, time.Month(month)+1, 1, 0, 0, 0, 0, tDate.Location()).String(), " ")[0])
+		if err != nil {
+			// fmt.Println(err)
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		// fmt.Println("param = ", me)
+
+		AppEnd.Scan(me)
+
+		param := db.GetClaimedJobByDriverIDParams{
+			ID:             int64(uid),
+			ApprovedDate:   AppFrom,
+			ApprovedDate_2: AppEnd,
+		}
+		//endstart
+
+		res, err := u.svc.JobsServ.GetClaimedJobByDriverID(param)
 		if err != nil {
 
 			// fmt.Println(err)
@@ -95,6 +179,7 @@ func (u *JobsCtrlImpl) GetClaimedJobByDriverID(c *gin.Context) {
 
 		c.JSON(http.StatusOK, res)
 		return
+
 	}
 }
 
