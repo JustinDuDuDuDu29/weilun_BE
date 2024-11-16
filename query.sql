@@ -429,54 +429,57 @@ values (
 RETURNING id;
 
 -- name: GetAllClaimedJobs :many
-SELECT ClaimJobT.id as id,
-  JobsT.id as JobID,
-  UserT.id as UserID,
-  JobsT.fromLoc,
-  JobsT.mid,
-  JobsT.toLoc,
+SELECT 
+  ClaimJobT.id AS id,
+  JobsT.id AS JobID,
+  UserT.id AS UserID,
+  JobsT.fromLoc AS fromloc,   -- Aliased as fromloc
+  JobsT.mid AS mid,
+  JobsT.toLoc AS toloc,       -- Aliased as toloc
   JobsT.Price,
   ClaimJobT.Create_Date,
-  usert.name as userName,
-  cmpt.name as cmpname,
-  cmpT.id as cmpID,
-  ClaimJobT.Approved_date as ApprovedDate,
-  ClaimJobT.Finished_Date as FinishDate,
+  UserT.name AS userName,
+  Cmpt.name AS cmpname,
+  Cmpt.id AS cmpID,
+  ClaimJobT.Approved_date AS ApprovedDate,
+  ClaimJobT.Finished_Date AS FinishDate,
   ClaimJobT.finishPic
-from ClaimJobT
-  inner join JobsT on JobsT.id = ClaimJobT.JobId
-  inner join UserT on UserT.id = ClaimJobT.Driverid
-  inner join Cmpt on UserT.belongCMP = cmpt.id
-WHERE ClaimJobT.Deleted_date is null
-  and (
+FROM 
+  ClaimJobT
+  INNER JOIN JobsT ON JobsT.id = ClaimJobT.JobId
+  INNER JOIN UserT ON UserT.id = ClaimJobT.Driverid
+  INNER JOIN Cmpt ON UserT.belongCMP = Cmpt.id
+WHERE 
+  ClaimJobT.Deleted_date IS NULL
+  AND (
     ClaimJobT.driverid = sqlc.narg('uid')
     OR sqlc.narg('uid') IS NULL
   )
-  and (
-    claimjobt.jobID = sqlc.narg('jobid')
+  AND (
+    ClaimJobT.jobID = sqlc.narg('jobid')
     OR sqlc.narg('jobid') IS NULL
   )
-  and (
-    usert.belongCMP = sqlc.narg('cmpID')
+  AND (
+    UserT.belongCMP = sqlc.narg('cmpID')
     OR sqlc.narg('cmpID') IS NULL
   )
-  and (
-    claimjobt.id = sqlc.narg('cjID')
+  AND (
+    ClaimJobT.id = sqlc.narg('cjID')
     OR sqlc.narg('cjID') IS NULL
   )
-  and (
+  AND (
     (
       sqlc.narg('cat') = 'pending'
-      AND claimjobt.Approved_date IS NULL
+      AND ClaimJobT.Approved_date IS NULL
     )
-    OR (sqlc.narg('cat') IS NULL)
+    OR sqlc.narg('cat') IS NULL
   )
-  and (
-    to_char(date(claimjobt.create_date), 'YYYY-MM') = to_char(date(sqlc.narg('ym')), 'YYYY-MM')
+  AND (
+    TO_CHAR(DATE(ClaimJobT.create_date), 'YYYY-MM') = TO_CHAR(DATE(sqlc.narg('ym')), 'YYYY-MM')
     OR sqlc.narg('ym') IS NULL
   )
-  and (claimjobt.deleted_date IS NULL);
-  
+  AND ClaimJobT.deleted_date IS NULL;
+ 
 -- name: GetClaimedJobByDriverID :many
 SELECT ClaimJobT.id as id,
   JobsT.id as JobID,
@@ -904,9 +907,9 @@ SELECT JSON_BUILD_OBJECT(
                         'Cmpid', CMPT.id,
                         'Approveddate', CLAIMJOBT.approved_date,
                         'jobId', CLAIMJOBT.jobid,
-                        'fromloc', jobst.fromloc,
-                        'mid', jobst.mid,
-                        'toloc', jobst.toloc
+                        'Fromloc', jobst.fromloc,
+                        'Mid', jobst.mid,
+                        'Toloc', jobst.toloc
                     )
                 )
                 FROM CLAIMJOBT
