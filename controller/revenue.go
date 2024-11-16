@@ -18,14 +18,15 @@ import (
 type RevenueCtrl interface {
 	RevenueDriver(c *gin.Context)
 	RevenueExcel(c *gin.Context)
+	// SimpleExcel(c *gin.Context)
 }
 
 type RevenueCtrlImpl struct {
 	svc *service.AppService
 }
 
-func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
-
+func (a *RevenueCtrlImpl) SimpleExcel(c *gin.Context) {
+	bcmp := c.MustGet("BelongCmp").(int64)
 	year, err := strconv.Atoi(c.Query("year"))
 
 	if err != nil {
@@ -59,9 +60,93 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 
 	AppEnd.Scan(me)
 
+	var qBcmp int64
+
+	if c.Query("cmp") == "" {
+		tmp, err := strconv.Atoi(c.Query("cmp"))
+
+		if err != nil {
+			// fmt.Println(err)
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		qBcmp = int64(tmp)
+	} else {
+		qBcmp = bcmp
+	}
+
 	param := db.GetRevenueExcelParams{
 		ApprovedDate:   AppFrom,
 		ApprovedDate_2: AppEnd,
+		Belongcmp:      qBcmp,
+	}
+	// fmt.Println("param = ", param)
+
+	res, err := a.svc.RevenueServ.GetExcel(param)
+
+	if err != nil {
+		// fmt.Println("err: ", err)
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	c.JSON(http.StatusOK, res)
+
+}
+
+func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
+	bcmp := c.MustGet("BelongCmp").(int64)
+	year, err := strconv.Atoi(c.Query("year"))
+
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	month, err := strconv.Atoi(c.Query("month"))
+
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	tDate := time.Now()
+
+	var AppFrom sql.NullTime
+	var AppEnd sql.NullTime
+	fm, err := time.Parse(time.DateOnly, strings.Split(time.Date(year, time.Month(month), 1, 0, 0, 0, 0, tDate.Location()).String(), " ")[0])
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	AppFrom.Scan(fm)
+
+	me, err := time.Parse(time.DateOnly, strings.Split(time.Date(year, time.Month(month)+1, 1, 0, 0, 0, 0, tDate.Location()).String(), " ")[0])
+	if err != nil {
+		// fmt.Println(err)
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	// fmt.Println("param = ", me)
+
+	AppEnd.Scan(me)
+
+	var qBcmp int64
+
+	if c.Query("cmp") == "" {
+		tmp, err := strconv.Atoi(c.Query("cmp"))
+
+		if err != nil {
+			// fmt.Println(err)
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		qBcmp = int64(tmp)
+	} else {
+		qBcmp = bcmp
+	}
+
+	param := db.GetRevenueExcelParams{
+		ApprovedDate:   AppFrom,
+		ApprovedDate_2: AppEnd,
+		Belongcmp:      qBcmp,
 	}
 	// fmt.Println("param = ", param)
 
@@ -81,7 +166,6 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 			c.AbortWithStatus(http.StatusBadRequest)
 		}
 	}()
-	// fmt.Println("res = ", res)
 
 	for _, userRecord := range res {
 		var record apptypes.Excel
@@ -278,6 +362,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 	c.File("./excel/" + targetPath)
 
 }
+
 func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
 
 	uid := c.MustGet("UserID")

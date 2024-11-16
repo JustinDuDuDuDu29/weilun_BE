@@ -355,7 +355,7 @@ func (u *JobsCtrlImpl) GetAllJob(c *gin.Context) {
 	belongCmp := c.MustGet("belongCmp").(int64)
 	// UserID := c.MustGet("UserID").(int)
 
-	if role <= 100 {
+	if role <= 200 {
 		var reqBody apptypes.GetJobsBodyT
 		if err := c.Bind(&reqBody); err != nil {
 			c.Abort()
@@ -385,6 +385,9 @@ func (u *JobsCtrlImpl) GetAllJob(c *gin.Context) {
 		var Belongcmp sql.NullInt64
 		if reqBody.Belongcmp != 0 {
 			Belongcmp.Scan(reqBody.Belongcmp)
+			if role >= 200 {
+				Belongcmp.Scan(role)
+			}
 		}
 
 		var Remaining sql.NullInt32

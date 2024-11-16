@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	db "main/sql"
 )
@@ -23,7 +24,7 @@ type JobsServ interface {
 	DeleteClaimedJob(param db.DeleteClaimedJobParams) (int32, error)
 	ApproveFinishedJob(param db.ApproveFinishedJobParams) error
 	SetJobNoMore(id int64) error
-	GetUserWithPendingJob(id sql.NullInt64) ([]db.GetUserWithPendingJobRow, error)
+	GetUserWithPendingJob(id sql.NullInt64) ([]json.RawMessage, error)
 	GetAllClaimedJobs(param db.GetAllClaimedJobsParams) ([]db.GetAllClaimedJobsRow, error)
 	GetClaimedJobByCmp(param db.GetClaimedJobByCmpParams) ([]db.GetClaimedJobByCmpRow, error)
 	GetClaimedJobByDriverID(param db.GetClaimedJobByDriverIDParams) ([]db.GetClaimedJobByDriverIDRow, error)
@@ -68,11 +69,11 @@ func (s *JobsServImpl) SetJobNoMore(id int64) error {
 	return err
 }
 
-func (s *JobsServImpl) GetUserWithPendingJob(id sql.NullInt64) ([]db.GetUserWithPendingJobRow, error) {
+func (s *JobsServImpl) GetUserWithPendingJob(id sql.NullInt64) ([]json.RawMessage, error) {
 	res, err := s.q.GetUserWithPendingJob(context.Background(), id)
 	if err == sql.ErrNoRows {
 
-		var r []db.GetUserWithPendingJobRow
+		var r []json.RawMessage
 		return r, nil
 	}
 	return res, err
