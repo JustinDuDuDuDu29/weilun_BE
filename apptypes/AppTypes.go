@@ -11,26 +11,74 @@ import (
 type CustomClaims struct {
 	jwt.RegisteredClaims
 }
+type RevenueData struct {
+	Platenum string `json:"platenum"`
+	CmpName  string `json:"cmpName"`
+	FromLoc  string `json:"fromLoc"`
+	Mid      string `json:"mid"`
+	Toloc    string `json:"toloc"`
+	Count    int    `json:"count"`
+	Jp       int    `json:"jp"`
+	Total    int    `json:"total"`
+	Ss       string `json:"ss"`
+}
+
+type RevenueList struct {
+	Date   string        `json:"date"`
+	Data   []RevenueData `json:"data"`
+	Gas    int           `json:"gas"`
+	Repair int           `json:"repair"`
+}
 
 type Excel struct {
-	Uid      int    `json:"uid"`
+	UID      int    `json:"uid"`
 	Username string `json:"username"`
 	List     []struct {
-		Gas  int `json:"gas"`
+		Date     string `json:"date"`
+		Platenum string `json:"platenum"`
+
 		Data []struct {
-			Jp       int    `json:"jp"`
-			Ss       string `json:"ss"`
-			Mid      string `json:"mid"`
-			Count    int    `json:"count"`
-			Toloc    string `json:"toloc"`
-			Total    int    `json:"total"`
-			CmpName  string `json:"cmpName"`
-			FromLoc  string `json:"fromLoc"`
-			Platenum string `json:"platenum"`
+			Platenum string  `json:"platenum"`
+			CmpName  string  `json:"cmpName"`
+			FromLoc  string  `json:"fromLoc"`
+			Mid      string  `json:"mid"`
+			ToLoc    string  `json:"toloc"`
+			Count    int     `json:"count"`
+			Jp       float64 `json:"jp"`
+			Total    float64 `json:"total"`
+			Ss       string  `json:"ss"`
+		} `json:"data"`
+		Gas struct {
+			Platenum string  `json:"platenum"`
+			Gas      float64 `json:"gas"`
 		}
-		Date string `json:"date"`
+		Repair struct {
+			Repair   float64 `json:"repair"`
+			Platenum string  `json:"platenum"`
+		}
 	} `json:"list"`
 }
+
+// type Excel struct {
+// 	Uid      int    `json:"uid"`
+// 	Username string `json:"username"`
+// 	List     []struct {
+// 		Gas    int `json:"gas"`
+// 		Repair int `json:"repair"`
+// 		Data   []struct {
+// 			Jp       int    `json:"jp"`
+// 			Ss       string `json:"ss"`
+// 			Mid      string `json:"mid"`
+// 			Count    int    `json:"count"`
+// 			Toloc    string `json:"toloc"`
+// 			Total    int    `json:"total"`
+// 			CmpName  string `json:"cmpName"`
+// 			FromLoc  string `json:"fromLoc"`
+// 			Platenum string `json:"platenum"`
+// 		}
+// 		Date string `json:"date"`
+// 	} `json:"list"`
+// }
 
 type ApproveJob struct {
 	Memo string `json:"memo"`

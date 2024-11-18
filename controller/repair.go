@@ -23,10 +23,95 @@ type RepairCtrl interface {
 	GetRepairByID(c *gin.Context)
 	GetRepairDate(c *gin.Context)
 	UpdateItem(c *gin.Context)
+	GetRepairCmpUser(c *gin.Context)
 }
 
 type RepairCtrlImpl struct {
 	svc *service.AppService
+}
+
+func (r *RepairCtrlImpl) GetRepairCmpUser(c *gin.Context) {
+
+	// UserID := c.MustGet("UserID").(int)
+	belongCmp := c.MustGet("belongCmp").(int64)
+	userRole := c.MustGet("Role").(int16)
+
+	// cmp and up
+	var BelongCmp sql.NullInt64
+	if userRole >= 200 {
+		BelongCmp.Scan(belongCmp)
+	} else {
+		if !(c.Query("belongCmp") == "") {
+			BelongCmp.Scan(c.Query("belongCmp"))
+		}
+	}
+
+	// var CreateDateStart sql.NullTime
+	// if c.Query("CreateDateStart") == "" {
+	// 	CreateDateStart.Valid = false
+	// } else {
+	// 	CreateDateStart.Scan(c.Query("CreateDateStart"))
+	// }
+
+	// var CreateDateEnd sql.NullTime
+	// if c.Query("CreateDateEnd") == "" {
+	// 	CreateDateEnd.Valid = false
+	// } else {
+	// 	CreateDateEnd.Scan(c.Query("CreateDateEnd"))
+	// }
+
+	// var DeletedDateStart sql.NullTime
+	// if c.Query("DeletedDateStart") == "" {
+	// 	DeletedDateStart.Valid = false
+	// } else {
+	// 	DeletedDateStart.Scan(c.Query("DeletedDateStart"))
+	// }
+	//
+	// var DeletedDateEnd sql.NullTime
+	// if c.Query("DeletedDateEnd") == "" {
+	// 	DeletedDateEnd.Valid = false
+	// } else {
+	// 	DeletedDateEnd.Scan(c.Query("DeletedDateEnd"))
+	// }
+
+	// var LastModifiedDateStart sql.NullTime
+	// if c.Query("LastModifiedDateStart") == "" {
+	// 	LastModifiedDateStart.Valid = false
+	// } else {
+	// 	LastModifiedDateStart.Scan(c.Query("LastModifiedDateStart"))
+	// }
+
+	// var LastModifiedDateEnd sql.NullTime
+	// if c.Query("LastModifiedDateEnd") == "" {
+	// 	LastModifiedDateEnd.Valid = false
+	// } else {
+	// 	LastModifiedDateEnd.Scan(c.Query("LastModifiedDateEnd"))
+	// }
+	var Cat sql.NullString
+
+	if c.Query("cat") != "" {
+		Cat.Scan(c.Query("cat"))
+	} else {
+		Cat.Valid = false
+	}
+	param := db.GetRepairCmpUserParams{
+		Belongcmp: BelongCmp,
+		Cat:       Cat,
+	}
+	repairRes, err := r.svc.RepairServ.GetRepairCmpUser(param)
+
+	if err != nil && err != sql.ErrNoRows {
+		fmt.Print("err", err)
+		c.Status(http.StatusInternalServerError)
+		c.Abort()
+		return
+	}
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusOK, gin.H{})
+		return
+	}
+	c.JSON(http.StatusOK, repairRes)
+
 }
 
 func (u *RepairCtrlImpl) GetRepairDate(c *gin.Context) {
@@ -116,6 +201,7 @@ func (r *RepairCtrlImpl) GetRepair(c *gin.Context) {
 	if userRole >= 300 {
 		DriverId.Scan(UserID)
 	} else {
+		// TODO : user same cmp?
 		if !(c.Query("driverid") == "") {
 			DriverId.Scan(c.Query("driverid"))
 		}

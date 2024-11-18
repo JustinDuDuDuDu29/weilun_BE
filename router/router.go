@@ -71,6 +71,7 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 
 		repair := api.Group("/repair")
 		repair.GET("", m.RoleMid.IsLoggedIn, c.RepairCtrl.GetRepair)
+		repair.GET("/cmpUser", m.RoleMid.IsLoggedIn, c.RepairCtrl.GetRepairCmpUser)
 		repair.GET("/cj", m.RoleMid.IsLoggedIn, c.RepairCtrl.GetRepairDate)
 		repair.POST("", m.RoleMid.IsLoggedIn, c.RepairCtrl.CreateNewRepair)
 		repair.PUT("/updateItem/", m.RoleMid.IsLoggedIn, c.RepairCtrl.UpdateItem)
@@ -79,6 +80,7 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 
 		gas := api.Group("/gas")
 		gas.GET("", m.RoleMid.IsLoggedIn, c.GasCtrl.GetGas)
+		gas.GET("/cmpUser", m.RoleMid.IsLoggedIn, c.GasCtrl.GetGasCmpUser)
 		gas.GET("/cj", m.RoleMid.IsLoggedIn, c.GasCtrl.GetGasDate)
 		gas.POST("", m.RoleMid.IsLoggedIn, c.GasCtrl.CreateNewGas)
 		gas.POST("/approve/:id", m.RoleMid.IsLoggedIn, c.GasCtrl.ApproveGas)
@@ -93,6 +95,8 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		revenue := api.Group("/revenue")
 		revenue.GET("", m.RoleMid.IsLoggedIn, c.RevenueCtrl.RevenueDriver)
 		revenue.GET("/excel", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.RevenueCtrl.RevenueExcel)
+		// revenue.GET("/simpleExcel", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.RevenueCtrl.SimpleExcel)
+
 		api.GET("/", func(ctx *gin.Context) {
 			ctx.JSON(http.StatusOK, gin.H{"version": os.Getenv("version")})
 		})

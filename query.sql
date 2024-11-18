@@ -244,6 +244,114 @@ SELECT *
 from cmpt;
 
 -- name: GetJobCmp :many
+WITH user_jobs AS (
+  SELECT 
+    UserT.id AS Userid,
+    UserT.name AS Username,
+    cmpt.id AS Cmpid,
+    cmpt.name AS Cmpname,
+    ClaimJobT.id AS ID,
+    JobsT.id AS Jobid,
+    JobsT.fromLoc AS Fromloc,
+    JobsT.mid AS Mid,
+    JobsT.toLoc AS Toloc,
+    ClaimJobT.Create_Date AS CreateDate,
+    ClaimJobT.Approved_date AS Approveddate,
+    ClaimJobT.Finished_Date AS Finishdate,
+    JobsT.price
+  FROM ClaimJobT
+  INNER JOIN JobsT ON JobsT.id = ClaimJobT.JobId
+  INNER JOIN UserT ON UserT.id = ClaimJobT.Driverid
+  INNER JOIN Cmpt ON UserT.belongCMP = Cmpt.id
+  WHERE ClaimJobT.Deleted_date IS NULL
+    AND ClaimJobT.Approved_date BETWEEN $1 AND $2
+    AND (
+      cmpt.id = sqlc.narg('cmpId')
+      OR sqlc.narg('cmpId') IS NULL
+    )
+)
+SELECT 
+  cmpt.cmpID AS ID,
+  cmpt.cmpName AS Name,
+  SUM(cmpt.jobCount) AS count,  -- Summing the job count from the inner query
+  SUM(cmpt.price) AS total,
+  JSON_AGG(
+    JSON_BUILD_OBJECT(
+      'UserID', cmpt.UserID,
+      'UserName', cmpt.UserName,
+      'job', jobsList
+    )
+  ) AS jobs
+FROM (
+  SELECT 
+    cmpID,
+    cmpName,
+    UserID,
+    UserName,
+    COUNT(*) AS jobCount,  -- Count the jobs per user in the inner query
+    JSON_AGG(
+      JSON_BUILD_OBJECT(
+        'ID', ID,
+        'Username', UserName,
+        'Jobid', JobID,
+        'Fromloc', Fromloc,
+        'Mid', Mid,
+        'Toloc', Toloc,
+        'CreateDate', CreateDate,
+        'Approveddate', Approveddate,
+        'Finishdate', Finishdate
+      )
+    ) AS jobsList,
+    SUM(price) AS price
+  FROM user_jobs
+  GROUP BY cmpID, cmpName, UserID, UserName
+) AS cmpt
+GROUP BY cmpt.cmpID, cmpt.cmpName;
+
+-- name: GetJobCmpXX :many
+SELECT 
+  cmpt.id AS cmpID,
+  cmpt.name AS cmpName,
+  COUNT(*) AS jobCount,
+  SUM(JobsT.price) AS totalAmount,
+  JSON_AGG(
+    JSON_BUILD_OBJECT(
+      'userID', UserT.id,
+      'userName', UserT.name,
+      'jobs', (
+        SELECT JSON_AGG(
+          JSON_BUILD_OBJECT(
+            'id', ClaimJobT.id,
+            'jobID', JobsT.id,
+            'fromLoc', JobsT.fromLoc,
+            'mid', JobsT.mid,
+            'toLoc', JobsT.toLoc,
+            'createDate', ClaimJobT.Create_Date,
+            'approvedDate', ClaimJobT.Approved_date,
+            'finishDate', ClaimJobT.Finished_Date
+          )
+        )
+        FROM ClaimJobT AS innerClaim
+        WHERE innerClaim.DriverID = UserT.id
+          AND innerClaim.Deleted_date IS NULL
+          AND innerClaim.Approved_date BETWEEN $1 AND $2
+      )
+    )
+  ) AS users
+FROM ClaimJobT
+INNER JOIN JobsT ON JobsT.id = ClaimJobT.JobId
+INNER JOIN UserT ON UserT.id = ClaimJobT.Driverid
+INNER JOIN Cmpt ON UserT.belongCMP = Cmpt.id
+WHERE ClaimJobT.Deleted_date IS NULL
+  AND (
+    cmpt.id = sqlc.narg('cmpId')
+    OR sqlc.narg('cmpId') IS NULL
+  )
+  AND ClaimJobT.Approved_date BETWEEN $1 AND $2
+GROUP BY cmpt.id, cmpt.name;
+
+
+-- name: GetJobCmpXXX :many
 SELECT cmpt.id, cmpt.name, COUNT(*) as count, sum(price) as total
 FROM cmpt
 LEFT JOIN userT ON userT.belongCMP = cmpt.id 
@@ -801,7 +909,7 @@ SELECT * from RepairInfoT where repairID = $1;
 
 -- name: GetRevenueExcel :many
 WITH GasData AS (
-    SELECT 
+    SELECT
         GasT.DRIVERID,
         SUM(GasInfoT.totalPrice) AS GAS,
         DATE(GasT.CREATE_DATE) AS GAS_DATE
@@ -810,7 +918,7 @@ WITH GasData AS (
     GROUP BY GasT.DRIVERID, DATE(GasT.CREATE_DATE)
 ),
 RepairData AS (
-    SELECT 
+    SELECT
         RepairT.DRIVERID,
         SUM(RepairInfoT.totalPrice) AS REPAIR,
         DATE(RepairT.CREATE_DATE) AS REPAIR_DATE
@@ -819,7 +927,7 @@ RepairData AS (
     GROUP BY RepairT.DRIVERID, DATE(RepairT.CREATE_DATE)
 ),
 JobData AS (
-    SELECT 
+    SELECT
         USERT.ID AS UID,
         USERT.NAME AS USERNAME,
         DRIVERT.PLATENUM AS PLATENUM,
@@ -845,17 +953,18 @@ JobData AS (
 SELECT JSON_BUILD_OBJECT(
     'uid', MQ.UID,
     'username', MQ.USERNAME,
-    'list', JSON_AGG(MQ.JSON_BUILD_OBJECT)
-) 
+    'list', JSON_AGG(MQ.JSON_BUILD_OBJECT ORDER BY MQ.DATE ASC)
+)
 FROM (
-    SELECT 
+    SELECT
         COALESCE(JD.UID, GD.DRIVERID, RD.DRIVERID) AS UID,
         COALESCE(JD.USERNAME, U.NAME) AS USERNAME,
+        COALESCE(JD.APPROVEDDATE, GD.GAS_DATE, RD.REPAIR_DATE) AS DATE,
         JSON_BUILD_OBJECT(
             'date', COALESCE(JD.APPROVEDDATE, GD.GAS_DATE, RD.REPAIR_DATE),
             'data', JSON_AGG(
                 JSON_BUILD_OBJECT(
-                    'platenum', JD.PLATENUM,
+                    'platenum', COALESCE(JD.PLATENUM, DR.PLATENUM, 'Unknown Plate'),
                     'cmpName', JD.CMPNAME,
                     'fromLoc', JD.FROMLOC,
                     'mid', JD.MID,
@@ -866,21 +975,28 @@ FROM (
                     'ss', JD.JOBSOURCE
                 )
             ),
-            'gas', MAX(COALESCE(GD.GAS, 0)),
-            'repair', MAX(COALESCE(RD.REPAIR, 0))
+            'gas', JSON_BUILD_OBJECT(
+                'platenum', COALESCE(JD.PLATENUM, DR.PLATENUM, 'Unknown Plate'),
+                'gasAmount', COALESCE(GD.GAS, 0)
+            ),
+            'repair', JSON_BUILD_OBJECT(
+                'platenum', COALESCE(JD.PLATENUM, DR.PLATENUM, 'Unknown Plate'),
+                'repairAmount', COALESCE(RD.REPAIR, 0)
+            )
         ) AS JSON_BUILD_OBJECT
     FROM JobData JD
-    FULL OUTER JOIN GasData GD 
-        ON JD.UID = GD.DRIVERID 
+    FULL OUTER JOIN GasData GD
+        ON JD.UID = GD.DRIVERID
         AND JD.APPROVEDDATE = GD.GAS_DATE
-    FULL OUTER JOIN RepairData RD 
-        ON COALESCE(JD.UID, GD.DRIVERID) = RD.DRIVERID 
+    FULL OUTER JOIN RepairData RD
+        ON COALESCE(JD.UID, GD.DRIVERID) = RD.DRIVERID
         AND COALESCE(JD.APPROVEDDATE, GD.GAS_DATE) = RD.REPAIR_DATE
     LEFT JOIN USERT U ON COALESCE(JD.UID, GD.DRIVERID, RD.DRIVERID) = U.ID
-    GROUP BY COALESCE(JD.UID, GD.DRIVERID, RD.DRIVERID), COALESCE(JD.USERNAME, U.NAME), COALESCE(JD.APPROVEDDATE, GD.GAS_DATE, RD.REPAIR_DATE)
+    LEFT JOIN DRIVERT DR ON COALESCE(JD.UID, GD.DRIVERID, RD.DRIVERID) = DR.ID
+    GROUP BY GD.GAS, RD.REPAIR, COALESCE(JD.UID, GD.DRIVERID, RD.DRIVERID), COALESCE(JD.USERNAME, U.NAME), COALESCE(JD.APPROVEDDATE, GD.GAS_DATE, RD.REPAIR_DATE), JD.PLATENUM, DR.PLATENUM
 ) MQ
-GROUP BY MQ.UID, MQ.USERNAME;
-
+GROUP BY MQ.UID, MQ.USERNAME
+ORDER BY MAX(MQ.DATE) ASC;
 -- name: GetCJDate :many
 SELECT to_char(create_date, 'YYYY-MM')
 FROM public.claimjobt
@@ -1016,3 +1132,53 @@ SELECT * from GasInfoT where gasID = $1;
 UPDATE RepairInfoT
 SET totalPrice = $2, last_modified_date = NOW()
 WHERE RepairInfoT.id = $1;
+
+
+-- name: GetRepairCmpUser :many
+SELECT JSON_BUILD_OBJECT(
+    'cmpName', cmpt.name,
+    'cmpId', cmpt.id,
+    'users', JSON_AGG(
+        JSON_BUILD_OBJECT(
+            'driverID', UserT.id,
+            'driverName', UserT.name
+        )
+    )
+) AS result
+FROM repairT
+INNER JOIN UserT ON UserT.id = repairT.driverID
+INNER JOIN driverT ON UserT.id = driverT.id
+INNER JOIN cmpt ON cmpt.id = UserT.belongCMP
+WHERE 
+   (UserT.belongCMP = sqlc.narg('belongcmp') OR sqlc.narg('belongcmp') IS NULL)
+  AND repairT.deleted_date IS NULL
+  AND (
+    (sqlc.narg('cat') = 'pending' AND repairT.Approved_date IS NULL)
+    OR (sqlc.narg('cat') IS NULL)
+  )
+GROUP BY cmpt.name,  cmpt.id;
+
+
+-- name: GetGasCmpUser :many
+SELECT JSON_BUILD_OBJECT(
+    'cmpName', cmpt.name,
+    'cmpId', cmpt.id,
+    'users', JSON_AGG(
+        JSON_BUILD_OBJECT(
+            'driverID', UserT.id,
+            'driverName', UserT.name
+        )
+    )
+) AS result
+FROM GasT
+INNER JOIN UserT ON UserT.id = GasT.driverID
+INNER JOIN driverT ON UserT.id = driverT.id
+INNER JOIN cmpt ON cmpt.id = UserT.belongCMP
+WHERE 
+   (UserT.belongCMP = sqlc.narg('belongcmp') OR sqlc.narg('belongcmp') IS NULL)
+  AND GasT.deleted_date IS NULL
+  AND (
+    (sqlc.narg('cat') = 'pending' AND GasT.Approved_date IS NULL)
+    OR (sqlc.narg('cat') IS NULL)
+  )
+GROUP BY cmpt.name,  cmpt.id;

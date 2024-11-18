@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	db "main/sql"
 )
 
@@ -10,6 +11,8 @@ type GasServ interface {
 	NewGas(param db.CreateNewGasParams) (int64, error)
 	NewGasInfo(param db.CreateNewGasInfoParams) (int64, error)
 	GetGas(param db.GetGasParams) ([]db.GetGasRow, error)
+	GetGasCmpUser(param db.GetGasCmpUserParams) ([]json.RawMessage, error)
+
 	DeleteGas(param int64) error
 	ApproveGas(param int64) error
 	// GetRepairById(param int64) ([]db.Repairt, error)
@@ -20,6 +23,11 @@ type GasServ interface {
 type GasServImpl struct {
 	q    *db.Queries
 	conn *sql.DB
+}
+
+func (r *GasServImpl) GetGasCmpUser(param db.GetGasCmpUserParams) ([]json.RawMessage, error) {
+	res, err := r.q.GetGasCmpUser(context.Background(), param)
+	return res, err
 }
 
 func (s *GasServImpl) GetGasDate(param int64) ([]string, error) {

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"database/sql"
+	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -118,6 +119,7 @@ func (u *CmpCtrlImpl) GetJobCmp(c *gin.Context) {
 	// cmpList, err := u.svc.CmpServ.GetAllCmp()
 
 	if err != nil {
+		fmt.Println(err)
 		c.Status(http.StatusConflict)
 		c.Abort()
 		return
