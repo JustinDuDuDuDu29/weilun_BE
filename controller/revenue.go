@@ -70,8 +70,8 @@ func (a *RevenueCtrlImpl) SimpleExcel(c *gin.Context) {
 
 	// Parse the company ID from the query or use the context value
 	var qBcmp sql.NullInt64
-	if cmp := c.Query("cmp"); cmp != "" {
-		tmp, err := strconv.Atoi(c.Query("cmp"))
+	if cmp := c.Query("cmpid"); cmp != "" {
+		tmp, err := strconv.Atoi(c.Query("cmpid"))
 		if err != nil {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
