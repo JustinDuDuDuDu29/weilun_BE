@@ -94,8 +94,8 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 
 		revenue := api.Group("/revenue")
 		revenue.GET("", m.RoleMid.IsLoggedIn, c.RevenueCtrl.RevenueDriver)
-		revenue.GET("/excel", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.RevenueCtrl.RevenueExcel)
-		// revenue.GET("/simpleExcel", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.RevenueCtrl.SimpleExcel)
+		revenue.GET("/excel", m.RoleMid.IsLoggedIn, m.RoleMid.CmpSuperAdminOnly, c.RevenueCtrl.RevenueExcel)
+		revenue.GET("/simpleExcel", m.RoleMid.IsLoggedIn, m.RoleMid.CmpAdminOnly, c.RevenueCtrl.SimpleExcel)
 
 		api.GET("/", func(ctx *gin.Context) {
 			ctx.JSON(http.StatusOK, gin.H{"version": os.Getenv("version")})

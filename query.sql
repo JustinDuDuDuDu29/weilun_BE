@@ -242,8 +242,121 @@ where cmpt.id = $1;
 -- name: GetAllCmp :many
 SELECT *
 from cmpt;
-
 -- name: GetJobCmp :many
+WITH user_jobs AS (
+  SELECT 
+    UserT.id AS UserID,
+    UserT.name AS UserName,
+    Cmpt.id AS CmpID,
+    Cmpt.name AS CmpName,
+    ClaimJobT.id AS ID,
+    JobsT.id AS JobID,
+    JobsT.fromLoc AS FromLoc,
+    JobsT.mid AS Mid,
+    JobsT.toLoc AS ToLoc,
+    ClaimJobT.Create_Date AS CreateDate,
+    ClaimJobT.Approved_date AS ApprovedDate,
+    ClaimJobT.Finished_Date AS FinishDate,
+    JobsT.price AS JobPrice
+  FROM ClaimJobT
+  INNER JOIN JobsT ON JobsT.id = ClaimJobT.JobID
+  INNER JOIN UserT ON UserT.id = ClaimJobT.DriverID
+  INNER JOIN Cmpt ON UserT.belongCMP = Cmpt.id
+  WHERE ClaimJobT.Deleted_date IS NULL
+    AND ClaimJobT.Approved_date BETWEEN $1 AND $2
+    AND (
+      Cmpt.id = sqlc.narg('cmpId')
+      OR sqlc.narg('cmpId') IS NULL
+    )
+),
+user_gas AS (
+  SELECT 
+    UserT.id AS UserID,
+    UserT.name AS UserName,
+    Cmpt.id AS CmpID,
+    Cmpt.name AS CmpName,
+    SUM(GasInfoT.totalPrice) AS GasTotal
+  FROM GasT
+  INNER JOIN GasInfoT ON GasInfoT.gasID = GasT.id
+  INNER JOIN UserT ON UserT.id = GasT.DriverID
+  INNER JOIN Cmpt ON UserT.belongCMP = Cmpt.id
+  WHERE GasT.Deleted_date IS NULL
+    AND GasT.approved_date BETWEEN $1 AND $2
+    AND (
+      Cmpt.id = sqlc.narg('cmpId')
+      OR sqlc.narg('cmpId') IS NULL
+    )
+  GROUP BY UserT.id, UserT.name, Cmpt.id, Cmpt.name
+),
+user_repair AS (
+  SELECT 
+    UserT.id AS UserID,
+    UserT.name AS UserName,
+    Cmpt.id AS CmpID,
+    Cmpt.name AS CmpName,
+    SUM(RepairInfoT.totalPrice) AS RepairTotal
+  FROM RepairT
+  INNER JOIN RepairInfoT ON RepairInfoT.repairID = RepairT.id
+  INNER JOIN UserT ON UserT.id = RepairT.DriverID
+  INNER JOIN Cmpt ON UserT.belongCMP = Cmpt.id
+  WHERE RepairT.Deleted_date IS NULL
+    AND RepairT.approved_date BETWEEN $1 AND $2
+    AND (
+      Cmpt.id = sqlc.narg('cmpId')
+      OR sqlc.narg('cmpId') IS NULL
+    )
+  GROUP BY UserT.id, UserT.name, Cmpt.id, Cmpt.name
+),
+user_summary AS (
+  SELECT 
+    uj.CmpID,
+    uj.CmpName,
+    uj.UserID,
+    uj.UserName,
+    COUNT(uj.ID) AS JobCount,
+    SUM(uj.JobPrice) AS JobTotal,
+    COALESCE(ug.GasTotal, 0) AS GasTotal,
+    COALESCE(ur.RepairTotal, 0) AS RepairTotal
+  FROM user_jobs uj
+  LEFT JOIN user_gas ug 
+    ON uj.UserID = ug.UserID
+  LEFT JOIN user_repair ur 
+    ON uj.UserID = ur.UserID
+  GROUP BY uj.CmpID, uj.CmpName, uj.UserID, uj.UserName, ug.GasTotal, ur.RepairTotal
+)
+SELECT 
+  cmpt.CmpID AS ID,
+  cmpt.CmpName AS Name,
+  SUM(cmpt.JobCount) AS Count,
+  SUM(cmpt.JobTotal) AS JobTotal,
+  SUM(cmpt.GasTotal) AS GasTotal,
+  SUM(cmpt.RepairTotal) AS RepairTotal,
+  JSON_AGG(
+    JSON_BUILD_OBJECT(
+      'UserID', cmpt.UserID,
+      'UserName', cmpt.UserName,
+      'JobCount', cmpt.JobCount,
+      'JobTotal', cmpt.JobTotal,
+      'GasTotal', cmpt.GasTotal,
+      'RepairTotal', cmpt.RepairTotal
+    )
+  ) AS Users
+FROM (
+  SELECT 
+    CmpID,
+    CmpName,
+    UserID,
+    UserName,
+    JobCount,
+    JobTotal,
+    GasTotal,
+    RepairTotal
+  FROM user_summary
+) AS cmpt
+GROUP BY cmpt.CmpID, cmpt.CmpName;
+
+
+-- name: GetJobCmpX :many
 WITH user_jobs AS (
   SELECT 
     UserT.id AS Userid,
@@ -915,6 +1028,7 @@ WITH GasData AS (
         DATE(GasT.CREATE_DATE) AS GAS_DATE
     FROM GasT
     LEFT JOIN GasInfoT ON GasInfoT.gasid = GasT.id
+    where GasT.approved_date is not null
     GROUP BY GasT.DRIVERID, DATE(GasT.CREATE_DATE)
 ),
 RepairData AS (
@@ -924,6 +1038,8 @@ RepairData AS (
         DATE(RepairT.CREATE_DATE) AS REPAIR_DATE
     FROM RepairT
     LEFT JOIN RepairInfoT ON RepairInfoT.repairid = RepairT.id
+    where RepairT.approved_date is not null
+
     GROUP BY RepairT.DRIVERID, DATE(RepairT.CREATE_DATE)
 ),
 JobData AS (
@@ -997,6 +1113,7 @@ FROM (
 ) MQ
 GROUP BY MQ.UID, MQ.USERNAME
 ORDER BY MAX(MQ.DATE) ASC;
+
 -- name: GetCJDate :many
 SELECT to_char(create_date, 'YYYY-MM')
 FROM public.claimjobt
