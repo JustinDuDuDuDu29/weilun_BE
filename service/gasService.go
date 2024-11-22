@@ -11,7 +11,7 @@ type GasServ interface {
 	NewGas(param db.CreateNewGasParams) (int64, error)
 	NewGasInfo(param db.CreateNewGasInfoParams) (int64, error)
 	GetGas(param db.GetGasParams) ([]db.GetGasRow, error)
-	GetGasCmpUser(param db.GetGasCmpUserParams) ([]json.RawMessage, error)
+	GetGasCmpUser(param sql.NullInt64) ([]json.RawMessage, error)
 
 	DeleteGas(param int64) error
 	ApproveGas(param int64) error
@@ -25,7 +25,7 @@ type GasServImpl struct {
 	conn *sql.DB
 }
 
-func (r *GasServImpl) GetGasCmpUser(param db.GetGasCmpUserParams) ([]json.RawMessage, error) {
+func (r *GasServImpl) GetGasCmpUser(param sql.NullInt64) ([]json.RawMessage, error) {
 	res, err := r.q.GetGasCmpUser(context.Background(), param)
 	return res, err
 }

@@ -93,11 +93,11 @@ func (r *GasCtrlImpl) GetGasCmpUser(c *gin.Context) {
 	} else {
 		Cat.Valid = false
 	}
-	param := db.GetGasCmpUserParams{
-		Belongcmp: BelongCmp,
-		Cat:       Cat,
-	}
-	repairRes, err := r.svc.GasServ.GetGasCmpUser(param)
+	// param := db.GetGasCmpUserParams{
+	// Belongcmp: BelongCmp,
+	// 	Cat:       Cat,
+	// }
+	repairRes, err := r.svc.GasServ.GetGasCmpUser(BelongCmp)
 
 	if err != nil && err != sql.ErrNoRows {
 		fmt.Print("err", err)

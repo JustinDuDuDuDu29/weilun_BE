@@ -1262,18 +1262,22 @@ SELECT JSON_BUILD_OBJECT(
         )
     )
 ) AS result
-FROM repairT
-INNER JOIN UserT ON UserT.id = repairT.driverID
-INNER JOIN driverT ON UserT.id = driverT.id
-INNER JOIN cmpt ON cmpt.id = UserT.belongCMP
+FROM cmpt
+INNER JOIN (
+    SELECT DISTINCT ON (UserT.id) UserT.id, UserT.name, UserT.belongCMP
+    FROM repairT
+    INNER JOIN UserT ON UserT.id = repairT.driverID
+    INNER JOIN driverT ON UserT.id = driverT.id
+    WHERE 
+        repairT.deleted_date IS NULL
+        AND (
+            ( repairT.Approved_date IS NULL)
+        )
+) AS UserT ON UserT.belongCMP = cmpt.id
 WHERE 
-   (UserT.belongCMP = sqlc.narg('belongcmp') OR sqlc.narg('belongcmp') IS NULL)
-  AND repairT.deleted_date IS NULL
-  AND (
-    (sqlc.narg('cat') = 'pending' AND repairT.Approved_date IS NULL)
-    OR (sqlc.narg('cat') IS NULL)
-  )
-GROUP BY cmpt.name,  cmpt.id;
+    (UserT.belongCMP = sqlc.narg('belongcmp') OR sqlc.narg('belongcmp') IS NULL)
+GROUP BY cmpt.name, cmpt.id;
+
 
 
 -- name: GetGasCmpUser :many
@@ -1287,15 +1291,18 @@ SELECT JSON_BUILD_OBJECT(
         )
     )
 ) AS result
-FROM GasT
-INNER JOIN UserT ON UserT.id = GasT.driverID
-INNER JOIN driverT ON UserT.id = driverT.id
-INNER JOIN cmpt ON cmpt.id = UserT.belongCMP
+FROM cmpt
+INNER JOIN (
+    SELECT DISTINCT ON (UserT.id) UserT.id, UserT.name, UserT.belongCMP
+    FROM GasT
+    INNER JOIN UserT ON UserT.id = GasT.driverID
+    INNER JOIN driverT ON UserT.id = driverT.id
+    WHERE 
+        GasT.deleted_date IS NULL
+        AND (
+            (GasT.Approved_date IS NULL)
+        )
+) AS UserT ON UserT.belongCMP = cmpt.id
 WHERE 
-   (UserT.belongCMP = sqlc.narg('belongcmp') OR sqlc.narg('belongcmp') IS NULL)
-  AND GasT.deleted_date IS NULL
-  AND (
-    (sqlc.narg('cat') = 'pending' AND GasT.Approved_date IS NULL)
-    OR (sqlc.narg('cat') IS NULL)
-  )
-GROUP BY cmpt.name,  cmpt.id;
+    (UserT.belongCMP = sqlc.narg('belongcmp') OR sqlc.narg('belongcmp') IS NULL)
+GROUP BY cmpt.name, cmpt.id;

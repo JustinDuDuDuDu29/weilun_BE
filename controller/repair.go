@@ -94,11 +94,11 @@ func (r *RepairCtrlImpl) GetRepairCmpUser(c *gin.Context) {
 	} else {
 		Cat.Valid = false
 	}
-	param := db.GetRepairCmpUserParams{
-		Belongcmp: BelongCmp,
-		Cat:       Cat,
-	}
-	repairRes, err := r.svc.RepairServ.GetRepairCmpUser(param)
+	// param := db.GetRepairCmpUserParams{
+	// Belongcmp: BelongCmp,
+	// 	Cat:       Cat,
+	// }
+	repairRes, err := r.svc.RepairServ.GetRepairCmpUser(BelongCmp)
 
 	if err != nil && err != sql.ErrNoRows {
 		fmt.Print("err", err)
@@ -283,7 +283,7 @@ func (r *RepairCtrlImpl) GetRepair(c *gin.Context) {
 	repairRes, err := r.svc.RepairServ.GetRepair(param)
 
 	if err != nil && err != sql.ErrNoRows {
-		fmt.Print("err", err)
+		fmt.Print("erhr", err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return

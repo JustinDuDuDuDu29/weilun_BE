@@ -1726,27 +1726,25 @@ SELECT JSON_BUILD_OBJECT(
         )
     )
 ) AS result
-FROM GasT
-INNER JOIN UserT ON UserT.id = GasT.driverID
-INNER JOIN driverT ON UserT.id = driverT.id
-INNER JOIN cmpt ON cmpt.id = UserT.belongCMP
+FROM cmpt
+INNER JOIN (
+    SELECT DISTINCT ON (UserT.id) UserT.id, UserT.name, UserT.belongCMP
+    FROM GasT
+    INNER JOIN UserT ON UserT.id = GasT.driverID
+    INNER JOIN driverT ON UserT.id = driverT.id
+    WHERE 
+        GasT.deleted_date IS NULL
+        AND (
+            (GasT.Approved_date IS NULL)
+        )
+) AS UserT ON UserT.belongCMP = cmpt.id
 WHERE 
-   (UserT.belongCMP = $1 OR $1 IS NULL)
-  AND GasT.deleted_date IS NULL
-  AND (
-    ($2 = 'pending' AND GasT.Approved_date IS NULL)
-    OR ($2 IS NULL)
-  )
-GROUP BY cmpt.name,  cmpt.id
+    (UserT.belongCMP = $1 OR $1 IS NULL)
+GROUP BY cmpt.name, cmpt.id
 `
 
-type GetGasCmpUserParams struct {
-	Belongcmp sql.NullInt64
-	Cat       interface{}
-}
-
-func (q *Queries) GetGasCmpUser(ctx context.Context, arg GetGasCmpUserParams) ([]json.RawMessage, error) {
-	rows, err := q.db.QueryContext(ctx, getGasCmpUser, arg.Belongcmp, arg.Cat)
+func (q *Queries) GetGasCmpUser(ctx context.Context, belongcmp sql.NullInt64) ([]json.RawMessage, error) {
+	rows, err := q.db.QueryContext(ctx, getGasCmpUser, belongcmp)
 	if err != nil {
 		return nil, err
 	}
@@ -2408,27 +2406,25 @@ SELECT JSON_BUILD_OBJECT(
         )
     )
 ) AS result
-FROM repairT
-INNER JOIN UserT ON UserT.id = repairT.driverID
-INNER JOIN driverT ON UserT.id = driverT.id
-INNER JOIN cmpt ON cmpt.id = UserT.belongCMP
+FROM cmpt
+INNER JOIN (
+    SELECT DISTINCT ON (UserT.id) UserT.id, UserT.name, UserT.belongCMP
+    FROM repairT
+    INNER JOIN UserT ON UserT.id = repairT.driverID
+    INNER JOIN driverT ON UserT.id = driverT.id
+    WHERE 
+        repairT.deleted_date IS NULL
+        AND (
+            ( repairT.Approved_date IS NULL)
+        )
+) AS UserT ON UserT.belongCMP = cmpt.id
 WHERE 
-   (UserT.belongCMP = $1 OR $1 IS NULL)
-  AND repairT.deleted_date IS NULL
-  AND (
-    ($2 = 'pending' AND repairT.Approved_date IS NULL)
-    OR ($2 IS NULL)
-  )
-GROUP BY cmpt.name,  cmpt.id
+    (UserT.belongCMP = $1 OR $1 IS NULL)
+GROUP BY cmpt.name, cmpt.id
 `
 
-type GetRepairCmpUserParams struct {
-	Belongcmp sql.NullInt64
-	Cat       interface{}
-}
-
-func (q *Queries) GetRepairCmpUser(ctx context.Context, arg GetRepairCmpUserParams) ([]json.RawMessage, error) {
-	rows, err := q.db.QueryContext(ctx, getRepairCmpUser, arg.Belongcmp, arg.Cat)
+func (q *Queries) GetRepairCmpUser(ctx context.Context, belongcmp sql.NullInt64) ([]json.RawMessage, error) {
+	rows, err := q.db.QueryContext(ctx, getRepairCmpUser, belongcmp)
 	if err != nil {
 		return nil, err
 	}
