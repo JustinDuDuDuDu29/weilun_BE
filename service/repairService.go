@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	db "main/sql"
 )
 
@@ -10,16 +11,23 @@ type RepairServ interface {
 	NewRepair(param db.CreateNewRepairParams) (int64, error)
 	NewRepairInfo(param db.CreateNewRepairInfoParams) (int64, error)
 	GetRepair(param db.GetRepairParams) ([]db.GetRepairRow, error)
+	GetRepairCmpUser(param sql.NullInt64) ([]json.RawMessage, error)
 	DeleteRepair(param int64) error
 	ApproveRepair(param int64) error
 	// GetRepairById(param int64) ([]db.Repairt, error)
 	GetRepairInfoById(param int64) ([]db.Repairinfot, error)
 	GetRepairDate(param int64) ([]string, error)
+	UpdateItem(param db.UpdateItemParams) error
 }
 
 type RepairServImpl struct {
 	q    *db.Queries
 	conn *sql.DB
+}
+
+func (r *RepairServImpl) GetRepairCmpUser(param sql.NullInt64) ([]json.RawMessage, error) {
+	res, err := r.q.GetRepairCmpUser(context.Background(), param)
+	return res, err
 }
 
 func (s *RepairServImpl) GetRepairDate(param int64) ([]string, error) {
@@ -62,10 +70,10 @@ func (r *RepairServImpl) GetRepairInfoById(param int64) ([]db.Repairinfot, error
 	return res, err
 }
 
-// func (r *RepairServImpl) GetRepairById(param int64) ([]db.Repairinfot, error) {
-// 	res, err := r.q.GetRepairById(context.Background(), param)
-// 	return res, err
-// }
+func (r *RepairServImpl) UpdateItem(param db.UpdateItemParams) error {
+	err := r.q.UpdateItem(context.Background(), param)
+	return err
+}
 
 func RepairServInit(q *db.Queries, conn *sql.DB) *RepairServImpl {
 	return &RepairServImpl{

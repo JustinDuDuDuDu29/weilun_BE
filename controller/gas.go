@@ -2,6 +2,8 @@ package controller
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -20,12 +22,139 @@ type GasCtrl interface {
 	GetGas(c *gin.Context)
 	GetGasByID(c *gin.Context)
 	GetGasDate(c *gin.Context)
+	GetGasCmpUser(c *gin.Context)
+	UpdateGas(c *gin.Context)
 }
 
 type GasCtrlImpl struct {
 	svc *service.AppService
 }
 
+func (r *GasCtrlImpl) UpdateGas(c *gin.Context) {
+	// bodyBytes, _ := io.ReadAll(c.Request.Body)
+	// fmt.Printf("Body: %s\n", string(bodyBytes))
+	var reqBody apptypes.UpdatedItems
+	err := c.BindJSON(&reqBody)
+
+	if err != nil {
+		fmt.Println("out here: ", err)
+		c.Abort()
+		return
+	}
+	// err = json.Unmarshal([]byte(reqBody.UpdatedItems), &data)
+
+	//danger???
+	//TODO: check this part
+	for _, item := range reqBody.UpdatedItems {
+		price, err := strconv.Atoi(item.Totalprice)
+		if err != nil {
+			fmt.Println(err)
+			c.Status(http.StatusBadRequest)
+			c.Abort()
+			return
+		}
+
+		data := db.UpdateGasParams{
+			ID:         int64(item.Id),
+			Totalprice: int64(price),
+		}
+		// fmt.Println(data)
+		err = r.svc.GasServ.UpdateGas(data)
+		if err != nil {
+			fmt.Println(err)
+			c.Status(http.StatusBadRequest)
+			c.Abort()
+			return
+		}
+	}
+
+	c.Status(http.StatusOK)
+	c.Abort()
+}
+
+func (r *GasCtrlImpl) GetGasCmpUser(c *gin.Context) {
+
+	// UserID := c.MustGet("UserID").(int)
+	belongCmp := c.MustGet("belongCmp").(int64)
+	userRole := c.MustGet("Role").(int16)
+
+	// cmp and up
+	var BelongCmp sql.NullInt64
+	if userRole >= 200 {
+		BelongCmp.Scan(belongCmp)
+	} else {
+		if !(c.Query("belongCmp") == "") {
+			BelongCmp.Scan(c.Query("belongCmp"))
+		}
+	}
+
+	// var CreateDateStart sql.NullTime
+	// if c.Query("CreateDateStart") == "" {
+	// 	CreateDateStart.Valid = false
+	// } else {
+	// 	CreateDateStart.Scan(c.Query("CreateDateStart"))
+	// }
+
+	// var CreateDateEnd sql.NullTime
+	// if c.Query("CreateDateEnd") == "" {
+	// 	CreateDateEnd.Valid = false
+	// } else {
+	// 	CreateDateEnd.Scan(c.Query("CreateDateEnd"))
+	// }
+
+	// var DeletedDateStart sql.NullTime
+	// if c.Query("DeletedDateStart") == "" {
+	// 	DeletedDateStart.Valid = false
+	// } else {
+	// 	DeletedDateStart.Scan(c.Query("DeletedDateStart"))
+	// }
+	//
+	// var DeletedDateEnd sql.NullTime
+	// if c.Query("DeletedDateEnd") == "" {
+	// 	DeletedDateEnd.Valid = false
+	// } else {
+	// 	DeletedDateEnd.Scan(c.Query("DeletedDateEnd"))
+	// }
+
+	// var LastModifiedDateStart sql.NullTime
+	// if c.Query("LastModifiedDateStart") == "" {
+	// 	LastModifiedDateStart.Valid = false
+	// } else {
+	// 	LastModifiedDateStart.Scan(c.Query("LastModifiedDateStart"))
+	// }
+
+	// var LastModifiedDateEnd sql.NullTime
+	// if c.Query("LastModifiedDateEnd") == "" {
+	// 	LastModifiedDateEnd.Valid = false
+	// } else {
+	// 	LastModifiedDateEnd.Scan(c.Query("LastModifiedDateEnd"))
+	// }
+	var Cat sql.NullString
+
+	if c.Query("cat") != "" {
+		Cat.Scan(c.Query("cat"))
+	} else {
+		Cat.Valid = false
+	}
+	// param := db.GetGasCmpUserParams{
+	// Belongcmp: BelongCmp,
+	// 	Cat:       Cat,
+	// }
+	repairRes, err := r.svc.GasServ.GetGasCmpUser(BelongCmp)
+
+	if err != nil && err != sql.ErrNoRows {
+		fmt.Print("err", err)
+		c.Status(http.StatusInternalServerError)
+		c.Abort()
+		return
+	}
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusOK, gin.H{})
+		return
+	}
+	c.JSON(http.StatusOK, repairRes)
+
+}
 func (u *GasCtrlImpl) GetGasDate(c *gin.Context) {
 	// protect
 	sid := c.Query("id")
@@ -193,7 +322,7 @@ func (r *GasCtrlImpl) GetGas(c *gin.Context) {
 	repairRes, err := r.svc.GasServ.GetGas(param)
 
 	if err != nil && err != sql.ErrNoRows {
-		// fmt.Print("err", err)
+		fmt.Print("err", err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
@@ -285,6 +414,7 @@ func (r *GasCtrlImpl) CreateNewGas(c *gin.Context) {
 	err := c.Bind(&reqBody)
 
 	if err != nil {
+		fmt.Println(err)
 		c.Abort()
 		return
 	}
@@ -324,7 +454,20 @@ func (r *GasCtrlImpl) CreateNewGas(c *gin.Context) {
 		return
 	}
 
-	for _, item := range reqBody.Gasinfo {
+	data := []db.CreateNewGasInfoParams{}
+	err = json.Unmarshal([]byte(reqBody.Gasinfo), &data)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for _, item := range data {
+		// subdata := db.CreateDriverInfoParams{}
+
+		// err = json.Unmarshal(([]byte(item)), &subdata)
+
+		item.Gasid = rID
 		_, err := r.svc.GasServ.NewGasInfo(item)
 		if err != nil {
 			// fmt.Println("err: ", err)

@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
+	"fmt"
 	db "main/sql"
 )
 
@@ -23,10 +25,11 @@ type JobsServ interface {
 	DeleteClaimedJob(param db.DeleteClaimedJobParams) (int32, error)
 	ApproveFinishedJob(param db.ApproveFinishedJobParams) error
 	SetJobNoMore(id int64) error
-	GetUserWithPendingJob(id sql.NullInt64) ([]db.GetUserWithPendingJobRow, error)
+	GetAllJobsSuper(param db.GetAllJobsSuperParams) ([]db.GetAllJobsSuperRow, error)
+	GetUserWithPendingJob(id sql.NullInt64) ([]json.RawMessage, error)
 	GetAllClaimedJobs(param db.GetAllClaimedJobsParams) ([]db.GetAllClaimedJobsRow, error)
-	GetClaimedJobByCmp(id int64) ([]db.GetClaimedJobByCmpRow, error)
-	GetClaimedJobByDriverID(id int64) ([]db.GetClaimedJobByDriverIDRow, error)
+	GetClaimedJobByCmp(param db.GetClaimedJobByCmpParams) ([]db.GetClaimedJobByCmpRow, error)
+	GetClaimedJobByDriverID(param db.GetClaimedJobByDriverIDParams) ([]db.GetClaimedJobByDriverIDRow, error)
 }
 
 type JobsServImpl struct {
@@ -34,8 +37,8 @@ type JobsServImpl struct {
 	conn *sql.DB
 }
 
-func (s *JobsServImpl) GetClaimedJobByCmp(id int64) ([]db.GetClaimedJobByCmpRow, error) {
-	res, err := s.q.GetClaimedJobByCmp(context.Background(), id)
+func (s *JobsServImpl) GetClaimedJobByCmp(param db.GetClaimedJobByCmpParams) ([]db.GetClaimedJobByCmpRow, error) {
+	res, err := s.q.GetClaimedJobByCmp(context.Background(), param)
 	// res, err := s.q.GetClaimedJobByCmp(context.Background(), id)
 
 	if err == sql.ErrNoRows {
@@ -46,8 +49,8 @@ func (s *JobsServImpl) GetClaimedJobByCmp(id int64) ([]db.GetClaimedJobByCmpRow,
 
 	return res, err
 }
-func (s *JobsServImpl) GetClaimedJobByDriverID(id int64) ([]db.GetClaimedJobByDriverIDRow, error) {
-	res, err := s.q.GetClaimedJobByDriverID(context.Background(), id)
+func (s *JobsServImpl) GetClaimedJobByDriverID(param db.GetClaimedJobByDriverIDParams) ([]db.GetClaimedJobByDriverIDRow, error) {
+	res, err := s.q.GetClaimedJobByDriverID(context.Background(), param)
 
 	if err == sql.ErrNoRows {
 
@@ -68,11 +71,11 @@ func (s *JobsServImpl) SetJobNoMore(id int64) error {
 	return err
 }
 
-func (s *JobsServImpl) GetUserWithPendingJob(id sql.NullInt64) ([]db.GetUserWithPendingJobRow, error) {
+func (s *JobsServImpl) GetUserWithPendingJob(id sql.NullInt64) ([]json.RawMessage, error) {
 	res, err := s.q.GetUserWithPendingJob(context.Background(), id)
 	if err == sql.ErrNoRows {
 
-		var r []db.GetUserWithPendingJobRow
+		var r []json.RawMessage
 		return r, nil
 	}
 	return res, err
@@ -147,6 +150,7 @@ func (s *JobsServImpl) DecreaseRemaining(id int64) (int32, error) {
 
 func (s *JobsServImpl) GetClaimedJobByID(id int64) (db.GetClaimedJobByIDRow, error) {
 	res, err := s.q.GetClaimedJobByID(context.Background(), id)
+	fmt.Println(err)
 	return res, err
 }
 
@@ -176,7 +180,7 @@ func (s *JobsServImpl) ClaimJob(param db.ClaimJobParams) (int64, error, int32) {
 	cres, err := qtx.GetCurrentClaimedJob(context.Background(), param.Driverid)
 
 	if err == nil {
-		return cres.ID, errors.New("already have ongoing job"), -99
+		return cres.Claimid, errors.New("already have ongoing job"), -99
 	}
 
 	// if err != nil && err != sql.ErrNoRows {
@@ -209,6 +213,10 @@ func (s *JobsServImpl) ClaimJob(param db.ClaimJobParams) (int64, error, int32) {
 
 func (s *JobsServImpl) GetAllJobs(param db.GetAllJobsAdminParams) ([]db.GetAllJobsAdminRow, error) {
 	res, err := s.q.GetAllJobsAdmin(context.Background(), param)
+	return res, err
+}
+func (s *JobsServImpl) GetAllJobsSuper(param db.GetAllJobsSuperParams) ([]db.GetAllJobsSuperRow, error) {
+	res, err := s.q.GetAllJobsSuper(context.Background(), param)
 	return res, err
 }
 

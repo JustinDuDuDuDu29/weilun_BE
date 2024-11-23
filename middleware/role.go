@@ -133,7 +133,7 @@ func (m *RoleMidImpl) IsLoggedIn(c *gin.Context) {
 
 func (m *RoleMidImpl) CmpAdminOnly(c *gin.Context) {
 	res := c.MustGet("Role").(int16)
-	if (res) > 200 || (res) < 100 {
+	if (res) > 200 {
 		c.Status(http.StatusForbidden)
 		c.Abort()
 		return

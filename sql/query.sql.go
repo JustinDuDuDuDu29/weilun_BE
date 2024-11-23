@@ -232,14 +232,14 @@ func (q *Queries) CreateNewGas(ctx context.Context, arg CreateNewGasParams) (int
 }
 
 const createNewGasInfo = `-- name: CreateNewGasInfo :one
-INSERT into GasInfoT (gasID, gasType, quantity, totalPrice)
+INSERT into GasInfoT (gasID, itemName, quantity, totalPrice)
 values ($1, $2, $3, $4)
 RETURNING id
 `
 
 type CreateNewGasInfoParams struct {
 	Gasid      int64
-	Gastype    string
+	Itemname   string
 	Quantity   int32
 	Totalprice int64
 }
@@ -247,7 +247,7 @@ type CreateNewGasInfoParams struct {
 func (q *Queries) CreateNewGasInfo(ctx context.Context, arg CreateNewGasInfoParams) (int64, error) {
 	row := q.db.QueryRowContext(ctx, createNewGasInfo,
 		arg.Gasid,
-		arg.Gastype,
+		arg.Itemname,
 		arg.Quantity,
 		arg.Totalprice,
 	)
@@ -613,53 +613,56 @@ func (q *Queries) GetAlertByCmp(ctx context.Context, belongcmp int64) ([]Alertt,
 }
 
 const getAllClaimedJobs = `-- name: GetAllClaimedJobs :many
-SELECT ClaimJobT.id as id,
-  JobsT.id as JobID,
-  UserT.id as UserID,
-  JobsT.fromLoc,
-  JobsT.mid,
-  JobsT.toLoc,
+SELECT 
+  ClaimJobT.id AS id,
+  JobsT.id AS JobID,
+  UserT.id AS UserID,
+  JobsT.fromLoc AS fromloc,   -- Aliased as fromloc
+  JobsT.mid AS mid,
+  JobsT.toLoc AS toloc,       -- Aliased as toloc
   JobsT.Price,
   ClaimJobT.Create_Date,
-  usert.name as userName,
-  cmpt.name as cmpname,
-  cmpT.id as cmpID,
-  ClaimJobT.Approved_date as ApprovedDate,
-  ClaimJobT.Finished_Date as FinishDate,
+  UserT.name AS userName,
+  Cmpt.name AS cmpname,
+  Cmpt.id AS cmpID,
+  ClaimJobT.Approved_date AS ApprovedDate,
+  ClaimJobT.Finished_Date AS FinishDate,
   ClaimJobT.finishPic
-from ClaimJobT
-  inner join JobsT on JobsT.id = ClaimJobT.JobId
-  inner join UserT on UserT.id = ClaimJobT.Driverid
-  inner join Cmpt on UserT.belongCMP = cmpt.id
-WHERE ClaimJobT.Deleted_date is null
-  and (
+FROM 
+  ClaimJobT
+  INNER JOIN JobsT ON JobsT.id = ClaimJobT.JobId
+  INNER JOIN UserT ON UserT.id = ClaimJobT.Driverid
+  INNER JOIN Cmpt ON UserT.belongCMP = Cmpt.id
+WHERE 
+  ClaimJobT.Deleted_date IS NULL
+  AND (
     ClaimJobT.driverid = $1
     OR $1 IS NULL
   )
-  and (
-    claimjobt.jobID = $2
+  AND (
+    ClaimJobT.jobID = $2
     OR $2 IS NULL
   )
-  and (
-    usert.belongCMP = $3
+  AND (
+    UserT.belongCMP = $3
     OR $3 IS NULL
   )
-  and (
-    claimjobt.id = $4
+  AND (
+    ClaimJobT.id = $4
     OR $4 IS NULL
   )
-  and (
+  AND (
     (
       $5 = 'pending'
-      AND claimjobt.Approved_date IS NULL
+      AND ClaimJobT.Approved_date IS NULL
     )
-    OR ($5 IS NULL)
+    OR $5 IS NULL
   )
-  and (
-    to_char(date(claimjobt.create_date), 'YYYY-MM') = to_char(date($6), 'YYYY-MM')
+  AND (
+    TO_CHAR(DATE(ClaimJobT.create_date), 'YYYY-MM') = TO_CHAR(DATE($6), 'YYYY-MM')
     OR $6 IS NULL
   )
-  and (claimjobt.deleted_date IS NULL)
+  AND ClaimJobT.deleted_date IS NULL
 `
 
 type GetAllClaimedJobsParams struct {
@@ -768,7 +771,7 @@ func (q *Queries) GetAllCmp(ctx context.Context) ([]Cmpt, error) {
 }
 
 const getAllJobsAdmin = `-- name: GetAllJobsAdmin :many
-SELECT jobst.id, fromloc, mid, toloc, price, estimated, remaining, belongcmp, source, memo, jobst.create_date, jobst.deleted_date, jobst.last_modified_date, cmpt.id, name, cmpt.create_date, cmpt.deleted_date, cmpt.last_modified_date
+SELECT jobst.id, fromloc, mid, toloc, price, estimated, remaining, belongcmp, source, memo, jobst.create_date, jobst.deleted_date, jobst.last_modified_date, cmpt.id, name, cmpt.create_date, cmpt.deleted_date, cmpt.last_modified_date, cmpt.name as cmpName
 from JobsT
   inner join cmpt on JobsT.belongcmp = cmpt.id
 where (
@@ -851,6 +854,7 @@ type GetAllJobsAdminRow struct {
 	CreateDate_2       time.Time
 	DeletedDate_2      sql.NullTime
 	LastModifiedDate_2 time.Time
+	Cmpname            string
 }
 
 func (q *Queries) GetAllJobsAdmin(ctx context.Context, arg GetAllJobsAdminParams) ([]GetAllJobsAdminRow, error) {
@@ -892,6 +896,7 @@ func (q *Queries) GetAllJobsAdmin(ctx context.Context, arg GetAllJobsAdminParams
 			&i.CreateDate_2,
 			&i.DeletedDate_2,
 			&i.LastModifiedDate_2,
+			&i.Cmpname,
 		); err != nil {
 			return nil, err
 		}
@@ -1049,6 +1054,126 @@ func (q *Queries) GetAllJobsClient(ctx context.Context, arg GetAllJobsClientPara
 	return items, nil
 }
 
+const getAllJobsSuper = `-- name: GetAllJobsSuper :many
+SELECT cmpt.name AS cmpName, cmpt.id AS BELONGCMP, 
+       json_agg(json_build_object(
+           'ID', JobsT.id,
+           'Fromloc', JobsT.fromLoc,
+           'Toloc', JobsT.toLoc,
+           'Mid', JobsT.mid,
+           'Price', JobsT.price,
+           'estimated', JobsT.estimated,
+           'Remaining', JobsT.remaining,
+           'Source', JobsT.source,
+           'Memo', JobsT.memo,
+           'Belongcmp', cmpT.id,
+           'create_date', JobsT.create_date
+       )) AS jobs
+FROM JobsT
+INNER JOIN cmpt ON JobsT.belongcmp = cmpt.id
+where (
+    JobsT.id = $1
+    OR $1 IS NULL
+  )
+  AND (
+    JobsT.fromLoc = $2
+    OR $2 IS NULL
+  )
+  AND (
+    JobsT.Mid = $3
+    OR $3 IS NULL
+  )
+  AND (
+    JobsT.toLoc = $4
+    OR $4 IS NULL
+  )
+  AND (
+    belongcmp = $5
+    OR $5 IS NULL
+  )
+  AND (remaining <> 0)
+  AND (
+    remaining <> $6
+    OR $6 IS NULL
+  )
+  AND (
+    (
+      JobsT.create_date > $7
+      OR $7 IS NULL
+    )
+    AND (
+      JobsT.create_date < $8
+      OR $8 IS NULL
+    )
+  )
+  AND (
+    (
+      JobsT.last_modified_date > $9
+      OR $9 IS NULL
+    )
+    AND (
+      JobsT.last_modified_date < $10
+      OR $10 IS NULL
+    )
+  )
+  AND(JobsT.deleted_date is NULL)
+
+GROUP BY cmpt.name, cmpt.id
+`
+
+type GetAllJobsSuperParams struct {
+	ID                    sql.NullInt64
+	FromLoc               sql.NullString
+	Mid                   sql.NullString
+	ToLoc                 sql.NullString
+	Belongcmp             sql.NullInt64
+	Remaining             sql.NullInt32
+	CreateDateStart       sql.NullTime
+	CreateDateEnd         sql.NullTime
+	LastModifiedDateStart sql.NullTime
+	LastModifiedDateEnd   sql.NullTime
+}
+
+type GetAllJobsSuperRow struct {
+	Cmpname   string
+	Belongcmp int64
+	Jobs      json.RawMessage
+}
+
+func (q *Queries) GetAllJobsSuper(ctx context.Context, arg GetAllJobsSuperParams) ([]GetAllJobsSuperRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllJobsSuper,
+		arg.ID,
+		arg.FromLoc,
+		arg.Mid,
+		arg.ToLoc,
+		arg.Belongcmp,
+		arg.Remaining,
+		arg.CreateDateStart,
+		arg.CreateDateEnd,
+		arg.LastModifiedDateStart,
+		arg.LastModifiedDateEnd,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllJobsSuperRow
+	for rows.Next() {
+		var i GetAllJobsSuperRow
+		if err := rows.Scan(&i.Cmpname, &i.Belongcmp, &i.Jobs); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getAllUserFromCMP = `-- name: GetAllUserFromCMP :many
 SELECT usert.id, usert.name from userT where belongCMP = $1
 `
@@ -1130,7 +1255,14 @@ from ClaimJobT
   inner join Cmpt on UserT.belongCMP = cmpt.id
 WHERE ClaimJobT.Deleted_date is null
   and UserT.belongCMP = $1
+  and ClaimJobT.Approved_date between $2 and $3
 `
+
+type GetClaimedJobByCmpParams struct {
+	Belongcmp      int64
+	ApprovedDate   sql.NullTime
+	ApprovedDate_2 sql.NullTime
+}
 
 type GetClaimedJobByCmpRow struct {
 	ID           int64
@@ -1147,8 +1279,8 @@ type GetClaimedJobByCmpRow struct {
 	Finishdate   sql.NullTime
 }
 
-func (q *Queries) GetClaimedJobByCmp(ctx context.Context, belongcmp int64) ([]GetClaimedJobByCmpRow, error) {
-	rows, err := q.db.QueryContext(ctx, getClaimedJobByCmp, belongcmp)
+func (q *Queries) GetClaimedJobByCmp(ctx context.Context, arg GetClaimedJobByCmpParams) ([]GetClaimedJobByCmpRow, error) {
+	rows, err := q.db.QueryContext(ctx, getClaimedJobByCmp, arg.Belongcmp, arg.ApprovedDate, arg.ApprovedDate_2)
 	if err != nil {
 		return nil, err
 	}
@@ -1202,7 +1334,14 @@ from ClaimJobT
   inner join Cmpt on UserT.belongCMP = cmpt.id
 WHERE ClaimJobT.Deleted_date is null
   and UserT.id = $1
+  and ClaimJobT.Approved_date between $2 and $3
 `
+
+type GetClaimedJobByDriverIDParams struct {
+	ID             int64
+	ApprovedDate   sql.NullTime
+	ApprovedDate_2 sql.NullTime
+}
 
 type GetClaimedJobByDriverIDRow struct {
 	ID           int64
@@ -1219,8 +1358,8 @@ type GetClaimedJobByDriverIDRow struct {
 	Finishdate   sql.NullTime
 }
 
-func (q *Queries) GetClaimedJobByDriverID(ctx context.Context, id int64) ([]GetClaimedJobByDriverIDRow, error) {
-	rows, err := q.db.QueryContext(ctx, getClaimedJobByDriverID, id)
+func (q *Queries) GetClaimedJobByDriverID(ctx context.Context, arg GetClaimedJobByDriverIDParams) ([]GetClaimedJobByDriverIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, getClaimedJobByDriverID, arg.ID, arg.ApprovedDate, arg.ApprovedDate_2)
 	if err != nil {
 		return nil, err
 	}
@@ -1588,46 +1727,47 @@ func (q *Queries) GetDriverRevenueByCmp(ctx context.Context, arg GetDriverRevenu
 }
 
 const getGas = `-- name: GetGas :many
-SELECT GasT.id as ID,
+SELECT 
+  gasT.id as ID,
   UserT.id as Driverid,
   UserT.Name as Drivername,
   cmpt.name as cmpName,
-  cmpt.id as cmpName,
-  GasT.id as Repairinfo,
-  GasT.Create_Date as CreateDate,
-  GasT.Approved_Date as ApprovedDate,
-  GasT.pic as pic,
-  driverT.plateNum as plateNum
-from GasT
-  inner join UserT on UserT.id = GasT.driverID
-  inner join driverT on UserT.id = driverT.id
-  inner join cmpt on cmpT.id = UserT.belongCMP
-where (
-    GasT.id = $1
-    OR $1 IS NULL
-  )
-  AND (
-    GasT.driverID = $2
-    OR $2 IS NULL
-  )
-  AND (
-    UserT.name = $3
-    OR $3 IS NULL
-  )
-  AND (
-    UserT.belongcmp = $4
-    OR $4 IS NULL
-  ) 
-  AND GasT.deleted_date is null 
-  and (
-    (
-      $5 = 'pending'
-      AND GasT.Approved_date IS NULL
+  cmpt.id as cmpID,
+  -- Include repair information as JSON
+  (
+    SELECT json_agg(
+      json_build_object(
+        'id', GasInfoT.id,
+        'itemName', GasInfoT.itemName,
+        'quantity', GasInfoT.quantity,
+        'totalPrice', GasInfoT.totalPrice,
+        'create_date', GasInfoT.create_date
+      )
     )
+    FROM GasInfoT 
+    WHERE GasInfoT.gasID = gasT.id
+  ) as Repairinfo,
+  gasT.Create_Date as CreateDate,
+  gasT.Approved_Date as ApprovedDate,
+  gasT.pic as pic,
+  -- gasT.place as place,
+  driverT.plateNum as plateNum
+FROM gasT
+INNER JOIN UserT ON UserT.id = gasT.driverID
+INNER JOIN driverT ON UserT.id = driverT.id
+INNER JOIN cmpt ON cmpt.id = UserT.belongCMP
+WHERE 
+  (gasT.id = $1 OR $1 IS NULL)
+  AND (gasT.driverID = $2 OR $2 IS NULL)
+  AND (UserT.name = $3 OR $3 IS NULL)
+  AND (UserT.belongcmp = $4 OR $4 IS NULL)
+  AND gasT.deleted_date IS NULL
+  AND (
+    ($5 = 'pending' AND gasT.Approved_date IS NULL)
     OR ($5 IS NULL)
   )
-  and (
-    to_char(date(GasT.create_date), 'YYYY-MM') = to_char(date($6), 'YYYY-MM')
+  AND (
+    to_char(date(gasT.create_date), 'YYYY-MM') = to_char(date($6), 'YYYY-MM')
     OR $6 IS NULL
   )
 `
@@ -1646,8 +1786,8 @@ type GetGasRow struct {
 	Driverid     int64
 	Drivername   string
 	Cmpname      string
-	Cmpname_2    int64
-	Repairinfo   int64
+	Cmpid        int64
+	Repairinfo   json.RawMessage
 	Createdate   time.Time
 	Approveddate sql.NullTime
 	Pic          sql.NullString
@@ -1675,7 +1815,7 @@ func (q *Queries) GetGas(ctx context.Context, arg GetGasParams) ([]GetGasRow, er
 			&i.Driverid,
 			&i.Drivername,
 			&i.Cmpname,
-			&i.Cmpname_2,
+			&i.Cmpid,
 			&i.Repairinfo,
 			&i.Createdate,
 			&i.Approveddate,
@@ -1685,6 +1825,57 @@ func (q *Queries) GetGas(ctx context.Context, arg GetGasParams) ([]GetGasRow, er
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getGasCmpUser = `-- name: GetGasCmpUser :many
+SELECT JSON_BUILD_OBJECT(
+    'cmpName', cmpt.name,
+    'cmpId', cmpt.id,
+    'users', JSON_AGG(
+        JSON_BUILD_OBJECT(
+            'driverID', UserT.id,
+            'driverName', UserT.name
+        )
+    )
+) AS result
+FROM cmpt
+INNER JOIN (
+    SELECT DISTINCT ON (UserT.id) UserT.id, UserT.name, UserT.belongCMP
+    FROM GasT
+    INNER JOIN UserT ON UserT.id = GasT.driverID
+    INNER JOIN driverT ON UserT.id = driverT.id
+    WHERE 
+        GasT.deleted_date IS NULL
+        AND (
+            (GasT.Approved_date IS NULL)
+        )
+) AS UserT ON UserT.belongCMP = cmpt.id
+WHERE 
+    (UserT.belongCMP = $1 OR $1 IS NULL)
+GROUP BY cmpt.name, cmpt.id
+`
+
+func (q *Queries) GetGasCmpUser(ctx context.Context, belongcmp sql.NullInt64) ([]json.RawMessage, error) {
+	rows, err := q.db.QueryContext(ctx, getGasCmpUser, belongcmp)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []json.RawMessage
+	for rows.Next() {
+		var result json.RawMessage
+		if err := rows.Scan(&result); err != nil {
+			return nil, err
+		}
+		items = append(items, result)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -1726,7 +1917,7 @@ func (q *Queries) GetGasDate(ctx context.Context, driverid int64) ([]string, err
 }
 
 const getGasInfoById = `-- name: GetGasInfoById :many
-SELECT id, gasid, gastype, quantity, totalprice, create_date, deleted_date, last_modified_date from GasInfoT where gasID = $1
+SELECT id, gasid, itemname, quantity, totalprice, create_date, deleted_date, last_modified_date from GasInfoT where gasID = $1
 `
 
 func (q *Queries) GetGasInfoById(ctx context.Context, gasid int64) ([]Gasinfot, error) {
@@ -1741,7 +1932,7 @@ func (q *Queries) GetGasInfoById(ctx context.Context, gasid int64) ([]Gasinfot, 
 		if err := rows.Scan(
 			&i.ID,
 			&i.Gasid,
-			&i.Gastype,
+			&i.Itemname,
 			&i.Quantity,
 			&i.Totalprice,
 			&i.CreateDate,
@@ -1789,6 +1980,417 @@ func (q *Queries) GetJobById(ctx context.Context, id int64) (Jobst, error) {
 	return i, err
 }
 
+const getJobCmp = `-- name: GetJobCmp :many
+WITH user_jobs AS (
+  SELECT 
+    UserT.id AS UserID,
+    UserT.name AS UserName,
+    Cmpt.id AS CmpID,
+    Cmpt.name AS CmpName,
+    ClaimJobT.id AS ID,
+    JobsT.id AS JobID,
+    JobsT.fromLoc AS FromLoc,
+    JobsT.mid AS Mid,
+    JobsT.toLoc AS ToLoc,
+    ClaimJobT.Create_Date AS CreateDate,
+    ClaimJobT.Approved_date AS ApprovedDate,
+    ClaimJobT.Finished_Date AS FinishDate,
+    JobsT.price AS JobPrice
+  FROM ClaimJobT
+  INNER JOIN JobsT ON JobsT.id = ClaimJobT.JobID
+  INNER JOIN UserT ON UserT.id = ClaimJobT.DriverID
+  INNER JOIN Cmpt ON UserT.belongCMP = Cmpt.id
+  WHERE ClaimJobT.Deleted_date IS NULL
+    AND ClaimJobT.Approved_date BETWEEN $1 AND $2
+    AND (
+      Cmpt.id = $3
+      OR $3 IS NULL
+    )
+),
+user_gas AS (
+  SELECT 
+    UserT.id AS UserID,
+    UserT.name AS UserName,
+    Cmpt.id AS CmpID,
+    Cmpt.name AS CmpName,
+    SUM(GasInfoT.totalPrice) AS GasTotal
+  FROM GasT
+  INNER JOIN GasInfoT ON GasInfoT.gasID = GasT.id
+  INNER JOIN UserT ON UserT.id = GasT.DriverID
+  INNER JOIN Cmpt ON UserT.belongCMP = Cmpt.id
+  WHERE GasT.Deleted_date IS NULL
+    AND GasT.approved_date BETWEEN $1 AND $2
+    AND (
+      Cmpt.id = $3
+      OR $3 IS NULL
+    )
+  GROUP BY UserT.id, UserT.name, Cmpt.id, Cmpt.name
+),
+user_repair AS (
+  SELECT 
+    UserT.id AS UserID,
+    UserT.name AS UserName,
+    Cmpt.id AS CmpID,
+    Cmpt.name AS CmpName,
+    SUM(RepairInfoT.totalPrice) AS RepairTotal
+  FROM RepairT
+  INNER JOIN RepairInfoT ON RepairInfoT.repairID = RepairT.id
+  INNER JOIN UserT ON UserT.id = RepairT.DriverID
+  INNER JOIN Cmpt ON UserT.belongCMP = Cmpt.id
+  WHERE RepairT.Deleted_date IS NULL
+    AND RepairT.approved_date BETWEEN $1 AND $2
+    AND (
+      Cmpt.id = $3
+      OR $3 IS NULL
+    )
+  GROUP BY UserT.id, UserT.name, Cmpt.id, Cmpt.name
+),
+user_summary AS (
+  SELECT 
+    uj.CmpID,
+    uj.CmpName,
+    uj.UserID,
+    uj.UserName,
+    COUNT(uj.ID) AS JobCount,
+    SUM(uj.JobPrice) AS JobTotal,
+    COALESCE(ug.GasTotal, 0) AS GasTotal,
+    COALESCE(ur.RepairTotal, 0) AS RepairTotal
+  FROM user_jobs uj
+  LEFT JOIN user_gas ug 
+    ON uj.UserID = ug.UserID
+  LEFT JOIN user_repair ur 
+    ON uj.UserID = ur.UserID
+  GROUP BY uj.CmpID, uj.CmpName, uj.UserID, uj.UserName, ug.GasTotal, ur.RepairTotal
+)
+SELECT 
+  cmpt.CmpID AS ID,
+  cmpt.CmpName AS Name,
+  SUM(cmpt.JobCount) AS Count,
+  SUM(cmpt.JobTotal) AS JobTotal,
+  SUM(cmpt.GasTotal) AS GasTotal,
+  SUM(cmpt.RepairTotal) AS RepairTotal,
+  JSON_AGG(
+    JSON_BUILD_OBJECT(
+      'UserID', cmpt.UserID,
+      'UserName', cmpt.UserName,
+      'JobCount', cmpt.JobCount,
+      'JobTotal', cmpt.JobTotal,
+      'GasTotal', cmpt.GasTotal,
+      'RepairTotal', cmpt.RepairTotal
+    )
+  ) AS Users
+FROM (
+  SELECT 
+    CmpID,
+    CmpName,
+    UserID,
+    UserName,
+    JobCount,
+    JobTotal,
+    GasTotal,
+    RepairTotal
+  FROM user_summary
+) AS cmpt
+GROUP BY cmpt.CmpID, cmpt.CmpName
+`
+
+type GetJobCmpParams struct {
+	ApprovedDate   sql.NullTime
+	ApprovedDate_2 sql.NullTime
+	CmpId          sql.NullInt64
+}
+
+type GetJobCmpRow struct {
+	ID          int64
+	Name        string
+	Count       int64
+	Jobtotal    int64
+	Gastotal    int64
+	Repairtotal int64
+	Users       json.RawMessage
+}
+
+func (q *Queries) GetJobCmp(ctx context.Context, arg GetJobCmpParams) ([]GetJobCmpRow, error) {
+	rows, err := q.db.QueryContext(ctx, getJobCmp, arg.ApprovedDate, arg.ApprovedDate_2, arg.CmpId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetJobCmpRow
+	for rows.Next() {
+		var i GetJobCmpRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Count,
+			&i.Jobtotal,
+			&i.Gastotal,
+			&i.Repairtotal,
+			&i.Users,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getJobCmpX = `-- name: GetJobCmpX :many
+WITH user_jobs AS (
+  SELECT 
+    UserT.id AS Userid,
+    UserT.name AS Username,
+    cmpt.id AS Cmpid,
+    cmpt.name AS Cmpname,
+    ClaimJobT.id AS ID,
+    JobsT.id AS Jobid,
+    JobsT.fromLoc AS Fromloc,
+    JobsT.mid AS Mid,
+    JobsT.toLoc AS Toloc,
+    ClaimJobT.Create_Date AS CreateDate,
+    ClaimJobT.Approved_date AS Approveddate,
+    ClaimJobT.Finished_Date AS Finishdate,
+    JobsT.price
+  FROM ClaimJobT
+  INNER JOIN JobsT ON JobsT.id = ClaimJobT.JobId
+  INNER JOIN UserT ON UserT.id = ClaimJobT.Driverid
+  INNER JOIN Cmpt ON UserT.belongCMP = Cmpt.id
+  WHERE ClaimJobT.Deleted_date IS NULL
+    AND ClaimJobT.Approved_date BETWEEN $1 AND $2
+    AND (
+      cmpt.id = $3
+      OR $3 IS NULL
+    )
+)
+SELECT 
+  cmpt.cmpID AS ID,
+  cmpt.cmpName AS Name,
+  SUM(cmpt.jobCount) AS count,  -- Summing the job count from the inner query
+  SUM(cmpt.price) AS total,
+  JSON_AGG(
+    JSON_BUILD_OBJECT(
+      'UserID', cmpt.UserID,
+      'UserName', cmpt.UserName,
+      'job', jobsList
+    )
+  ) AS jobs
+FROM (
+  SELECT 
+    cmpID,
+    cmpName,
+    UserID,
+    UserName,
+    COUNT(*) AS jobCount,  -- Count the jobs per user in the inner query
+    JSON_AGG(
+      JSON_BUILD_OBJECT(
+        'ID', ID,
+        'Username', UserName,
+        'Jobid', JobID,
+        'Fromloc', Fromloc,
+        'Mid', Mid,
+        'Toloc', Toloc,
+        'CreateDate', CreateDate,
+        'Approveddate', Approveddate,
+        'Finishdate', Finishdate
+      )
+    ) AS jobsList,
+    SUM(price) AS price
+  FROM user_jobs
+  GROUP BY cmpID, cmpName, UserID, UserName
+) AS cmpt
+GROUP BY cmpt.cmpID, cmpt.cmpName
+`
+
+type GetJobCmpXParams struct {
+	ApprovedDate   sql.NullTime
+	ApprovedDate_2 sql.NullTime
+	CmpId          sql.NullInt64
+}
+
+type GetJobCmpXRow struct {
+	ID    int64
+	Name  string
+	Count int64
+	Total int64
+	Jobs  json.RawMessage
+}
+
+func (q *Queries) GetJobCmpX(ctx context.Context, arg GetJobCmpXParams) ([]GetJobCmpXRow, error) {
+	rows, err := q.db.QueryContext(ctx, getJobCmpX, arg.ApprovedDate, arg.ApprovedDate_2, arg.CmpId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetJobCmpXRow
+	for rows.Next() {
+		var i GetJobCmpXRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Count,
+			&i.Total,
+			&i.Jobs,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getJobCmpXX = `-- name: GetJobCmpXX :many
+SELECT 
+  cmpt.id AS cmpID,
+  cmpt.name AS cmpName,
+  COUNT(*) AS jobCount,
+  SUM(JobsT.price) AS totalAmount,
+  JSON_AGG(
+    JSON_BUILD_OBJECT(
+      'userID', UserT.id,
+      'userName', UserT.name,
+      'jobs', (
+        SELECT JSON_AGG(
+          JSON_BUILD_OBJECT(
+            'id', ClaimJobT.id,
+            'jobID', JobsT.id,
+            'fromLoc', JobsT.fromLoc,
+            'mid', JobsT.mid,
+            'toLoc', JobsT.toLoc,
+            'createDate', ClaimJobT.Create_Date,
+            'approvedDate', ClaimJobT.Approved_date,
+            'finishDate', ClaimJobT.Finished_Date
+          )
+        )
+        FROM ClaimJobT AS innerClaim
+        WHERE innerClaim.DriverID = UserT.id
+          AND innerClaim.Deleted_date IS NULL
+          AND innerClaim.Approved_date BETWEEN $1 AND $2
+      )
+    )
+  ) AS users
+FROM ClaimJobT
+INNER JOIN JobsT ON JobsT.id = ClaimJobT.JobId
+INNER JOIN UserT ON UserT.id = ClaimJobT.Driverid
+INNER JOIN Cmpt ON UserT.belongCMP = Cmpt.id
+WHERE ClaimJobT.Deleted_date IS NULL
+  AND (
+    cmpt.id = $3
+    OR $3 IS NULL
+  )
+  AND ClaimJobT.Approved_date BETWEEN $1 AND $2
+GROUP BY cmpt.id, cmpt.name
+`
+
+type GetJobCmpXXParams struct {
+	ApprovedDate   sql.NullTime
+	ApprovedDate_2 sql.NullTime
+	CmpId          sql.NullInt64
+}
+
+type GetJobCmpXXRow struct {
+	Cmpid       int64
+	Cmpname     string
+	Jobcount    int64
+	Totalamount int64
+	Users       json.RawMessage
+}
+
+func (q *Queries) GetJobCmpXX(ctx context.Context, arg GetJobCmpXXParams) ([]GetJobCmpXXRow, error) {
+	rows, err := q.db.QueryContext(ctx, getJobCmpXX, arg.ApprovedDate, arg.ApprovedDate_2, arg.CmpId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetJobCmpXXRow
+	for rows.Next() {
+		var i GetJobCmpXXRow
+		if err := rows.Scan(
+			&i.Cmpid,
+			&i.Cmpname,
+			&i.Jobcount,
+			&i.Totalamount,
+			&i.Users,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getJobCmpXXX = `-- name: GetJobCmpXXX :many
+SELECT cmpt.id, cmpt.name, COUNT(*) as count, sum(price) as total
+FROM cmpt
+LEFT JOIN userT ON userT.belongCMP = cmpt.id 
+LEFT JOIN claimjobt ON claimjobt.driverID = userT.id
+LEFT JOIN JobsT on claimjobt.jobID = JobsT.id
+WHERE claimjobt.Approved_date BETWEEN $1 AND $2
+AND (
+    cmpt.id = $3
+    OR $3 IS NULL
+  )
+GROUP BY cmpt.id, cmpt.name
+`
+
+type GetJobCmpXXXParams struct {
+	ApprovedDate   sql.NullTime
+	ApprovedDate_2 sql.NullTime
+	CmpId          sql.NullInt64
+}
+
+type GetJobCmpXXXRow struct {
+	ID    int64
+	Name  string
+	Count int64
+	Total int64
+}
+
+func (q *Queries) GetJobCmpXXX(ctx context.Context, arg GetJobCmpXXXParams) ([]GetJobCmpXXXRow, error) {
+	rows, err := q.db.QueryContext(ctx, getJobCmpXXX, arg.ApprovedDate, arg.ApprovedDate_2, arg.CmpId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetJobCmpXXXRow
+	for rows.Next() {
+		var i GetJobCmpXXXRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Count,
+			&i.Total,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getLastAlert = `-- name: GetLastAlert :one
 SELECT lastAlert
 from driverT
@@ -1803,46 +2405,46 @@ func (q *Queries) GetLastAlert(ctx context.Context, id int64) (sql.NullInt64, er
 }
 
 const getRepair = `-- name: GetRepair :many
-SELECT repairT.id as ID,
+SELECT 
+  repairT.id as ID,
   UserT.id as Driverid,
   UserT.Name as Drivername,
   cmpt.name as cmpName,
-  cmpt.id as cmpName,
-  repairT.id as Repairinfo,
+  cmpt.id as cmpID,
+  -- Include repair information as JSON
+  (
+    SELECT json_agg(
+      json_build_object(
+        'id', repairinfoT.id,
+        'itemName', repairinfoT.itemName,
+        'quantity', repairinfoT.quantity,
+        'totalPrice', repairinfoT.totalPrice,
+        'create_date', repairinfoT.create_date
+      )
+    )
+    FROM repairinfoT 
+    WHERE repairinfoT.repairID = repairT.id
+  ) as Repairinfo,
   repairT.Create_Date as CreateDate,
   repairT.Approved_Date as ApprovedDate,
   repairT.pic as pic,
   repairT.place as place,
   driverT.plateNum as plateNum
-from repairT
-  inner join UserT on UserT.id = repairT.driverID
-  inner join driverT on UserT.id = driverT.id
-  inner join cmpt on cmpT.id = UserT.belongCMP
-where (
-    repairT.id = $1
-    OR $1 IS NULL
-  )
+FROM repairT
+INNER JOIN UserT ON UserT.id = repairT.driverID
+INNER JOIN driverT ON UserT.id = driverT.id
+INNER JOIN cmpt ON cmpt.id = UserT.belongCMP
+WHERE 
+  (repairT.id = $1 OR $1 IS NULL)
+  AND (repairT.driverID = $2 OR $2 IS NULL)
+  AND (UserT.name = $3 OR $3 IS NULL)
+  AND (UserT.belongcmp = $4 OR $4 IS NULL)
+  AND repairT.deleted_date IS NULL
   AND (
-    repairT.driverID = $2
-    OR $2 IS NULL
-  )
-  AND (
-    UserT.name = $3
-    OR $3 IS NULL
-  )
-  AND (
-    UserT.belongcmp = $4
-    OR $4 IS NULL
-  ) 
-  AND repairT.deleted_date is null 
-  and (
-    (
-      $5 = 'pending'
-      AND repairT.Approved_date IS NULL
-    )
+    ($5 = 'pending' AND repairT.Approved_date IS NULL)
     OR ($5 IS NULL)
   )
-  and (
+  AND (
     to_char(date(repairT.create_date), 'YYYY-MM') = to_char(date($6), 'YYYY-MM')
     OR $6 IS NULL
   )
@@ -1862,8 +2464,8 @@ type GetRepairRow struct {
 	Driverid     int64
 	Drivername   string
 	Cmpname      string
-	Cmpname_2    int64
-	Repairinfo   int64
+	Cmpid        int64
+	Repairinfo   json.RawMessage
 	Createdate   time.Time
 	Approveddate sql.NullTime
 	Pic          sql.NullString
@@ -1892,7 +2494,7 @@ func (q *Queries) GetRepair(ctx context.Context, arg GetRepairParams) ([]GetRepa
 			&i.Driverid,
 			&i.Drivername,
 			&i.Cmpname,
-			&i.Cmpname_2,
+			&i.Cmpid,
 			&i.Repairinfo,
 			&i.Createdate,
 			&i.Approveddate,
@@ -1903,6 +2505,57 @@ func (q *Queries) GetRepair(ctx context.Context, arg GetRepairParams) ([]GetRepa
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRepairCmpUser = `-- name: GetRepairCmpUser :many
+SELECT JSON_BUILD_OBJECT(
+    'cmpName', cmpt.name,
+    'cmpId', cmpt.id,
+    'users', JSON_AGG(
+        JSON_BUILD_OBJECT(
+            'driverID', UserT.id,
+            'driverName', UserT.name
+        )
+    )
+) AS result
+FROM cmpt
+INNER JOIN (
+    SELECT DISTINCT ON (UserT.id) UserT.id, UserT.name, UserT.belongCMP
+    FROM repairT
+    INNER JOIN UserT ON UserT.id = repairT.driverID
+    INNER JOIN driverT ON UserT.id = driverT.id
+    WHERE 
+        repairT.deleted_date IS NULL
+        AND (
+            ( repairT.Approved_date IS NULL)
+        )
+) AS UserT ON UserT.belongCMP = cmpt.id
+WHERE 
+    (UserT.belongCMP = $1 OR $1 IS NULL)
+GROUP BY cmpt.name, cmpt.id
+`
+
+func (q *Queries) GetRepairCmpUser(ctx context.Context, belongcmp sql.NullInt64) ([]json.RawMessage, error) {
+	rows, err := q.db.QueryContext(ctx, getRepairCmpUser, belongcmp)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []json.RawMessage
+	for rows.Next() {
+		var result json.RawMessage
+		if err := rows.Scan(&result); err != nil {
+			return nil, err
+		}
+		items = append(items, result)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -1980,116 +2633,108 @@ func (q *Queries) GetRepairInfoById(ctx context.Context, repairid int64) ([]Repa
 }
 
 const getRevenueExcel = `-- name: GetRevenueExcel :many
+WITH GasData AS (
+    SELECT
+        GasT.DRIVERID,
+        SUM(GasInfoT.totalPrice) AS GAS,
+        DATE(GasT.CREATE_DATE) AS GAS_DATE
+    FROM GasT
+    LEFT JOIN GasInfoT ON GasInfoT.gasid = GasT.id
+    where GasT.approved_date is not null
+    GROUP BY GasT.DRIVERID, DATE(GasT.CREATE_DATE)
+),
+RepairData AS (
+    SELECT
+        RepairT.DRIVERID,
+        SUM(RepairInfoT.totalPrice) AS REPAIR,
+        DATE(RepairT.CREATE_DATE) AS REPAIR_DATE
+    FROM RepairT
+    LEFT JOIN RepairInfoT ON RepairInfoT.repairid = RepairT.id
+    where RepairT.approved_date is not null
+
+    GROUP BY RepairT.DRIVERID, DATE(RepairT.CREATE_DATE)
+),
+JobData AS (
+    SELECT
+        USERT.ID AS UID,
+        USERT.NAME AS USERNAME,
+        DRIVERT.PLATENUM AS PLATENUM,
+        JOBST.fromLoc AS FROMLOC,
+        COALESCE(JOBST.MID, '') AS MID,
+        JOBST.toLoc AS TOLOC,
+        COUNT(CLAIMJOBT.JOBID) AS TIMES,
+        JOBST.PRICE AS JP,
+        JOBST.PRICE * COUNT(CLAIMJOBT.JOBID) AS TOTALPRICE,
+        JOBST.SOURCE AS JOBSOURCE,
+        CMPT.NAME AS CMPNAME,
+        DATE(CLAIMJOBT.APPROVED_DATE) AS APPROVEDDATE
+    FROM CLAIMJOBT
+    LEFT JOIN JOBST ON CLAIMJOBT.JOBID = JOBST.ID
+    LEFT JOIN USERT ON USERT.ID = CLAIMJOBT.DRIVERID
+    LEFT JOIN DRIVERT ON USERT.ID = DRIVERT.ID
+    LEFT JOIN CMPT ON CMPT.ID = USERT.BELONGCMP
+    WHERE CLAIMJOBT.DELETED_DATE IS NULL
+      AND CLAIMJOBT.APPROVED_DATE BETWEEN $1 AND $2
+      AND USERT.belongCMP = $3
+    GROUP BY USERT.ID, USERT.NAME, DRIVERT.PLATENUM, JOBST.fromLoc, JOBST.MID, JOBST.toLoc, JOBST.PRICE, JOBST.SOURCE, CMPT.NAME, DATE(CLAIMJOBT.APPROVED_DATE)
+)
 SELECT JSON_BUILD_OBJECT(
-    'uid',
-    MQ.UID,
-    'username',
-    MQ.USERNAME,
-    'list',
-    JSON_AGG(MQ.JSON_BUILD_OBJECT)
-  )
+    'uid', MQ.UID,
+    'username', MQ.USERNAME,
+    'list', JSON_AGG(MQ.JSON_BUILD_OBJECT ORDER BY MQ.DATE ASC)
+)
 FROM (
-    SELECT SQ.UID,
-      SQ.USERNAME AS USERNAME,
-      JSON_BUILD_OBJECT(
-        'date',
-        SQ.APPROVEDDATE,
-        'data',
-        JSON_AGG(
-          JSON_BUILD_OBJECT(
-            -- 'id',
-            -- sq.ID,
-            'platenum',
-            SQ.PLATENUM,
-            'cmpName',
-            SQ.CMPNAME,
-            'fromLoc',
-            SQ.FROMLOC,
-            'mid',
-            SQ.MID,
-            'toloc',
-            SQ.TOLOC,
-            'count',
-            SQ.TIMES,
-            'jp',
-            SQ.JP,
-            'total',
-            SQ.TOTALPRICE,
-            'ss',
-            SQ.JOBSOURCE
-          )
-        ),
-        'gas',
-        coalesce(SQ.GAS, 0)
-      )::JSONB
-    FROM (
-        SELECT USERT.ID AS UID,
-          DRIVERT.PLATENUM AS PLATENUM,
-          USERT.NAME AS USERNAME,
-          JOBST.BELONGCMP AS BELONGCMP,
-          JOBST.fromLoc AS FROMLOC,
-          coalesce(JOBST.MID, '') AS MID,
-          JOBST.toLoc AS TOLOC,
-          COUNT(*) AS TIMES,
-          JOBST.PRICE AS JP,
-          JOBST.PRICE * COUNT(*) AS TOTALPRICE,
-          JOBST.SOURCE AS JOBSOURCE,
-          CMPT.NAME AS CMPNAME,
-          DATE (CLAIMJOBT.APPROVED_DATE) AS APPROVEDDATE,
-          CLAIMJOBT.MEMO,
-          RT.GAS
-        FROM CLAIMJOBT
-          LEFT JOIN JOBST ON CLAIMJOBT.JOBID = JOBST.ID
-          LEFT JOIN USERT ON USERT.ID = CLAIMJOBT.DRIVERID
-          LEFT JOIN CMPT ON CMPT.ID = USERT.BELONGCMP
-          LEFT JOIN DRIVERT ON USERT.ID = DRIVERT.ID
-          LEFT JOIN (
-            SELECT DRIVERID,
-              SUM(
-                ((REPAIRINFO->>0)::JSON->>'price')::INT --* ((REPAIRINFO->>0)::JSON->>'quantity')::INT
-              ) AS GAS,
-              DATE (CREATE_DATE)
-            FROM REPAIRT
-            GROUP BY DRIVERID,
-              DATE (CREATE_DATE)
-          ) RT ON RT.DRIVERID = DRIVERT.ID
-          AND DATE (RT.DATE) = DATE (CLAIMJOBT.APPROVED_DATE)
-        WHERE (CLAIMJOBT.DELETED_DATE IS NULL)
-          AND (CLAIMJOBT.APPROVED_DATE IS NOT NULL)
-          and (
-            ClaimJobT.Approved_date between $1 and $2
-          )
-        GROUP BY USERT.ID,
-          JOBID,
-          DRIVERT.PLATENUM,
-          USERT.NAME,
-          JOBST.fromLoc,
-          JOBST.MID,
-          JOBST.toLoc,
-          JOBST.PRICE,
-          CMPT.NAME,
-          JOBST.BELONGCMP,
-          JOBST.SOURCE,
-          DATE (CLAIMJOBT.APPROVED_DATE),
-          CLAIMJOBT.MEMO,
-          RT.GAS
-      ) SQ
-    GROUP BY SQ.UID,
-      SQ.USERNAME,
-      SQ.APPROVEDDATE,
-      SQ.GAS
-  ) MQ
-GROUP BY MQ.UID,
-  MQ.USERNAME
+    SELECT
+        COALESCE(JD.UID, GD.DRIVERID, RD.DRIVERID) AS UID,
+        COALESCE(JD.USERNAME, U.NAME) AS USERNAME,
+        COALESCE(JD.APPROVEDDATE, GD.GAS_DATE, RD.REPAIR_DATE) AS DATE,
+        JSON_BUILD_OBJECT(
+            'date', COALESCE(JD.APPROVEDDATE, GD.GAS_DATE, RD.REPAIR_DATE),
+            'data', JSON_AGG(
+                JSON_BUILD_OBJECT(
+                    'platenum', COALESCE(JD.PLATENUM, DR.PLATENUM, 'Unknown Plate'),
+                    'cmpName', JD.CMPNAME,
+                    'fromLoc', JD.FROMLOC,
+                    'mid', JD.MID,
+                    'toloc', JD.TOLOC,
+                    'count', JD.TIMES,
+                    'jp', JD.JP,
+                    'total', JD.TOTALPRICE,
+                    'ss', JD.JOBSOURCE
+                )
+            ),
+            'gas', JSON_BUILD_OBJECT(
+                'platenum', COALESCE(JD.PLATENUM, DR.PLATENUM, 'Unknown Plate'),
+                'gasAmount', COALESCE(GD.GAS, 0)
+            ),
+            'repair', JSON_BUILD_OBJECT(
+                'platenum', COALESCE(JD.PLATENUM, DR.PLATENUM, 'Unknown Plate'),
+                'repairAmount', COALESCE(RD.REPAIR, 0)
+            )
+        ) AS JSON_BUILD_OBJECT
+    FROM JobData JD
+    FULL OUTER JOIN GasData GD
+        ON JD.UID = GD.DRIVERID
+        AND JD.APPROVEDDATE = GD.GAS_DATE
+    FULL OUTER JOIN RepairData RD
+        ON COALESCE(JD.UID, GD.DRIVERID) = RD.DRIVERID
+        AND COALESCE(JD.APPROVEDDATE, GD.GAS_DATE) = RD.REPAIR_DATE
+    LEFT JOIN USERT U ON COALESCE(JD.UID, GD.DRIVERID, RD.DRIVERID) = U.ID
+    LEFT JOIN DRIVERT DR ON COALESCE(JD.UID, GD.DRIVERID, RD.DRIVERID) = DR.ID
+    GROUP BY GD.GAS, RD.REPAIR, COALESCE(JD.UID, GD.DRIVERID, RD.DRIVERID), COALESCE(JD.USERNAME, U.NAME), COALESCE(JD.APPROVEDDATE, GD.GAS_DATE, RD.REPAIR_DATE), JD.PLATENUM, DR.PLATENUM
+) MQ
+GROUP BY MQ.UID, MQ.USERNAME
+ORDER BY MAX(MQ.DATE) ASC
 `
 
 type GetRevenueExcelParams struct {
 	ApprovedDate   sql.NullTime
 	ApprovedDate_2 sql.NullTime
+	Belongcmp      int64
 }
 
 func (q *Queries) GetRevenueExcel(ctx context.Context, arg GetRevenueExcelParams) ([]json.RawMessage, error) {
-	rows, err := q.db.QueryContext(ctx, getRevenueExcel, arg.ApprovedDate, arg.ApprovedDate_2)
+	rows, err := q.db.QueryContext(ctx, getRevenueExcel, arg.ApprovedDate, arg.ApprovedDate_2, arg.Belongcmp)
 	if err != nil {
 		return nil, err
 	}
@@ -2358,38 +3003,65 @@ func (q *Queries) GetUserSeed(ctx context.Context, id int64) (GetUserSeedRow, er
 }
 
 const getUserWithPendingJob = `-- name: GetUserWithPendingJob :many
-SELECT
-  UserT.id, 
-  UserT.name as userName, 
-  CMPT.name  as cmpName
-from UserT
-  left join ClaimJobT on UserT.id = ClaimJobT.driverID 
-  left join CMPT on CMPT.id = serT.Belongcmp 
-where (ClaimJobT.approved_date = NULL) 
-  and
-    (CMPT.id =  $1
-    OR $1 IS NULL)
+SELECT JSON_BUILD_OBJECT(
+    'cmpID', CMPT.id,
+    'cmpName', CMPT.name,
+    'users', JSON_AGG(
+        JSON_BUILD_OBJECT(
+            'userID', UserT.id,
+            'userName', UserT.name,
+            'jobs', (
+                SELECT JSON_AGG(
+                    JSON_BUILD_OBJECT(
+                        'ID', CLAIMJOBT.id,
+                        'Userid', CLAIMJOBT.driverid,
+                        'CreateDate', CLAIMJOBT.create_date,
+                        'userName', UserT.name,
+                        'Cmpname', CMPT.name,
+                        'Finishdate', CLAIMJOBT.finished_date,
+                        'Cmpid', CMPT.id,
+                        'Approveddate', CLAIMJOBT.approved_date,
+                        'jobId', CLAIMJOBT.jobid,
+                        'Fromloc', jobst.fromloc,
+                        'Mid', jobst.mid,
+                        'Toloc', jobst.toloc
+                    )
+                )
+                FROM CLAIMJOBT
+                LEFT JOIN jobst ON jobst.id = CLAIMJOBT.jobid
+                WHERE CLAIMJOBT.driverID = UserT.id
+                AND CLAIMJOBT.approved_date IS NULL
+                AND CLAIMJOBT.deleted_date IS NULL
+            )
+        )
+    )
+) AS result
+FROM UserT
+LEFT JOIN CMPT ON CMPT.id = UserT.belongCMP
+WHERE EXISTS (
+    SELECT 1
+    FROM CLAIMJOBT
+    WHERE CLAIMJOBT.driverID = UserT.id
+    AND CLAIMJOBT.approved_date IS NULL
+    AND CLAIMJOBT.deleted_date IS NULL
+)
+AND (CMPT.id = $1 OR $1 IS NULL)
+GROUP BY CMPT.id, CMPT.name
 `
 
-type GetUserWithPendingJobRow struct {
-	ID       int64
-	Username string
-	Cmpname  sql.NullString
-}
-
-func (q *Queries) GetUserWithPendingJob(ctx context.Context, cmpid sql.NullInt64) ([]GetUserWithPendingJobRow, error) {
+func (q *Queries) GetUserWithPendingJob(ctx context.Context, cmpid sql.NullInt64) ([]json.RawMessage, error) {
 	rows, err := q.db.QueryContext(ctx, getUserWithPendingJob, cmpid)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetUserWithPendingJobRow
+	var items []json.RawMessage
 	for rows.Next() {
-		var i GetUserWithPendingJobRow
-		if err := rows.Scan(&i.ID, &i.Username, &i.Cmpname); err != nil {
+		var result json.RawMessage
+		if err := rows.Scan(&result); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, result)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -2536,6 +3208,38 @@ func (q *Queries) UpdateDriverPic(ctx context.Context, arg UpdateDriverPicParams
 		arg.Driverlicense,
 		arg.Trucklicense,
 	)
+	return err
+}
+
+const updateGas = `-- name: UpdateGas :exec
+UPDATE GasInfoT
+SET totalPrice = $2, last_modified_date = NOW()
+WHERE GasInfoT.id = $1
+`
+
+type UpdateGasParams struct {
+	ID         int64
+	Totalprice int64
+}
+
+func (q *Queries) UpdateGas(ctx context.Context, arg UpdateGasParams) error {
+	_, err := q.db.ExecContext(ctx, updateGas, arg.ID, arg.Totalprice)
+	return err
+}
+
+const updateItem = `-- name: UpdateItem :exec
+UPDATE RepairInfoT
+SET totalPrice = $2, last_modified_date = NOW()
+WHERE RepairInfoT.id = $1
+`
+
+type UpdateItemParams struct {
+	ID         int64
+	Totalprice int64
+}
+
+func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) error {
+	_, err := q.db.ExecContext(ctx, updateItem, arg.ID, arg.Totalprice)
 	return err
 }
 

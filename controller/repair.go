@@ -2,6 +2,8 @@ package controller
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -20,10 +22,96 @@ type RepairCtrl interface {
 	GetRepair(c *gin.Context)
 	GetRepairByID(c *gin.Context)
 	GetRepairDate(c *gin.Context)
+	UpdateItem(c *gin.Context)
+	GetRepairCmpUser(c *gin.Context)
 }
 
 type RepairCtrlImpl struct {
 	svc *service.AppService
+}
+
+func (r *RepairCtrlImpl) GetRepairCmpUser(c *gin.Context) {
+
+	// UserID := c.MustGet("UserID").(int)
+	belongCmp := c.MustGet("belongCmp").(int64)
+	userRole := c.MustGet("Role").(int16)
+
+	// cmp and up
+	var BelongCmp sql.NullInt64
+	if userRole >= 200 {
+		BelongCmp.Scan(belongCmp)
+	} else {
+		if !(c.Query("belongCmp") == "") {
+			BelongCmp.Scan(c.Query("belongCmp"))
+		}
+	}
+
+	// var CreateDateStart sql.NullTime
+	// if c.Query("CreateDateStart") == "" {
+	// 	CreateDateStart.Valid = false
+	// } else {
+	// 	CreateDateStart.Scan(c.Query("CreateDateStart"))
+	// }
+
+	// var CreateDateEnd sql.NullTime
+	// if c.Query("CreateDateEnd") == "" {
+	// 	CreateDateEnd.Valid = false
+	// } else {
+	// 	CreateDateEnd.Scan(c.Query("CreateDateEnd"))
+	// }
+
+	// var DeletedDateStart sql.NullTime
+	// if c.Query("DeletedDateStart") == "" {
+	// 	DeletedDateStart.Valid = false
+	// } else {
+	// 	DeletedDateStart.Scan(c.Query("DeletedDateStart"))
+	// }
+	//
+	// var DeletedDateEnd sql.NullTime
+	// if c.Query("DeletedDateEnd") == "" {
+	// 	DeletedDateEnd.Valid = false
+	// } else {
+	// 	DeletedDateEnd.Scan(c.Query("DeletedDateEnd"))
+	// }
+
+	// var LastModifiedDateStart sql.NullTime
+	// if c.Query("LastModifiedDateStart") == "" {
+	// 	LastModifiedDateStart.Valid = false
+	// } else {
+	// 	LastModifiedDateStart.Scan(c.Query("LastModifiedDateStart"))
+	// }
+
+	// var LastModifiedDateEnd sql.NullTime
+	// if c.Query("LastModifiedDateEnd") == "" {
+	// 	LastModifiedDateEnd.Valid = false
+	// } else {
+	// 	LastModifiedDateEnd.Scan(c.Query("LastModifiedDateEnd"))
+	// }
+	var Cat sql.NullString
+
+	if c.Query("cat") != "" {
+		Cat.Scan(c.Query("cat"))
+	} else {
+		Cat.Valid = false
+	}
+	// param := db.GetRepairCmpUserParams{
+	// Belongcmp: BelongCmp,
+	// 	Cat:       Cat,
+	// }
+	repairRes, err := r.svc.RepairServ.GetRepairCmpUser(BelongCmp)
+
+	if err != nil && err != sql.ErrNoRows {
+		fmt.Print("err", err)
+		c.Status(http.StatusInternalServerError)
+		c.Abort()
+		return
+	}
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusOK, gin.H{})
+		return
+	}
+	c.JSON(http.StatusOK, repairRes)
+
 }
 
 func (u *RepairCtrlImpl) GetRepairDate(c *gin.Context) {
@@ -113,6 +201,7 @@ func (r *RepairCtrlImpl) GetRepair(c *gin.Context) {
 	if userRole >= 300 {
 		DriverId.Scan(UserID)
 	} else {
+		// TODO : user same cmp?
 		if !(c.Query("driverid") == "") {
 			DriverId.Scan(c.Query("driverid"))
 		}
@@ -194,7 +283,7 @@ func (r *RepairCtrlImpl) GetRepair(c *gin.Context) {
 	repairRes, err := r.svc.RepairServ.GetRepair(param)
 
 	if err != nil && err != sql.ErrNoRows {
-		// fmt.Print("err", err)
+		fmt.Print("erhr", err)
 		c.Status(http.StatusInternalServerError)
 		c.Abort()
 		return
@@ -279,6 +368,48 @@ func (r *RepairCtrlImpl) DeleteRepair(c *gin.Context) {
 	c.Abort()
 }
 
+func (r *RepairCtrlImpl) UpdateItem(c *gin.Context) {
+	// bodyBytes, _ := io.ReadAll(c.Request.Body)
+	// fmt.Printf("Body: %s\n", string(bodyBytes))
+	var reqBody apptypes.UpdatedItems
+	err := c.BindJSON(&reqBody)
+
+	if err != nil {
+		fmt.Println("out here: ", err)
+		c.Abort()
+		return
+	}
+	// err = json.Unmarshal([]byte(reqBody.UpdatedItems), &data)
+
+	//danger???
+	//TODO: check this part
+	for _, item := range reqBody.UpdatedItems {
+		price, err := strconv.Atoi(item.Totalprice)
+		if err != nil {
+			fmt.Println(err)
+			c.Status(http.StatusBadRequest)
+			c.Abort()
+			return
+		}
+
+		data := db.UpdateItemParams{
+			ID:         int64(item.Id),
+			Totalprice: int64(price),
+		}
+		// fmt.Println(data)
+		err = r.svc.RepairServ.UpdateItem(data)
+		if err != nil {
+			fmt.Println(err)
+			c.Status(http.StatusBadRequest)
+			c.Abort()
+			return
+		}
+	}
+
+	c.Status(http.StatusOK)
+	c.Abort()
+}
+
 func (r *RepairCtrlImpl) CreateNewRepair(c *gin.Context) {
 	// TODO: Repair Info In Body
 
@@ -286,6 +417,7 @@ func (r *RepairCtrlImpl) CreateNewRepair(c *gin.Context) {
 	err := c.Bind(&reqBody)
 
 	if err != nil {
+		// fmt.Print("out here")
 		c.Abort()
 		return
 	}
@@ -324,11 +456,24 @@ func (r *RepairCtrlImpl) CreateNewRepair(c *gin.Context) {
 		c.Abort()
 		return
 	}
+	data := []db.CreateNewRepairInfoParams{}
+	err = json.Unmarshal([]byte(reqBody.Repairinfo), &data)
 
-	for _, item := range reqBody.Repairinfo {
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for _, item := range data {
+		// subdata := db.CreateDriverInfoParams{}
+
+		// err = json.Unmarshal(([]byte(item)), &subdata)
+
+		item.Repairid = rID
+		fmt.Println(item)
 		_, err := r.svc.RepairServ.NewRepairInfo(item)
 		if err != nil {
-			// fmt.Println("err: ", err)
+			fmt.Println("1err: ", err)
 			c.Status(http.StatusInternalServerError)
 			c.Abort()
 			return
