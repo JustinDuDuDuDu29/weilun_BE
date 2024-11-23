@@ -3,7 +3,7 @@
 Create Table GasInfoT(
   id BIGSERIAL PRIMARY KEY,
   gasID BigInt references GasT(id) NOT NULL,
-  gasType varchar NOT NULL,
+  itemName varchar NOT NULL,
   quantity int DEFAULT(1) NOT NULL,
   totalPrice BigInt NOT NULL,
   create_date Timestamp NOT NULL DEFAULT NOW(),
@@ -14,5 +14,5 @@ Create Table GasInfoT(
 
 -- +goose Down
 -- +goose StatementBegin
-Drop Table if exists GasTInfo;
+Drop Table if exists GasInfoT;
 -- +goose StatementEnd

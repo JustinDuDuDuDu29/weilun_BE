@@ -23,10 +23,53 @@ type GasCtrl interface {
 	GetGasByID(c *gin.Context)
 	GetGasDate(c *gin.Context)
 	GetGasCmpUser(c *gin.Context)
+	UpdateGas(c *gin.Context)
 }
 
 type GasCtrlImpl struct {
 	svc *service.AppService
+}
+
+func (r *GasCtrlImpl) UpdateGas(c *gin.Context) {
+	// bodyBytes, _ := io.ReadAll(c.Request.Body)
+	// fmt.Printf("Body: %s\n", string(bodyBytes))
+	var reqBody apptypes.UpdatedItems
+	err := c.BindJSON(&reqBody)
+
+	if err != nil {
+		fmt.Println("out here: ", err)
+		c.Abort()
+		return
+	}
+	// err = json.Unmarshal([]byte(reqBody.UpdatedItems), &data)
+
+	//danger???
+	//TODO: check this part
+	for _, item := range reqBody.UpdatedItems {
+		price, err := strconv.Atoi(item.Totalprice)
+		if err != nil {
+			fmt.Println(err)
+			c.Status(http.StatusBadRequest)
+			c.Abort()
+			return
+		}
+
+		data := db.UpdateGasParams{
+			ID:         int64(item.Id),
+			Totalprice: int64(price),
+		}
+		// fmt.Println(data)
+		err = r.svc.GasServ.UpdateGas(data)
+		if err != nil {
+			fmt.Println(err)
+			c.Status(http.StatusBadRequest)
+			c.Abort()
+			return
+		}
+	}
+
+	c.Status(http.StatusOK)
+	c.Abort()
 }
 
 func (r *GasCtrlImpl) GetGasCmpUser(c *gin.Context) {
@@ -371,6 +414,7 @@ func (r *GasCtrlImpl) CreateNewGas(c *gin.Context) {
 	err := c.Bind(&reqBody)
 
 	if err != nil {
+		fmt.Println(err)
 		c.Abort()
 		return
 	}

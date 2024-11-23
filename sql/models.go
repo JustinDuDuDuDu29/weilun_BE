@@ -65,7 +65,7 @@ type Drivert struct {
 type Gasinfot struct {
 	ID               int64
 	Gasid            int64
-	Gastype          string
+	Itemname         string
 	Quantity         int32
 	Totalprice       int64
 	CreateDate       time.Time

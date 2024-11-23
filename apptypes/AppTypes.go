@@ -167,12 +167,11 @@ type UpdatedItems struct {
 }
 
 type UpdateItemT struct {
-	Id    int    `form:"id" binding:"required"`
-	Price string `form:"price" binding:"required"`
+	Id         int    `form:"id" binding:"required"`
+	Totalprice string `form:"totalPrice" binding:"required"`
 }
 
 type NewGasBodyT struct {
-	Place   string                `form:"place" binding:"required"`
 	Gasinfo string                `form:"gasInfo" binding:"required"`
 	GasPic  *multipart.FileHeader `form:"gasPic"`
 }

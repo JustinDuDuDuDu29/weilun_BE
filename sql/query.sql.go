@@ -232,14 +232,14 @@ func (q *Queries) CreateNewGas(ctx context.Context, arg CreateNewGasParams) (int
 }
 
 const createNewGasInfo = `-- name: CreateNewGasInfo :one
-INSERT into GasInfoT (gasID, gasType, quantity, totalPrice)
+INSERT into GasInfoT (gasID, itemName, quantity, totalPrice)
 values ($1, $2, $3, $4)
 RETURNING id
 `
 
 type CreateNewGasInfoParams struct {
 	Gasid      int64
-	Gastype    string
+	Itemname   string
 	Quantity   int32
 	Totalprice int64
 }
@@ -247,7 +247,7 @@ type CreateNewGasInfoParams struct {
 func (q *Queries) CreateNewGasInfo(ctx context.Context, arg CreateNewGasInfoParams) (int64, error) {
 	row := q.db.QueryRowContext(ctx, createNewGasInfo,
 		arg.Gasid,
-		arg.Gastype,
+		arg.Itemname,
 		arg.Quantity,
 		arg.Totalprice,
 	)
@@ -1054,6 +1054,126 @@ func (q *Queries) GetAllJobsClient(ctx context.Context, arg GetAllJobsClientPara
 	return items, nil
 }
 
+const getAllJobsSuper = `-- name: GetAllJobsSuper :many
+SELECT cmpt.name AS cmpName, cmpt.id AS BELONGCMP, 
+       json_agg(json_build_object(
+           'ID', JobsT.id,
+           'Fromloc', JobsT.fromLoc,
+           'Toloc', JobsT.toLoc,
+           'Mid', JobsT.mid,
+           'Price', JobsT.price,
+           'estimated', JobsT.estimated,
+           'Remaining', JobsT.remaining,
+           'Source', JobsT.source,
+           'Memo', JobsT.memo,
+           'Belongcmp', cmpT.id,
+           'create_date', JobsT.create_date
+       )) AS jobs
+FROM JobsT
+INNER JOIN cmpt ON JobsT.belongcmp = cmpt.id
+where (
+    JobsT.id = $1
+    OR $1 IS NULL
+  )
+  AND (
+    JobsT.fromLoc = $2
+    OR $2 IS NULL
+  )
+  AND (
+    JobsT.Mid = $3
+    OR $3 IS NULL
+  )
+  AND (
+    JobsT.toLoc = $4
+    OR $4 IS NULL
+  )
+  AND (
+    belongcmp = $5
+    OR $5 IS NULL
+  )
+  AND (remaining <> 0)
+  AND (
+    remaining <> $6
+    OR $6 IS NULL
+  )
+  AND (
+    (
+      JobsT.create_date > $7
+      OR $7 IS NULL
+    )
+    AND (
+      JobsT.create_date < $8
+      OR $8 IS NULL
+    )
+  )
+  AND (
+    (
+      JobsT.last_modified_date > $9
+      OR $9 IS NULL
+    )
+    AND (
+      JobsT.last_modified_date < $10
+      OR $10 IS NULL
+    )
+  )
+  AND(JobsT.deleted_date is NULL)
+
+GROUP BY cmpt.name, cmpt.id
+`
+
+type GetAllJobsSuperParams struct {
+	ID                    sql.NullInt64
+	FromLoc               sql.NullString
+	Mid                   sql.NullString
+	ToLoc                 sql.NullString
+	Belongcmp             sql.NullInt64
+	Remaining             sql.NullInt32
+	CreateDateStart       sql.NullTime
+	CreateDateEnd         sql.NullTime
+	LastModifiedDateStart sql.NullTime
+	LastModifiedDateEnd   sql.NullTime
+}
+
+type GetAllJobsSuperRow struct {
+	Cmpname   string
+	Belongcmp int64
+	Jobs      json.RawMessage
+}
+
+func (q *Queries) GetAllJobsSuper(ctx context.Context, arg GetAllJobsSuperParams) ([]GetAllJobsSuperRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllJobsSuper,
+		arg.ID,
+		arg.FromLoc,
+		arg.Mid,
+		arg.ToLoc,
+		arg.Belongcmp,
+		arg.Remaining,
+		arg.CreateDateStart,
+		arg.CreateDateEnd,
+		arg.LastModifiedDateStart,
+		arg.LastModifiedDateEnd,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllJobsSuperRow
+	for rows.Next() {
+		var i GetAllJobsSuperRow
+		if err := rows.Scan(&i.Cmpname, &i.Belongcmp, &i.Jobs); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getAllUserFromCMP = `-- name: GetAllUserFromCMP :many
 SELECT usert.id, usert.name from userT where belongCMP = $1
 `
@@ -1618,7 +1738,7 @@ SELECT
     SELECT json_agg(
       json_build_object(
         'id', GasInfoT.id,
-        'itemName', GasInfoT.gasType,
+        'itemName', GasInfoT.itemName,
         'quantity', GasInfoT.quantity,
         'totalPrice', GasInfoT.totalPrice,
         'create_date', GasInfoT.create_date
@@ -1797,7 +1917,7 @@ func (q *Queries) GetGasDate(ctx context.Context, driverid int64) ([]string, err
 }
 
 const getGasInfoById = `-- name: GetGasInfoById :many
-SELECT id, gasid, gastype, quantity, totalprice, create_date, deleted_date, last_modified_date from GasInfoT where gasID = $1
+SELECT id, gasid, itemname, quantity, totalprice, create_date, deleted_date, last_modified_date from GasInfoT where gasID = $1
 `
 
 func (q *Queries) GetGasInfoById(ctx context.Context, gasid int64) ([]Gasinfot, error) {
@@ -1812,7 +1932,7 @@ func (q *Queries) GetGasInfoById(ctx context.Context, gasid int64) ([]Gasinfot, 
 		if err := rows.Scan(
 			&i.ID,
 			&i.Gasid,
-			&i.Gastype,
+			&i.Itemname,
 			&i.Quantity,
 			&i.Totalprice,
 			&i.CreateDate,
@@ -3088,6 +3208,22 @@ func (q *Queries) UpdateDriverPic(ctx context.Context, arg UpdateDriverPicParams
 		arg.Driverlicense,
 		arg.Trucklicense,
 	)
+	return err
+}
+
+const updateGas = `-- name: UpdateGas :exec
+UPDATE GasInfoT
+SET totalPrice = $2, last_modified_date = NOW()
+WHERE GasInfoT.id = $1
+`
+
+type UpdateGasParams struct {
+	ID         int64
+	Totalprice int64
+}
+
+func (q *Queries) UpdateGas(ctx context.Context, arg UpdateGasParams) error {
+	_, err := q.db.ExecContext(ctx, updateGas, arg.ID, arg.Totalprice)
 	return err
 }
 

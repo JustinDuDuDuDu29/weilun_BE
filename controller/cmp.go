@@ -104,7 +104,6 @@ func (u *CmpCtrlImpl) GetJobCmp(c *gin.Context) {
 	} else {
 
 		cmpid.Scan(bcmp)
-
 	}
 
 	param := db.GetJobCmpParams{

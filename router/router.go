@@ -52,8 +52,8 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 
 		jobs := api.Group("/jobs")
 		jobs.POST("/all", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetAllJob)
-		jobs.POST("", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.CreateJob)
-		jobs.PUT("", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.UpdateJob)
+		jobs.POST("", m.RoleMid.IsLoggedIn, m.RoleMid.CmpSuperAdminOnly, c.JobsCtrl.CreateJob)
+		jobs.PUT("", m.RoleMid.IsLoggedIn, m.RoleMid.CmpSuperAdminOnly, c.JobsCtrl.UpdateJob)
 		jobs.DELETE(":id", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.DeleteJob)
 
 		claimed := api.Group("/claimed")
@@ -66,7 +66,7 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		claimed.POST("/current", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetCurrentClaimedJob)
 		claimed.POST(":id", m.RoleMid.IsLoggedIn, c.JobsCtrl.ClaimJob)
 		claimed.POST("/finish/:id", m.RoleMid.IsLoggedIn, c.JobsCtrl.FinishClaimJob)
-		claimed.POST("/approve/:id", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.JobsCtrl.ApproveClaimedJob)
+		claimed.POST("/approve/:id", m.RoleMid.IsLoggedIn, m.RoleMid.CmpSuperAdminOnly, c.JobsCtrl.ApproveClaimedJob)
 		claimed.DELETE(":id", m.RoleMid.IsLoggedIn, c.JobsCtrl.CancelClaimJob)
 
 		repair := api.Group("/repair")
@@ -74,7 +74,7 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		repair.GET("/cmpUser", m.RoleMid.IsLoggedIn, c.RepairCtrl.GetRepairCmpUser)
 		repair.GET("/cj", m.RoleMid.IsLoggedIn, c.RepairCtrl.GetRepairDate)
 		repair.POST("", m.RoleMid.IsLoggedIn, c.RepairCtrl.CreateNewRepair)
-		repair.PUT("/updateItem/", m.RoleMid.IsLoggedIn, c.RepairCtrl.UpdateItem)
+		repair.PUT("/updateItem/", m.RoleMid.IsLoggedIn, m.RoleMid.CmpSuperAdminOnly, c.RepairCtrl.UpdateItem)
 		repair.POST("/approve/:id", m.RoleMid.IsLoggedIn, c.RepairCtrl.ApproveRepair)
 		repair.DELETE(":id", m.RoleMid.IsLoggedIn, c.RepairCtrl.DeleteRepair)
 
@@ -83,12 +83,13 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		gas.GET("/cmpUser", m.RoleMid.IsLoggedIn, c.GasCtrl.GetGasCmpUser)
 		gas.GET("/cj", m.RoleMid.IsLoggedIn, c.GasCtrl.GetGasDate)
 		gas.POST("", m.RoleMid.IsLoggedIn, c.GasCtrl.CreateNewGas)
+		gas.PUT("/updateItem/", m.RoleMid.IsLoggedIn, m.RoleMid.CmpSuperAdminOnly, c.GasCtrl.UpdateGas)
 		gas.POST("/approve/:id", m.RoleMid.IsLoggedIn, c.GasCtrl.ApproveGas)
 		gas.DELETE(":id", m.RoleMid.IsLoggedIn, c.GasCtrl.DeleteGas)
 
 		alert := api.Group("/alert")
 		alert.GET("", m.RoleMid.IsLoggedIn, c.AlertCtrl.GetAlert)
-		alert.POST("", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.AlertCtrl.CreateAlert)
+		alert.POST("", m.RoleMid.IsLoggedIn, m.RoleMid.CmpSuperAdminOnly, c.AlertCtrl.CreateAlert)
 		alert.PUT("", m.RoleMid.IsLoggedIn, c.AlertCtrl.CheckNewAlert)
 		alert.DELETE(":id", m.RoleMid.IsLoggedIn, c.AlertCtrl.DeleteAlert)
 

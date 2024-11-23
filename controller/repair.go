@@ -384,7 +384,7 @@ func (r *RepairCtrlImpl) UpdateItem(c *gin.Context) {
 	//danger???
 	//TODO: check this part
 	for _, item := range reqBody.UpdatedItems {
-		price, err := strconv.Atoi(item.Price)
+		price, err := strconv.Atoi(item.Totalprice)
 		if err != nil {
 			fmt.Println(err)
 			c.Status(http.StatusBadRequest)

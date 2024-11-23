@@ -340,11 +340,16 @@ func (u *UserCtrlImpl) UpdateUser(c *gin.Context) {
 func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
 
 	userType := c.Query("userType")
-
+	cRole := c.MustGet("Role").(int16)
+	belongCmp := c.MustGet("belongCmp").(int64)
 	var newid int64
 
 	switch userType {
 	case "cmpAdmin":
+		// if cRole >= 200 {
+		// 	c.AbortWithStatus(http.StatusBadRequest)
+		// 	return
+		// }
 		var reqBody apptypes.RegisterCmpAdminBodyT
 
 		if err := c.BindJSON(&reqBody); err != nil {
@@ -357,10 +362,18 @@ func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
 			return
 		}
 
+		var bcmp int64
+
+		if cRole >= 200 {
+			bcmp = belongCmp
+		} else {
+			bcmp = int64(reqBody.BelongCmp)
+		}
+
 		param := db.CreateUserParams{
 			Pwd:       string(hash),
 			Name:      reqBody.Name,
-			Belongcmp: int64(reqBody.BelongCmp),
+			Belongcmp: bcmp,
 			Phonenum:  reqBody.PhoneNum,
 			Role:      200,
 		}
@@ -386,11 +399,17 @@ func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
+		var bcmp int64
+		if cRole >= 200 {
+			bcmp = belongCmp
+		} else {
+			bcmp = int64(reqBody.BelongCmp)
+		}
 
 		param := db.CreateUserParams{
 			Pwd:       string(hash),
 			Name:      reqBody.Name,
-			Belongcmp: int64(reqBody.BelongCmp),
+			Belongcmp: bcmp,
 			Phonenum:  reqBody.PhoneNum,
 			Role:      300,
 		}

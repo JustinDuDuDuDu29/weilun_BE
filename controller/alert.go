@@ -173,15 +173,38 @@ func (a *AlertCtrlImpl) DeleteAlert(c *gin.Context) {
 }
 
 func (a *AlertCtrlImpl) CreateAlert(c *gin.Context) {
+	role := c.MustGet("Role").(int16)
+	bcmp := c.MustGet("belongCmp").(int64)
+
 	var reqBody apptypes.CreateAlertBodyT
 	if err := c.BindJSON(&reqBody); err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
+	var cmpID int64
+	cmpID = int64(reqBody.BelongCmp)
+
+	if role >= 200 {
+		// send cmp to own driver
+		cmpID = bcmp
+		param := db.CreateAlertParams{
+			Alert:     reqBody.Alert,
+			Belongcmp: cmpID,
+		}
+		res, err := a.svc.AlertServ.CreateAlert(param)
+		if err != nil {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		SendMessageCmpToDriver(reqBody.BelongCmp, 100, reqBody.Alert)
+
+		c.JSON(http.StatusOK, gin.H{"res": res})
+		return
+	}
 
 	param := db.CreateAlertParams{
 		Alert:     reqBody.Alert,
-		Belongcmp: int64(reqBody.BelongCmp),
+		Belongcmp: cmpID,
 	}
 	res, err := a.svc.AlertServ.CreateAlert(param)
 	if err != nil {
@@ -189,7 +212,7 @@ func (a *AlertCtrlImpl) CreateAlert(c *gin.Context) {
 		return
 	}
 
-	SandByCmp(reqBody.BelongCmp, 100, reqBody.Alert)
+	SendMessageByCmp(reqBody.BelongCmp, 100, reqBody.Alert)
 
 	c.JSON(http.StatusOK, gin.H{"res": res})
 }

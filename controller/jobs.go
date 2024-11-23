@@ -2,6 +2,7 @@ package controller
 
 import (
 	"database/sql"
+	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -355,7 +356,7 @@ func (u *JobsCtrlImpl) GetAllJob(c *gin.Context) {
 	belongCmp := c.MustGet("belongCmp").(int64)
 	// UserID := c.MustGet("UserID").(int)
 
-	if role <= 200 {
+	if role <= 100 {
 		var reqBody apptypes.GetJobsBodyT
 		if err := c.Bind(&reqBody); err != nil {
 			c.Abort()
@@ -385,9 +386,9 @@ func (u *JobsCtrlImpl) GetAllJob(c *gin.Context) {
 		var Belongcmp sql.NullInt64
 		if reqBody.Belongcmp != 0 {
 			Belongcmp.Scan(reqBody.Belongcmp)
-			if role >= 200 {
-				Belongcmp.Scan(role)
-			}
+		}
+		if role >= 200 {
+			Belongcmp.Scan(belongCmp)
 		}
 
 		var Remaining sql.NullInt32
@@ -484,7 +485,7 @@ func (u *JobsCtrlImpl) GetAllJob(c *gin.Context) {
 			LastModifiedDateEnd.Scan(dt)
 		}
 
-		param := db.GetAllJobsAdminParams{
+		param := db.GetAllJobsSuperParams{
 			ID:        ID,
 			FromLoc:   FromLoc,
 			Mid:       Mid,
@@ -500,9 +501,10 @@ func (u *JobsCtrlImpl) GetAllJob(c *gin.Context) {
 			LastModifiedDateStart: LastModifiedDateStart,
 			LastModifiedDateEnd:   LastModifiedDateEnd,
 		}
-		res, err := u.svc.JobsServ.GetAllJobs(param)
+		res, err := u.svc.JobsServ.GetAllJobsSuper(param)
 
 		if err != nil {
+			fmt.Println(err)
 			c.Status(http.StatusInternalServerError)
 			c.Abort()
 			return
@@ -510,7 +512,7 @@ func (u *JobsCtrlImpl) GetAllJob(c *gin.Context) {
 		c.JSON(http.StatusOK, res)
 
 	} else {
-
+		fmt.Println("Here")
 		var reqBody apptypes.GetJobsClientBodyT
 		if err := c.Bind(&reqBody); err != nil {
 			c.Abort()
@@ -583,8 +585,10 @@ func (u *JobsCtrlImpl) ClaimJob(c *gin.Context) {
 	if err != nil {
 		// fmt.Print(err)
 		if err.Error() == "already have ongoing job" {
+			fmt.Println(res)
 			res, err := u.svc.JobsServ.GetClaimedJobByID(res)
 			if err != nil {
+				fmt.Println(err)
 				c.Status(http.StatusInternalServerError)
 				c.Abort()
 				return
@@ -610,7 +614,7 @@ func (u *JobsCtrlImpl) FinishClaimJob(c *gin.Context) {
 	}
 	id, err := strconv.Atoi(sid)
 	if err != nil {
-
+		fmt.Println(err)
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -620,11 +624,15 @@ func (u *JobsCtrlImpl) FinishClaimJob(c *gin.Context) {
 	cres, err := u.svc.JobsServ.GetClaimedJobByID(int64(id))
 
 	if err != nil {
+		fmt.Println(int64(id))
+		fmt.Println(err)
 
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 	if Role != 100 && UserID != int(cres.Userid) {
+		fmt.Println(err)
+
 		c.AbortWithStatus(http.StatusBadRequest)
 	}
 
@@ -787,6 +795,7 @@ func (u *JobsCtrlImpl) CreateJob(c *gin.Context) {
 	err := c.BindJSON(&reqBody)
 
 	if err != nil {
+		fmt.Println(err)
 		c.Abort()
 		return
 	}
@@ -885,7 +894,7 @@ func (u *JobsCtrlImpl) UpdateJob(c *gin.Context) {
 	err := c.BindJSON(&reqBody)
 
 	if err != nil {
-		// fmt.Print(err)
+		fmt.Print(err)
 		c.Abort()
 		return
 	}

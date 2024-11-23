@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	db "main/sql"
 )
 
@@ -24,6 +25,7 @@ type JobsServ interface {
 	DeleteClaimedJob(param db.DeleteClaimedJobParams) (int32, error)
 	ApproveFinishedJob(param db.ApproveFinishedJobParams) error
 	SetJobNoMore(id int64) error
+	GetAllJobsSuper(param db.GetAllJobsSuperParams) ([]db.GetAllJobsSuperRow, error)
 	GetUserWithPendingJob(id sql.NullInt64) ([]json.RawMessage, error)
 	GetAllClaimedJobs(param db.GetAllClaimedJobsParams) ([]db.GetAllClaimedJobsRow, error)
 	GetClaimedJobByCmp(param db.GetClaimedJobByCmpParams) ([]db.GetClaimedJobByCmpRow, error)
@@ -148,6 +150,7 @@ func (s *JobsServImpl) DecreaseRemaining(id int64) (int32, error) {
 
 func (s *JobsServImpl) GetClaimedJobByID(id int64) (db.GetClaimedJobByIDRow, error) {
 	res, err := s.q.GetClaimedJobByID(context.Background(), id)
+	fmt.Println(err)
 	return res, err
 }
 
@@ -177,7 +180,7 @@ func (s *JobsServImpl) ClaimJob(param db.ClaimJobParams) (int64, error, int32) {
 	cres, err := qtx.GetCurrentClaimedJob(context.Background(), param.Driverid)
 
 	if err == nil {
-		return cres.ID, errors.New("already have ongoing job"), -99
+		return cres.Claimid, errors.New("already have ongoing job"), -99
 	}
 
 	// if err != nil && err != sql.ErrNoRows {
@@ -210,6 +213,10 @@ func (s *JobsServImpl) ClaimJob(param db.ClaimJobParams) (int64, error, int32) {
 
 func (s *JobsServImpl) GetAllJobs(param db.GetAllJobsAdminParams) ([]db.GetAllJobsAdminRow, error) {
 	res, err := s.q.GetAllJobsAdmin(context.Background(), param)
+	return res, err
+}
+func (s *JobsServImpl) GetAllJobsSuper(param db.GetAllJobsSuperParams) ([]db.GetAllJobsSuperRow, error) {
+	res, err := s.q.GetAllJobsSuper(context.Background(), param)
 	return res, err
 }
 
