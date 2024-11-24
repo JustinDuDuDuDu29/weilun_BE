@@ -194,6 +194,8 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 		return
 	}
 
+	total := 0
+
 	month, err := strconv.Atoi(c.Query("month"))
 	if err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
@@ -393,6 +395,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 					c.AbortWithStatus(http.StatusBadRequest)
 					return
 				}
+				total += int(row.Total)
 				f.SetCellValue(sheetname, cell, row.Total)
 
 				// CMPT (甲方)
@@ -456,6 +459,31 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 			}
 		}
 	}
+
+	sheetname := "總和"
+	_, err = f.NewSheet(sheetname)
+	if err != nil {
+		fmt.Println("Error creating new sheet:", err)
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	for _, row := range [][]interface{}{
+		{"應收款總和"},
+	} {
+		cell, err := excelize.CoordinatesToCellName(1, 1)
+		if err != nil {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+		f.SetSheetRow(sheetname, cell, &row)
+	}
+	cell, err := excelize.CoordinatesToCellName(1, 2)
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	f.SetCellValue(sheetname, cell, total)
 
 	// Save the Excel file
 	targetPath := time.DateOnly + ".xlsx"
