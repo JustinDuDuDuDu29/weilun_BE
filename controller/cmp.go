@@ -67,6 +67,8 @@ func (u *CmpCtrlImpl) GetJobCmp(c *gin.Context) {
 	year, err := strconv.Atoi(c.Query("year"))
 	bcmp := c.MustGet("belongCmp")
 	role := c.MustGet("Role").(int16)
+	cuid := c.MustGet("UserID").(int)
+
 	if err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
@@ -106,10 +108,27 @@ func (u *CmpCtrlImpl) GetJobCmp(c *gin.Context) {
 		cmpid.Scan(bcmp)
 	}
 
+	var userid sql.NullInt64
+	if role >= 300 {
+		userid.Scan(cuid)
+	} else {
+		// id, err := strconv.Atoi(c.Query("id"))
+		// if err != nil {
+		// 	fmt.Println(err)
+		// 	c.Status(http.StatusConflict)
+		// 	c.Abort()
+		// 	return
+		// }
+		// userid.Scan(id)
+		userid.Valid = false
+
+	}
+
 	param := db.GetJobCmpParams{
 		ApprovedDate:   AppFrom,
 		ApprovedDate_2: AppEnd,
 		CmpId:          cmpid,
+		UserId:         userid,
 	}
 	// fmt.Println("param = ", param)
 

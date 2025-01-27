@@ -84,11 +84,16 @@ func (a *RevenueCtrlImpl) SimpleExcel(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 	}
 
+	var userid sql.NullInt64
+
+	userid.Valid = false
+
 	// Prepare parameters for the database query
 	param := db.GetJobCmpParams{
 		ApprovedDate:   AppFrom,
 		ApprovedDate_2: AppEnd,
 		CmpId:          qBcmp,
+		UserId:         userid,
 	}
 
 	// Fetch the data from the service
