@@ -2,6 +2,7 @@ package controller
 
 import (
 	"database/sql"
+	"fmt"
 	"main/apptypes"
 	"main/service"
 	db "main/sql"
@@ -433,10 +434,34 @@ func (u *UserCtrlImpl) RegisterUser(c *gin.Context) {
 }
 
 func (u *UserCtrlImpl) DeleteUser(c *gin.Context) {
+	role := c.MustGet("Role").(int16)
+	if role >= 300 {
+		c.Abort()
+		return
+	}
+
 	var reqBody apptypes.DeleteUserBodyT
+	bcmp := c.MustGet("belongCmp")
 	err := c.BindJSON(&reqBody)
 
 	if err != nil {
+		c.Abort()
+
+		return
+	}
+	r, err := u.svc.UserServ.GetDriverInfo(int64(reqBody.ToDeleteUserId))
+	if err != nil {
+		fmt.Println(reqBody.ToDeleteUserId)
+
+		c.Status(http.StatusInternalServerError)
+		c.Abort()
+		return
+	}
+	if bcmp != r.Belongcmp {
+		fmt.Println(bcmp)
+		fmt.Println(r.Belongcmp)
+
+		c.Abort()
 		return
 	}
 
