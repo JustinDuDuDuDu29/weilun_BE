@@ -757,7 +757,7 @@ func (u *JobsCtrlImpl) CancelClaimJob(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	if !(cJobRes.CreateDate.Add(time.Minute*10).After(time.Now()) && cJobRes.Userid == int64(UserID)) && !(res.Role <= int16(100)) {
+	if !(cJobRes.CreateDate.Add(time.Minute*10).After(time.Now()) && cJobRes.Userid == int64(UserID)) && !(res.Role <= int16(200)) {
 		// reject has pass 5 min
 
 		c.Status(http.StatusConflict)
