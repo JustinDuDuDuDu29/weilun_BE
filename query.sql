@@ -1319,35 +1319,40 @@ SELECT gasT.id as ID,
   UserT.Name as Drivername,
   cmpt.name as cmpName,
   cmpt.id as cmpID,
-  -- Include repair information as JSON
-  (
-    SELECT json_agg(
-        json_build_object(
-          'id',
-          GasInfoT.id,
-          'itemName',
-          GasInfoT.itemName,
-          'quantity',
-          GasInfoT.quantity,
-          'totalPrice',
-          GasInfoT.totalPrice,
-          'create_date',
-          GasInfoT.create_date
+  -- Include repair information as JSON with default values if NULL
+
+  COALESCE(
+    (
+      SELECT jsonb_agg(
+        jsonb_build_object(
+          'id', COALESCE(GasInfoT.id, 0),
+          'itemName', COALESCE(GasInfoT.itemName, ''),
+          'quantity', COALESCE(GasInfoT.quantity, 0),
+          'totalPrice', COALESCE(GasInfoT.totalPrice, 0),
+          'create_date', COALESCE(GasInfoT.create_date, '1970-01-01')
         )
       )
-    FROM GasInfoT
-    WHERE GasInfoT.gasID = gasT.id
-  ) as Repairinfo,
+      FROM GasInfoT
+      WHERE GasInfoT.gasID = gasT.id
+    ), '[
+        {
+          "id": 0,
+          "itemName": "",
+          "quantity": 0,
+          "totalPrice": 0,
+          "create_date": "1970-01-01"
+        }
+      ]'::jsonb
+  ) AS Repairinfo,
   gasT.Create_Date as CreateDate,
   gasT.Approved_Date as ApprovedDate,
   gasT.pic as pic,
-  -- gasT.place as place,
   driverT.plateNum as plateNum
 FROM gasT
   INNER JOIN UserT ON UserT.id = gasT.driverID
   INNER JOIN driverT ON UserT.id = driverT.id
   INNER JOIN cmpt ON cmpt.id = UserT.belongCMP
-WHERE (
+WHERE  (
     gasT.id = sqlc.narg('id')
     OR sqlc.narg('id') IS NULL
   )
@@ -1375,6 +1380,7 @@ WHERE (
     to_char(date(gasT.create_date), 'YYYY-MM') = to_char(date(sqlc.narg('ym')), 'YYYY-MM')
     OR sqlc.narg('ym') IS NULL
   );
+
 -- name: ApproveGas :exec
 Update GasT
 set approved_date = NOW(),

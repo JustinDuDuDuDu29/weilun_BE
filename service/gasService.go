@@ -52,9 +52,26 @@ func (r *GasServImpl) NewGasInfo(param db.CreateNewGasInfoParams) (int64, error)
 }
 
 func (r *GasServImpl) GetGas(param db.GetGasParams) ([]db.GetGasRow, error) {
+	// Fetch data from the database
 	res, err := r.q.GetGas(context.Background(), param)
-	return res, err
+	if err != nil {
+		return nil, err
+	}
+
+	// Iterate over the result and convert Repairinfo from interface{} to json.RawMessage
+	for i := range res {
+		if raw, ok := res[i].Repairinfo.([]byte); ok {
+			res[i].Repairinfo = json.RawMessage(raw)
+		}
+	}
+
+	return res, nil
 }
+
+// func (r *GasServImpl) GetGas(param db.GetGasParams) ([]db.GetGasRow, error) {
+// 	res, err := r.q.GetGas(context.Background(), param)
+// 	return res, err
+// }
 
 func (r *GasServImpl) DeleteGas(param int64) error {
 	err := r.q.DeleteGasT(context.Background(), param)

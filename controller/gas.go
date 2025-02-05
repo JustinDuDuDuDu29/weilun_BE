@@ -331,6 +331,7 @@ func (r *GasCtrlImpl) GetGas(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{})
 		return
 	}
+	fmt.Println(repairRes)
 	c.JSON(http.StatusOK, gin.H{"res": repairRes})
 
 }

@@ -6,3 +6,6 @@ sql:
     gen:
       go:
         out: "sql"
+        overrides:
+          - column: "gasT.Repairinfo"
+            go_type: "encoding/json.RawMessage"

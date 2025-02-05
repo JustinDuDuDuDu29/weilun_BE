@@ -3,7 +3,9 @@ package apptypes
 import (
 	// "encoding/json"
 
+	"database/sql"
 	"mime/multipart"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -95,6 +97,19 @@ type Excel struct {
 // 		Date string `json:"date"`
 // 	} `json:"list"`
 // }
+
+type GetGasRowAlter struct {
+	ID           int64
+	Driverid     int64
+	Drivername   string
+	Cmpname      string
+	Cmpid        int64
+	Repairinfo   interface{}
+	Createdate   time.Time
+	Approveddate sql.NullTime
+	Pic          sql.NullString
+	Platenum     string
+}
 
 type ApproveJob struct {
 	Memo string `json:"memo"`
