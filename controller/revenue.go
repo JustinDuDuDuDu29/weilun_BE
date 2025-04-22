@@ -499,19 +499,21 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 	}
 	f.SetCellValue(sheetname, cell, total)
 
-	// Save the Excel file
-	targetPath := time.DateOnly + ".xlsx"
+	now := time.Now()
+	targetPath := fmt.Sprintf("%d%02d%02d.xlsx", now.Year()-1911, now.Month(), now.Day())
+
 	if err := f.SaveAs("./excel/" + targetPath); err != nil {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 
 	// Set the headers for downloading the Excel file
-	c.Header("Content-Description", "File Transfer")
+	c.Header("Content-Disposition", "attachment; filename=\""+targetPath+"\"")
+	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 	c.Header("Content-Transfer-Encoding", "binary")
-	c.Header("Content-Disposition", "attachment; filename="+targetPath)
-	c.Header("Content-Type", "application/octet-stream")
+	c.Header("Expires", "0")
 	c.File("./excel/" + targetPath)
+
 }
 
 func (a *RevenueCtrlImpl) RevenueDriver(c *gin.Context) {
