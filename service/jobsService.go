@@ -24,6 +24,7 @@ type JobsServ interface {
 	GetCurrentClaimedJob(id int64) (db.GetCurrentClaimedJobRow, error)
 	DeleteClaimedJob(param db.DeleteClaimedJobParams) (int32, error)
 	ApproveFinishedJob(param db.ApproveFinishedJobParams) error
+	ApproveFinishedJobs(param db.ApproveMultipleJobsParams) error
 	SetJobNoMore(id int64) error
 	GetAllJobsSuper(param db.GetAllJobsSuperParams) ([]db.GetAllJobsSuperRow, error)
 	GetUserWithPendingJob(id sql.NullInt64) ([]json.RawMessage, error)
@@ -83,6 +84,11 @@ func (s *JobsServImpl) GetUserWithPendingJob(id sql.NullInt64) ([]json.RawMessag
 
 func (s *JobsServImpl) ApproveFinishedJob(param db.ApproveFinishedJobParams) error {
 	err := s.q.ApproveFinishedJob(context.Background(), param)
+	return err
+}
+
+func (s *JobsServImpl) ApproveFinishedJobs(param db.ApproveMultipleJobsParams) error {
+	err := s.q.ApproveMultipleJobs(context.Background(), param)
 	return err
 }
 

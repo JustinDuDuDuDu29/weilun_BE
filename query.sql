@@ -892,6 +892,16 @@ set memo = $3,
   approved_date = NOW(),
   last_modified_date = NOW()
 where id = $1;
+
+-- name: ApproveMultipleJobs :exec
+UPDATE ClaimJobT
+SET 
+  memo = sqlc.arg(memo),
+  approved_by = sqlc.arg(approved_by),
+  approved_date = NOW(),
+  last_modified_date = NOW()
+WHERE id = ANY(sqlc.arg(ids)::bigint[]);
+
 -- name: GetCurrentClaimedJob :one
 SELECT t2.id as claimID,
   t2.create_date as claimDate,

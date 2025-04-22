@@ -40,7 +40,7 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		user.POST("/approve/:id", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.UserCtrl.ApproveUser)
 		user.POST("/UpdateDriverPic", m.RoleMid.IsLoggedIn, c.UserCtrl.UpdateDriverPic)
 		user.PUT(":id", m.RoleMid.IsLoggedIn, c.UserCtrl.UpdateUser)
-		user.DELETE("", m.RoleMid.IsLoggedIn,  m.RoleMid.CmpSuperAdminOnly,c.UserCtrl.DeleteUser)
+		user.DELETE("", m.RoleMid.IsLoggedIn, m.RoleMid.CmpSuperAdminOnly, c.UserCtrl.DeleteUser)
 
 		cmp := api.Group("/cmp")
 		cmp.GET("", m.RoleMid.IsLoggedIn, c.CmpCtrl.GetCmp)
@@ -48,7 +48,7 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		cmp.GET("/job", m.RoleMid.IsLoggedIn, c.CmpCtrl.GetJobCmp)
 		cmp.POST("", m.RoleMid.IsLoggedIn, c.CmpCtrl.RegisterCmp)
 		cmp.PUT("", m.RoleMid.IsLoggedIn, c.CmpCtrl.UpdateCmp)
-		cmp.DELETE("", m.RoleMid.IsLoggedIn,  m.RoleMid.SuperAdminOnly,c.CmpCtrl.DeleteCmp)
+		cmp.DELETE("", m.RoleMid.IsLoggedIn, m.RoleMid.SuperAdminOnly, c.CmpCtrl.DeleteCmp)
 
 		jobs := api.Group("/jobs")
 		jobs.POST("/all", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetAllJob)
@@ -62,6 +62,8 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		claimed.GET("/cj", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetCJDate)
 		claimed.GET("/list", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetClaimedJobByDriverID)
 		claimed.GET("/pending", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetClaimedJobByDriverID)
+
+		claimed.POST("/approve-multiple", m.RoleMid.IsLoggedIn, m.RoleMid.CmpAdminOnly, c.JobsCtrl.ApproveClaimedJobs)
 		claimed.GET("/userwitpendingjob", m.RoleMid.IsLoggedIn, m.RoleMid.CmpAdminOnly, c.JobsCtrl.GetUserWithPendingJob)
 		claimed.POST("/current", m.RoleMid.IsLoggedIn, c.JobsCtrl.GetCurrentClaimedJob)
 		claimed.POST(":id", m.RoleMid.IsLoggedIn, c.JobsCtrl.ClaimJob)
@@ -76,7 +78,7 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		repair.POST("", m.RoleMid.IsLoggedIn, c.RepairCtrl.CreateNewRepair)
 		repair.PUT("/updateItem/", m.RoleMid.IsLoggedIn, m.RoleMid.CmpSuperAdminOnly, c.RepairCtrl.UpdateItem)
 		repair.POST("/approve/:id", m.RoleMid.IsLoggedIn, c.RepairCtrl.ApproveRepair)
-		repair.DELETE(":id", m.RoleMid.IsLoggedIn,  m.RoleMid.CmpSuperAdminOnly,c.RepairCtrl.DeleteRepair)
+		repair.DELETE(":id", m.RoleMid.IsLoggedIn, m.RoleMid.CmpSuperAdminOnly, c.RepairCtrl.DeleteRepair)
 
 		gas := api.Group("/gas")
 		gas.GET("", m.RoleMid.IsLoggedIn, c.GasCtrl.GetGas)
@@ -91,7 +93,7 @@ func RouterInit(c *controller.AppControllerImpl, m *middleware.AppMiddlewareImpl
 		alert.GET("", m.RoleMid.IsLoggedIn, c.AlertCtrl.GetAlert)
 		alert.POST("", m.RoleMid.IsLoggedIn, m.RoleMid.CmpSuperAdminOnly, c.AlertCtrl.CreateAlert)
 		alert.PUT("", m.RoleMid.IsLoggedIn, c.AlertCtrl.CheckNewAlert)
-		alert.DELETE(":id", m.RoleMid.IsLoggedIn,  m.RoleMid.CmpSuperAdminOnly,c.AlertCtrl.DeleteAlert)
+		alert.DELETE(":id", m.RoleMid.IsLoggedIn, m.RoleMid.CmpSuperAdminOnly, c.AlertCtrl.DeleteAlert)
 
 		revenue := api.Group("/revenue")
 		revenue.GET("", m.RoleMid.IsLoggedIn, c.RevenueCtrl.RevenueDriver)

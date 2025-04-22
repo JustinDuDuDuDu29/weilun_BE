@@ -10,6 +10,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 const approveDriver = `-- name: ApproveDriver :exec
@@ -52,6 +54,27 @@ where id = $1
 
 func (q *Queries) ApproveGas(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, approveGas, id)
+	return err
+}
+
+const approveMultipleJobs = `-- name: ApproveMultipleJobs :exec
+UPDATE ClaimJobT
+SET 
+  memo = $1,
+  approved_by = $2,
+  approved_date = NOW(),
+  last_modified_date = NOW()
+WHERE id = ANY($3::bigint[])
+`
+
+type ApproveMultipleJobsParams struct {
+	Memo       sql.NullString
+	ApprovedBy sql.NullInt64
+	Ids        []int64
+}
+
+func (q *Queries) ApproveMultipleJobs(ctx context.Context, arg ApproveMultipleJobsParams) error {
+	_, err := q.db.ExecContext(ctx, approveMultipleJobs, arg.Memo, arg.ApprovedBy, pq.Array(arg.Ids))
 	return err
 }
 

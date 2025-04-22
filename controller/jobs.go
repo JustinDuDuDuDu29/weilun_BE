@@ -29,6 +29,7 @@ type JobsCtrl interface {
 	GetUserWithPendingJob(c *gin.Context)
 	GetCurrentClaimedJob(c *gin.Context)
 	ApproveClaimedJob(c *gin.Context)
+	ApproveClaimedJobs(c *gin.Context)
 	GetClaimedJobByDriverID(c *gin.Context)
 	GetCJDate(c *gin.Context)
 }
@@ -726,6 +727,38 @@ func (u *JobsCtrlImpl) ApproveClaimedJob(c *gin.Context) {
 
 	c.AbortWithStatus(http.StatusOK)
 
+}
+func (u *JobsCtrlImpl) ApproveClaimedJobs(c *gin.Context) {
+	var reqBody struct {
+		IDs  []int64 `json:"ids"`
+		Memo string  `json:"memo"`
+	}
+
+	if err := c.BindJSON(&reqBody); err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	UserID := c.MustGet("UserID").(int)
+
+	if len(reqBody.IDs) == 0 {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "No IDs provided"})
+		return
+	}
+
+	param := db.ApproveMultipleJobsParams{
+		Ids:        reqBody.IDs,
+		Memo:       sql.NullString{String: reqBody.Memo, Valid: reqBody.Memo != ""},
+		ApprovedBy: sql.NullInt64{Int64: int64(UserID), Valid: true},
+	}
+
+	err := u.svc.JobsServ.ApproveFinishedJobs(param)
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	c.Status(http.StatusOK)
 }
 
 func (u *JobsCtrlImpl) CancelClaimJob(c *gin.Context) {
