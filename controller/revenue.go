@@ -244,8 +244,8 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 
 	// Prepare the parameters for the database query
 	param := db.GetRevenueExcelParams{
-		FinishedDate:   AppFrom,
-		FinishedDate_2: AppEnd,
+		ApprovedDate:   AppFrom,
+		ApprovedDate_2: AppEnd,
 		Belongcmp:      qBcmp,
 	}
 	fmt.Println(AppFrom)
