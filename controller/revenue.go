@@ -325,9 +325,16 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 				return
 			}
 
-			year := strconv.Itoa((date.Year()) - 1911)
-			month := strconv.Itoa(int(date.Month()))
-			day := strconv.Itoa(date.Day())
+			year := date.Year() - 1911 // 民國年
+			month := int(date.Month())
+			day := date.Day()
+
+			yearStr := strconv.Itoa(year)
+			monthStr := fmt.Sprintf("%02d", month) // 補前導0
+			dayStr := fmt.Sprintf("%02d", day)     // 補前導0
+
+			formattedDate := yearStr + monthStr + dayStr
+			// fmt.Println(formattedDate)
 
 			// Loop through each job data entry (ls.Data)
 			for _, row := range ls.Data {
@@ -338,7 +345,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 					c.AbortWithStatus(http.StatusBadRequest)
 					return
 				}
-				f.SetCellValue(sheetname, cell, year+month+day)
+				f.SetCellValue(sheetname, cell, formattedDate)
 
 				// Platenum
 				cell, err = excelize.CoordinatesToCellName(2, rr+2)
