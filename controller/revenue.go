@@ -244,11 +244,13 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 
 	// Prepare the parameters for the database query
 	param := db.GetRevenueExcelParams{
-		ApprovedDate:   AppFrom,
-		ApprovedDate_2: AppEnd,
+		FinishedDate:   AppFrom,
+		FinishedDate_2: AppEnd,
 		Belongcmp:      qBcmp,
 	}
+	fmt.Println(AppFrom)
 
+	fmt.Println(AppEnd)
 	// Call the service to get the revenue data
 	res, err := a.svc.RevenueServ.GetExcel(param)
 	if err != nil {
@@ -329,7 +331,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 
 			// Loop through each job data entry (ls.Data)
 			for _, row := range ls.Data {
-				fmt.Println(row)
+				// fmt.Println(row)
 				// Set the date, platenum, and other fields
 				cell, err := excelize.CoordinatesToCellName(1, rr+2)
 				if err != nil {
@@ -425,7 +427,7 @@ func (a *RevenueCtrlImpl) RevenueExcel(c *gin.Context) {
 					c.AbortWithStatus(http.StatusBadRequest)
 					return
 				}
-				fmt.Println(ls.Gas.Gas)
+				// fmt.Println(ls.Gas.Gas)
 				// if ids == len(ls.Data)-1 {
 				f.SetCellValue(sheetname, cell, ls.Gas.Gas)
 				// } else {

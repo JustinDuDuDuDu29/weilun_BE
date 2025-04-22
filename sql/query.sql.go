@@ -2791,22 +2791,22 @@ const getRevenueExcel = `-- name: GetRevenueExcel :many
 WITH GasData AS (
   SELECT GasT.DRIVERID,
     SUM(GasInfoT.totalPrice) AS GAS,
-    DATE(GasT.CREATE_DATE) AS GAS_DATE
+    DATE(GasT.Approved_Date) AS GAS_DATE
   FROM GasT
     LEFT JOIN GasInfoT ON GasInfoT.gasid = GasT.id
-  where GasT.approved_date is not null
+  where GasT.approved_date is not null and GasT.deleted_date is null
   GROUP BY GasT.DRIVERID,
-    DATE(GasT.CREATE_DATE)
+    DATE(GasT.Approved_Date)
 ),
 RepairData AS (
   SELECT RepairT.DRIVERID,
     SUM(RepairInfoT.totalPrice) AS REPAIR,
-    DATE(RepairT.CREATE_DATE) AS REPAIR_DATE
+    DATE(RepairT.Approved_Date) AS REPAIR_DATE
   FROM RepairT
     LEFT JOIN RepairInfoT ON RepairInfoT.repairid = RepairT.id
-  where RepairT.approved_date is not null
+  where RepairT.approved_date is not null and RepairT.deleted_date is null
   GROUP BY RepairT.DRIVERID,
-    DATE(RepairT.CREATE_DATE)
+    DATE(RepairT.Approved_Date)
 ),
 JobData AS (
   SELECT USERT.ID AS UID,
@@ -2820,14 +2820,14 @@ JobData AS (
     JOBST.PRICE * COUNT(CLAIMJOBT.JOBID) AS TOTALPRICE,
     JOBST.SOURCE AS JOBSOURCE,
     CMPT.NAME AS CMPNAME,
-    DATE(CLAIMJOBT.APPROVED_DATE) AS APPROVEDDATE
+    DATE(CLAIMJOBT.finished_date) AS finishDate
   FROM CLAIMJOBT
     LEFT JOIN JOBST ON CLAIMJOBT.JOBID = JOBST.ID
     LEFT JOIN USERT ON USERT.ID = CLAIMJOBT.DRIVERID
     LEFT JOIN DRIVERT ON USERT.ID = DRIVERT.ID
     LEFT JOIN CMPT ON CMPT.ID = USERT.BELONGCMP
   WHERE CLAIMJOBT.DELETED_DATE IS NULL
-    AND CLAIMJOBT.APPROVED_DATE BETWEEN $1 AND $2
+    AND CLAIMJOBT.finished_date BETWEEN $1 AND $2
     AND USERT.belongCMP = $3
   GROUP BY USERT.ID,
     USERT.NAME,
@@ -2838,7 +2838,7 @@ JobData AS (
     JOBST.PRICE,
     JOBST.SOURCE,
     CMPT.NAME,
-    DATE(CLAIMJOBT.APPROVED_DATE)
+    DATE(CLAIMJOBT.finished_date)
 )
 SELECT JSON_BUILD_OBJECT(
     'uid',
@@ -2854,10 +2854,10 @@ SELECT JSON_BUILD_OBJECT(
 FROM (
     SELECT COALESCE(JD.UID, GD.DRIVERID, RD.DRIVERID) AS UID,
       COALESCE(JD.USERNAME, U.NAME) AS USERNAME,
-      COALESCE(JD.APPROVEDDATE, GD.GAS_DATE, RD.REPAIR_DATE) AS DATE,
+      COALESCE(JD.finishDate, GD.GAS_DATE, RD.REPAIR_DATE) AS DATE,
       JSON_BUILD_OBJECT(
         'date',
-        COALESCE(JD.APPROVEDDATE, GD.GAS_DATE, RD.REPAIR_DATE),
+        COALESCE(JD.finishDate, GD.GAS_DATE, RD.REPAIR_DATE),
         'data',
         JSON_AGG(
           JSON_BUILD_OBJECT(
@@ -2898,16 +2898,16 @@ FROM (
       ) AS JSON_BUILD_OBJECT
     FROM JobData JD
       FULL OUTER JOIN GasData GD ON JD.UID = GD.DRIVERID
-      AND JD.APPROVEDDATE = GD.GAS_DATE
+      AND JD.finishDate = GD.GAS_DATE
       FULL OUTER JOIN RepairData RD ON COALESCE(JD.UID, GD.DRIVERID) = RD.DRIVERID
-      AND COALESCE(JD.APPROVEDDATE, GD.GAS_DATE) = RD.REPAIR_DATE
+      AND COALESCE(JD.finishDate, GD.GAS_DATE) = RD.REPAIR_DATE
       LEFT JOIN USERT U ON COALESCE(JD.UID, GD.DRIVERID, RD.DRIVERID) = U.ID
       LEFT JOIN DRIVERT DR ON COALESCE(JD.UID, GD.DRIVERID, RD.DRIVERID) = DR.ID
     GROUP BY GD.GAS,
       RD.REPAIR,
       COALESCE(JD.UID, GD.DRIVERID, RD.DRIVERID),
       COALESCE(JD.USERNAME, U.NAME),
-      COALESCE(JD.APPROVEDDATE, GD.GAS_DATE, RD.REPAIR_DATE),
+      COALESCE(JD.finishDate, GD.GAS_DATE, RD.REPAIR_DATE),
       JD.PLATENUM,
       DR.PLATENUM
   ) MQ
@@ -2917,13 +2917,13 @@ ORDER BY MAX(MQ.DATE) ASC
 `
 
 type GetRevenueExcelParams struct {
-	ApprovedDate   sql.NullTime
-	ApprovedDate_2 sql.NullTime
+	FinishedDate   sql.NullTime
+	FinishedDate_2 sql.NullTime
 	Belongcmp      int64
 }
 
 func (q *Queries) GetRevenueExcel(ctx context.Context, arg GetRevenueExcelParams) ([]json.RawMessage, error) {
-	rows, err := q.db.QueryContext(ctx, getRevenueExcel, arg.ApprovedDate, arg.ApprovedDate_2, arg.Belongcmp)
+	rows, err := q.db.QueryContext(ctx, getRevenueExcel, arg.FinishedDate, arg.FinishedDate_2, arg.Belongcmp)
 	if err != nil {
 		return nil, err
 	}
