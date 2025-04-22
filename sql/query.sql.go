@@ -2795,6 +2795,7 @@ WITH GasData AS (
   FROM GasT
     LEFT JOIN GasInfoT ON GasInfoT.gasid = GasT.id
   where GasT.approved_date is not null and GasT.deleted_date is null
+  And GasT.Approved_Date  BETWEEN $1 AND $2
   GROUP BY GasT.DRIVERID,
     DATE(GasT.Approved_Date)
 ),
@@ -2805,6 +2806,7 @@ RepairData AS (
   FROM RepairT
     LEFT JOIN RepairInfoT ON RepairInfoT.repairid = RepairT.id
   where RepairT.approved_date is not null and RepairT.deleted_date is null
+  and RepairT.Approved_Date  BETWEEN $1 AND $2
   GROUP BY RepairT.DRIVERID,
     DATE(RepairT.Approved_Date)
 ),
@@ -2917,13 +2919,13 @@ ORDER BY MAX(MQ.DATE) ASC
 `
 
 type GetRevenueExcelParams struct {
-	FinishedDate   sql.NullTime
-	FinishedDate_2 sql.NullTime
+	ApprovedDate   sql.NullTime
+	ApprovedDate_2 sql.NullTime
 	Belongcmp      int64
 }
 
 func (q *Queries) GetRevenueExcel(ctx context.Context, arg GetRevenueExcelParams) ([]json.RawMessage, error) {
-	rows, err := q.db.QueryContext(ctx, getRevenueExcel, arg.FinishedDate, arg.FinishedDate_2, arg.Belongcmp)
+	rows, err := q.db.QueryContext(ctx, getRevenueExcel, arg.ApprovedDate, arg.ApprovedDate_2, arg.Belongcmp)
 	if err != nil {
 		return nil, err
 	}

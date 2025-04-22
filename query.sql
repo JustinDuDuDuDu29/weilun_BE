@@ -1125,6 +1125,7 @@ WITH GasData AS (
   FROM GasT
     LEFT JOIN GasInfoT ON GasInfoT.gasid = GasT.id
   where GasT.approved_date is not null and GasT.deleted_date is null
+  And GasT.Approved_Date  BETWEEN $1 AND $2
   GROUP BY GasT.DRIVERID,
     DATE(GasT.Approved_Date)
 ),
@@ -1135,6 +1136,7 @@ RepairData AS (
   FROM RepairT
     LEFT JOIN RepairInfoT ON RepairInfoT.repairid = RepairT.id
   where RepairT.approved_date is not null and RepairT.deleted_date is null
+  and RepairT.Approved_Date  BETWEEN $1 AND $2
   GROUP BY RepairT.DRIVERID,
     DATE(RepairT.Approved_Date)
 ),
